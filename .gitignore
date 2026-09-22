@@ -24,6 +24,10 @@ ENV/
 # Model serialization (can be generated via python train_model.py)
 *.pkl
 
+# Flask runtime logs
+server.log
+server.err.log
+
 # IDE
 .vscode/
 .idea/

@@ -1,360 +1,1206 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Spam Detector | Machine Learning Message Security</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            cyan: '#06b6d4',
-                            indigo: '#6366f1',
-                            purple: '#a855f7',
-                            dark: '#070913',
-                            panel: 'rgba(15, 23, 42, 0.75)'
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Custom 3D & Glass Styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KAVACHAM AI — Intelligent Email Threat Discovery</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 </head>
-<body class="bg-[#070913] text-slate-100 min-h-screen relative overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+<body>
 
-    <!-- Interactive 3D Canvas Background -->
-    <canvas id="bg-canvas"></canvas>
+<!-- 3D CYBERNETIC CANVAS BACKGROUND & AMBIENT EFFECTS -->
+<canvas id="bg-canvas"></canvas>
+<div class="aurora"></div>
+<div class="cyber-grid"></div>
+<div class="bg-vignette"></div>
+<div class="scan-line"></div>
+<div class="scan-line-2"></div>
+<div class="glow-orb-1"></div>
+<div class="glow-orb-2"></div>
+<div class="glow-orb-3"></div>
 
-    <!-- Dynamic Ambient Glowing Orbs -->
-    <div class="glow-orb-1"></div>
-    <div class="glow-orb-2"></div>
+<!-- ========== SIDEBAR ========== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none" stroke="#00d4ff" stroke-width="1.5"/>
+        <circle cx="16" cy="16" r="5" fill="#00d4ff" opacity="0.9"/>
+        <line x1="16" y1="7" x2="16" y2="11" stroke="#00d4ff" stroke-width="1.5"/>
+        <line x1="16" y1="21" x2="16" y2="25" stroke="#00d4ff" stroke-width="1.5"/>
+        <line x1="7" y1="11.5" x2="11" y2="13.5" stroke="#00d4ff" stroke-width="1.5"/>
+        <line x1="21" y1="18.5" x2="25" y2="20.5" stroke="#00d4ff" stroke-width="1.5"/>
+        <line x1="7" y1="20.5" x2="11" y2="18.5" stroke="#00d4ff" stroke-width="1.5"/>
+        <line x1="21" y1="13.5" x2="25" y2="11.5" stroke="#00d4ff" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <span class="logo-name">KAVACHAM AI</span>
+      <span class="logo-tagline">Threat Discovery</span>
+    </div>
+  </div>
 
-    <div class="relative z-10 flex flex-col min-h-screen">
-        <!-- TOP NAVIGATION / HEADER -->
-        <header class="border-b border-slate-800/80 bg-slate-950/40 backdrop-blur-md sticky top-0 z-50">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 p-[1px] shadow-lg shadow-indigo-500/20">
-                        <div class="w-full h-full bg-slate-950 rounded-xl flex items-center justify-center text-cyan-400">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div>
-                        <h1 class="text-base font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
-                            AI Spam Detector
-                        </h1>
-                        <p class="text-xs text-slate-400 hidden sm:block">Machine Learning Powered Message Security</p>
-                    </div>
-                </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item active" data-page="dashboard" href="#" onclick="navigateTo('dashboard');return false;">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <span>Dashboard</span>
+    </a>
+    <a class="nav-item" data-page="analyze" href="#" onclick="navigateTo('analyze');return false;">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>
+        <path d="M8 11h6M11 8v6"/>
+      </svg>
+      <span>Analyze Email</span>
+    </a>
+    <a class="nav-item" data-page="gmail" href="#" onclick="navigateTo('gmail');return false;">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="2" y="4" width="20" height="16" rx="2"/>
+        <path d="m2 7 10 7 10-7"/>
+      </svg>
+      <span>Gmail</span>
+      {% if is_authenticated %}<span class="nav-badge connected">●</span>{% endif %}
+    </a>
+    <a class="nav-item" data-page="phishing" href="#" onclick="navigateTo('phishing');return false;">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
+      </svg>
+      <span>Phishing Checker</span>
+    </a>
+    <a class="nav-item" data-page="history" href="#" onclick="navigateTo('history');return false;">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>
+      </svg>
+      <span>History</span>
+    </a>
+    <a class="nav-item" data-page="performance" href="#" onclick="navigateTo('performance');return false;">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 5-5"/>
+      </svg>
+      <span>Model Performance</span>
+    </a>
+    <a class="nav-item" data-page="testsuite" href="#" onclick="navigateTo('testsuite');return false;">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <path d="m9 15 2 2 4-4"/>
+      </svg>
+      <span>Test Suite</span>
+    </a>
+    <a class="nav-item" data-page="settings" href="#" onclick="navigateTo('settings');return false;">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M19.07 4.93 4.93 19.07"/>
+        <circle cx="12" cy="12" r="9" stroke-dasharray="2 4"/>
+      </svg>
+      <span>Settings</span>
+    </a>
+  </nav>
 
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2 px-3 py-1.5 rounded-full glass-pill text-xs font-medium text-slate-300 border border-emerald-500/30 bg-emerald-950/20">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 online-dot"></span>
-                        <span>ML Model Online</span>
-                    </div>
-                </div>
-            </div>
-        </header>
+  <div class="sidebar-footer">
+    <div class="model-status-badge">
+      <span class="status-dot"></span>
+      <span class="status-text">ML Model Active</span>
+    </div>
+    {% if is_authenticated %}
+    <div class="user-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <span class="user-email">{{ session.get('user_email', 'Connected') }}</span>
+    </div>
+    {% endif %}
+  </div>
+</aside>
 
-        <!-- MAIN CONTENT CONTAINER -->
-        <main class="flex-grow max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-12">
-            
-            <!-- HERO SECTION -->
-            <div class="text-center space-y-4 max-w-2xl mx-auto">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                    <span class="text-cyan-400">✦</span> Naive Bayes + TF-IDF Vectorization
-                </div>
-                <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent leading-tight">
-                    Detect Spam Before It Tricks You.
-                </h2>
-                <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
-                    Analyze suspicious SMS and email messages using machine learning and get an instant prediction with probability scoring and pattern explanation.
-                </p>
-            </div>
+<!-- ========== MOBILE TOPBAR ========== -->
+<div class="mobile-topbar">
+  <button class="hamburger" onclick="toggleSidebar()">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="mobile-logo">KAVACHAM AI</span>
+</div>
 
-            <!-- MAIN PREDICTION CARD (3D TILT EFFECT) -->
-            <div class="tilt-card glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl relative">
-                <form id="spam-form" onsubmit="return false;" class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <label for="message-input" class="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                            </svg>
-                            Message Content
-                        </label>
-                        <span id="char-counter" class="text-xs text-slate-400 font-mono">0 characters</span>
-                    </div>
+<!-- ========== MAIN CONTENT ========== -->
+<main class="main-content">
 
-                    <div class="relative">
-                        <textarea 
-                            id="message-input" 
-                            rows="5" 
-                            class="w-full custom-textarea p-4 rounded-2xl text-sm sm:text-base placeholder-slate-500 leading-relaxed" 
-                            placeholder="Paste an SMS or email message here... (e.g., 'Congratulations! You won a free prize!')"
-                            required
-                        ></textarea>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-                        <p class="text-xs text-slate-400">
-                            Tip: Press <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">Ctrl+Enter</kbd> to quickly analyze.
-                        </p>
-                        <button 
-                            type="button" 
-                            id="check-btn" 
-                            disabled
-                            class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 transition-all duration-200 shadow-lg shadow-indigo-500/25 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                            <svg class="w-5 h-5 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Check Message
-                        </button>
-                    </div>
-                </form>
-
-                <!-- DYNAMIC RESULT CONTAINER -->
-                <div id="result-section" class="mt-8 hidden space-y-4 pt-6 border-t border-slate-800/80">
-                    
-                    <!-- Loading Indicator -->
-                    <div id="loading-state" class="hidden flex items-center justify-center p-8 space-x-3 text-indigo-400">
-                        <svg class="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                        </svg>
-                        <span class="font-medium text-sm">Extracting features & computing probabilities...</span>
-                    </div>
-
-                    <!-- Dynamic Card (Spam / Ham) -->
-                    <div id="result-card" class="hidden p-6 rounded-2xl transition-all duration-300">
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-white/10">
-                            <div class="flex items-center space-x-4">
-                                <div id="result-icon" class="flex-shrink-0"></div>
-                                <div>
-                                    <div id="result-status" class="text-2xl font-bold tracking-tight"></div>
-                                    <p id="result-explanation" class="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl"></p>
-                                </div>
-                            </div>
-                            <div class="sm:text-right flex-shrink-0">
-                                <div class="text-xs text-slate-400 font-medium">Confidence Score</div>
-                                <div id="result-confidence" class="text-2xl font-black font-mono"></div>
-                            </div>
-                        </div>
-
-                        <!-- Animated Progress Bar -->
-                        <div class="mt-5 space-y-2">
-                            <div class="w-full bg-slate-900/80 rounded-full h-3 p-0.5 overflow-hidden border border-white/5">
-                                <div id="confidence-bar" class="h-2 rounded-full progress-bar-fill" style="width: 0%;"></div>
-                            </div>
-                            <p class="text-[11px] text-slate-400 italic">
-                                Note: Confidence represents the model's prediction probability based on learned patterns.
-                            </p>
-                        </div>
-
-                        <!-- Matched Keywords / Tokens Display -->
-                        <div id="keywords-container" class="mt-5 pt-4 border-t border-white/10 hidden">
-                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                                Influential Tokens Detected:
-                            </span>
-                            <div id="keywords-list" class="flex flex-wrap gap-2"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SAMPLE MESSAGE BUTTONS -->
-            <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                        Try an Example
-                    </h3>
-                    <span class="text-xs text-slate-400">Click any example to test immediately</span>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <!-- Spam Samples -->
-                    <button type="button" class="sample-msg-btn text-left p-3.5 rounded-xl bg-slate-900/60 border border-red-500/20 hover:border-red-500/50 hover:bg-red-950/20 transition group" data-sample="Congratulations! You have won a free cash prize of $5000. Call 0800123456 to claim now!">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-semibold text-red-400 flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Spam Example 1
-                            </span>
-                            <span class="text-[11px] text-slate-500 group-hover:text-slate-300 transition">Use this ↗</span>
-                        </div>
-                        <p class="text-xs text-slate-300 line-clamp-2">
-                            "Congratulations! You have won a free cash prize of $5000. Call 0800123456 to claim now!"
-                        </p>
-                    </button>
-
-                    <button type="button" class="sample-msg-btn text-left p-3.5 rounded-xl bg-slate-900/60 border border-red-500/20 hover:border-red-500/50 hover:bg-red-950/20 transition group" data-sample="URGENT! Your account has been selected for a reward. Click the link to claim your bonus now.">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-semibold text-red-400 flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Spam Example 2
-                            </span>
-                            <span class="text-[11px] text-slate-500 group-hover:text-slate-300 transition">Use this ↗</span>
-                        </div>
-                        <p class="text-xs text-slate-300 line-clamp-2">
-                            "URGENT! Your account has been selected for a reward. Click the link to claim your bonus now."
-                        </p>
-                    </button>
-
-                    <!-- Legitimate Samples -->
-                    <button type="button" class="sample-msg-btn text-left p-3.5 rounded-xl bg-slate-900/60 border border-emerald-500/20 hover:border-emerald-500/50 hover:bg-emerald-950/20 transition group" data-sample="Hey, are we still meeting at 5 PM today?">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Not Spam Example 1
-                            </span>
-                            <span class="text-[11px] text-slate-500 group-hover:text-slate-300 transition">Use this ↗</span>
-                        </div>
-                        <p class="text-xs text-slate-300 line-clamp-2">
-                            "Hey, are we still meeting at 5 PM today?"
-                        </p>
-                    </button>
-
-                    <button type="button" class="sample-msg-btn text-left p-3.5 rounded-xl bg-slate-900/60 border border-emerald-500/20 hover:border-emerald-500/50 hover:bg-emerald-950/20 transition group" data-sample="Your assignment submission deadline is tomorrow. Don't forget to submit it.">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Not Spam Example 2
-                            </span>
-                            <span class="text-[11px] text-slate-500 group-hover:text-slate-300 transition">Use this ↗</span>
-                        </div>
-                        <p class="text-xs text-slate-300 line-clamp-2">
-                            "Your assignment submission deadline is tomorrow. Don't forget to submit it."
-                        </p>
-                    </button>
-                </div>
-            </div>
-
-            <!-- HOW IT WORKS SECTION -->
-            <div class="pt-6 space-y-6">
-                <div class="text-center space-y-2">
-                    <h3 class="text-2xl font-bold tracking-tight text-white">How It Works</h3>
-                    <p class="text-xs sm:text-sm text-slate-400">End-to-end Machine Learning Text Classification Pipeline</p>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="glass-panel p-5 rounded-2xl space-y-3">
-                        <div class="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm">
-                            01
-                        </div>
-                        <h4 class="font-bold text-sm text-slate-200">Enter Message</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed">
-                            User enters raw SMS or email content into the input dashboard.
-                        </p>
-                    </div>
-
-                    <div class="glass-panel p-5 rounded-2xl space-y-3">
-                        <div class="w-9 h-9 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-sm">
-                            02
-                        </div>
-                        <h4 class="font-bold text-sm text-slate-200">Clean Text</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed">
-                            Lowercasing, punctuation stripping, digits removal, and English stopwords filtering.
-                        </p>
-                    </div>
-
-                    <div class="glass-panel p-5 rounded-2xl space-y-3">
-                        <div class="w-9 h-9 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-sm">
-                            03
-                        </div>
-                        <h4 class="font-bold text-sm text-slate-200">TF-IDF Analysis</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed">
-                            Converts clean text into sparse numerical vectors using term frequency-inverse document frequency.
-                        </p>
-                    </div>
-
-                    <div class="glass-panel p-5 rounded-2xl space-y-3">
-                        <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">
-                            04
-                        </div>
-                        <h4 class="font-bold text-sm text-slate-200">ML Prediction</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed">
-                            Multinomial Naive Bayes computes conditional probabilities and outputs Spam vs. Ham.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MODEL INFORMATION (FACULTY DEMO HIGHLIGHT) -->
-            <div class="pt-4 space-y-4">
-                <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                    </svg>
-                    Model Architecture & Specifications
-                </h3>
-
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div class="p-4 rounded-xl glass-panel text-center">
-                        <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Algorithm</div>
-                        <div class="text-sm font-bold text-indigo-300">Multinomial Naive Bayes</div>
-                    </div>
-
-                    <div class="p-4 rounded-xl glass-panel text-center">
-                        <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Feature Extraction</div>
-                        <div class="text-sm font-bold text-cyan-300">TF-IDF (1-2 N-grams)</div>
-                    </div>
-
-                    <div class="p-4 rounded-xl glass-panel text-center">
-                        <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Dataset</div>
-                        <div class="text-sm font-bold text-purple-300">SMS Spam Collection</div>
-                    </div>
-
-                    <div class="p-4 rounded-xl glass-panel text-center">
-                        <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Task</div>
-                        <div class="text-sm font-bold text-emerald-300">Binary Classification</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- RECENT CHECKS (CLIENT-SIDE HISTORY) -->
-            <div class="pt-4 space-y-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        Recent Checks
-                    </h3>
-                    <button 
-                        type="button" 
-                        id="clear-history-btn" 
-                        class="text-xs text-slate-400 hover:text-red-400 transition cursor-pointer"
-                    >
-                        Clear History
-                    </button>
-                </div>
-
-                <div id="empty-history" class="p-8 rounded-2xl glass-panel text-center text-slate-500 text-xs">
-                    No recent predictions yet. Analyze a message above to see your history.
-                </div>
-
-                <div id="history-list" class="space-y-2"></div>
-            </div>
-
-        </main>
-
-        <!-- FOOTER -->
-        <footer class="border-t border-slate-900 bg-slate-950/60 backdrop-blur-md py-6 mt-12 text-center text-xs text-slate-400">
-            <p>AI Spam Detector • Academic Machine Learning Project • Flask & Scikit-Learn</p>
-        </footer>
+  <!-- ===== DASHBOARD PAGE ===== -->
+  <section class="page" id="page-dashboard">
+    <div class="page-header">
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Email threat intelligence overview</p>
     </div>
 
-    <!-- Application JavaScript -->
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <div class="stats-grid" id="dashboard-stats">
+      <div class="stat-card accent-cyan">
+        <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="stat-content"><div class="stat-value" id="stat-total" data-count="{{ (stats|default({})).total | default(0) }}">0</div><div class="stat-label">Total Analyzed</div></div>
+      </div>
+      <div class="stat-card accent-red">
+        <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <div class="stat-content"><div class="stat-value" id="stat-spam" data-count="{{ (stats|default({})).spam | default(0) }}">0</div><div class="stat-label">Spam Detected</div></div>
+      </div>
+      <div class="stat-card accent-green">
+        <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="stat-content"><div class="stat-value" id="stat-ham" data-count="{{ (stats|default({})).ham | default(0) }}">0</div><div class="stat-label">Legitimate</div></div>
+      </div>
+      <div class="stat-card accent-purple">
+        <div class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+        <div class="stat-content"><div class="stat-value" id="stat-model-acc" data-count="{{ metrics.accuracy | default(99.52) }}" data-suffix="%">0%</div><div class="stat-label">Model Accuracy</div></div>
+      </div>
+    </div>
+
+    <!-- ═══ LIVE CHARTS / GRAPHS ═══ -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-head"><h3>Threat Distribution</h3><span class="chip">LIVE</span></div>
+        <div class="chart-card-body"><div class="chart-wrap compact"><canvas id="chart-distribution"></canvas></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-head"><h3>Confidence Trend</h3><span class="chip">LAST 12</span></div>
+        <div class="chart-card-body"><div class="chart-wrap compact"><canvas id="chart-trend"></canvas></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-head"><h3>Model Score Profile</h3><span class="chip">HOLDOUT</span></div>
+        <div class="chart-card-body"><div class="chart-wrap compact"><canvas id="chart-radar-metrics"></canvas></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-head"><h3>Model Accuracy</h3><span class="chip">GAUGE</span></div>
+        <div class="chart-card-body"><div class="chart-wrap compact"><canvas id="chart-gauge-acc"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ PIPELINE CAROUSEL ═══ -->
+    <section class="chart-card carousel-card" style="margin-bottom:20px;">
+      <div class="chart-card-head">
+        <h3>Pipeline / How Kavacham AI Decides</h3>
+        <span class="chip">AUTO SCROLL</span>
+      </div>
+      <div class="carousel" data-carousel data-autoplay="5200">
+        <button type="button" class="carousel-arrow prev" aria-label="Previous">&#8249;</button>
+        <div class="carousel-viewport">
+          <div class="carousel-track">
+            <div class="carousel-slide">
+              <div class="carousel-num">01</div>
+              <div><h4>Input Text <span class="carousel-tag">RAW</span></h4><p>Paste any email, SMS or notification — or scan your real inbox via Gmail OAuth 2.0.</p></div>
+            </div>
+            <div class="carousel-slide">
+              <div class="carousel-num">02</div>
+              <div><h4>Clean &amp; Context <span class="carousel-tag">NLP</span></h4><p>Lowercase, punctuation removal, semantic token normalization with clause-aware negation preservation.</p></div>
+            </div>
+            <div class="carousel-slide">
+              <div class="carousel-num">03</div>
+              <div><h4>Feature Vectors <span class="carousel-tag">TF-IDF</span></h4><p>FeatureUnion: Word TF-IDF (1–3 grams) + Character TF-IDF (3–5 grams) extracted jointly.</p></div>
+            </div>
+            <div class="carousel-slide">
+              <div class="carousel-num">04</div>
+              <div><h4>Naive Bayes <span class="carousel-tag">ML</span></h4><p>MultinomialNB posterior probabilities computed from the trained TF-IDF feature space.</p></div>
+            </div>
+            <div class="carousel-slide">
+              <div class="carousel-num">05</div>
+              <div><h4>Threshold Decision <span class="carousel-tag">DECIDE</span></h4><p>Classify as Spam only when posterior probability ≥ 85% — engineered to keep false positives near 0%.</p></div>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="carousel-arrow next" aria-label="Next">&#8250;</button>
+        <div class="carousel-dots"></div>
+      </div>
+    </section>
+      <div class="card" style="flex:2">
+        <div class="card-header"><h3>Recent Analyses</h3></div>
+        <div class="card-body" id="recent-analyses-list">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+            <p>No analyses yet. <a href="#" onclick="navigateTo('analyze');return false;">Analyze an email</a> to get started.</p>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="flex:1">
+        <div class="card-header"><h3>Model Info</h3></div>
+        <div class="card-body">
+          <div class="info-list">
+            <div class="info-item"><span class="info-label">Algorithm</span><span class="info-val mono">Multinomial NB</span></div>
+            <div class="info-item"><span class="info-label">Features</span><span class="info-val mono">TF-IDF Word+Char</span></div>
+            <div class="info-item"><span class="info-label">Threshold</span><span class="info-val mono">{{ (metrics.decision_threshold | default(0.85)) * 100 | int }}%</span></div>
+            <div class="info-item"><span class="info-label">F1 Score</span><span class="info-val mono">{{ metrics.f1_score | default('99.51') }}%</span></div>
+            <div class="info-item"><span class="info-label">False Positive Rate</span><span class="info-val mono green-text">{{ metrics.false_positive_rate | default('0.0') }}%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ANALYZE PAGE ===== -->
+  <section class="page hidden" id="page-analyze">
+    <div class="page-header">
+      <h1 class="page-title">Analyze Email</h1>
+      <p class="page-subtitle">Paste email content for threat analysis</p>
+    </div>
+
+    <!-- Mode Selector -->
+    <div class="mode-selector-wrapper">
+      <div class="mode-selector" id="mode-selector">
+        <button class="mode-btn active" data-mode="anveshak" onclick="setAnalysisMode('anveshak')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Kavacham AI
+        </button>
+        <button class="mode-btn" data-mode="ultra" onclick="setAnalysisMode('ultra')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Ultra AI
+        </button>
+      </div>
+      <div class="mode-description" id="mode-desc">
+        <span id="mode-desc-text">Kavacham AI uses your trained ML model for fast, local classification.</span>
+      </div>
+    </div>
+
+    <!-- Ultra AI Privacy Notice -->
+    <div class="privacy-notice hidden" id="ultra-privacy-notice">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+      <span>Ultra AI evaluates your email using both Kavacham AI and Kavacham AI Pro for deep contextual threat discovery. Your email is analyzed on-demand and not stored permanently.</span>
+    </div>
+
+    <!-- Email Input Form -->
+    <div class="card analyze-card">
+      <div class="card-header"><h3>Email Content</h3></div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Sender (optional)</label>
+            <input type="text" class="form-input" id="input-sender" placeholder="e.g. alerts@yourbank.com" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject (optional)</label>
+            <input type="text" class="form-input" id="input-subject" placeholder="e.g. Security Alert: New sign-in detected" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Body <span class="required">*</span></label>
+          <textarea class="form-textarea" id="input-body" rows="8" placeholder="Paste the email body here..."></textarea>
+        </div>
+        <div class="form-group collapsible-group">
+          <button class="collapse-toggle" onclick="toggleAdvanced()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="m6 9 6 6 6-6"/></svg>
+            Advanced (URLs / Headers)
+          </button>
+          <div class="collapse-body hidden" id="advanced-fields">
+            <textarea class="form-textarea" id="input-urls" rows="3" placeholder="Paste any URLs found in the email (one per line)..."></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="analyze-btn" onclick="runAnalysis()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+            Analyze Email
+          </button>
+          <button class="btn btn-ghost" onclick="clearAnalysis()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result: Kavacham AI Only -->
+    <div class="hidden" id="result-anveshak">
+      <div class="result-header">
+        <h2>Analysis Result</h2>
+        <span class="analysis-mode-badge anveshak-badge">KAVACHAM AI</span>
+      </div>
+      <div class="result-grid">
+        <div class="result-verdict-card" id="anveshak-verdict-card">
+          <div class="verdict-label">Detection Result</div>
+          <div class="verdict-value" id="anveshak-verdict">—</div>
+          <div class="confidence-row">
+            <span class="confidence-label">Model Confidence</span>
+            <span class="confidence-value" id="anveshak-confidence">—</span>
+          </div>
+          <div class="threshold-row">
+            <span class="threshold-label">Decision Threshold</span>
+            <span class="threshold-value" id="anveshak-threshold">—</span>
+          </div>
+        </div>
+        <div class="card explanation-card">
+          <div class="card-header"><h3>Why Kavacham AI Reached This Result</h3></div>
+          <div class="card-body">
+            <p class="explanation-text" id="anveshak-explanation">—</p>
+            <div class="prob-bars" id="anveshak-prob-bars"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card signals-card">
+        <div class="card-header"><h3>Influential Signals</h3></div>
+        <div class="card-body">
+          <div class="signals-table-wrap" id="anveshak-signals-table"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result: Ultra AI -->
+    <div class="hidden" id="result-ultra">
+      <div class="result-header">
+        <h2>Ultra AI Analysis</h2>
+        <span class="analysis-mode-badge ultra-badge">ULTRA AI</span>
+      </div>
+      <!-- Two engine cards side by side -->
+      <div class="ultra-engines-grid">
+        <!-- Kavacham engine -->
+        <div class="engine-card" id="ultra-anveshak-card">
+          <div class="engine-header anveshak-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            KAVACHAM AI
+          </div>
+          <div class="engine-body">
+            <div class="engine-verdict" id="ultra-anveshak-verdict">—</div>
+            <div class="engine-confidence">Confidence: <strong id="ultra-anveshak-conf">—</strong></div>
+            <div class="engine-signals" id="ultra-anveshak-signals"></div>
+          </div>
+        </div>
+        <!-- Kavacham AI Pro engine -->
+        <div class="engine-card" id="ultra-gemini-card">
+          <div class="engine-header gemini-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            KAVACHAM AI PRO
+          </div>
+          <div class="engine-body" id="ultra-gemini-body">
+            <div class="engine-verdict" id="ultra-gemini-verdict">—</div>
+            <div class="engine-confidence">Confidence: <strong id="ultra-gemini-conf">—</strong></div>
+            <div class="engine-risk">Risk: <span id="ultra-gemini-risk">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agreement / Disagreement banner -->
+      <div class="agreement-banner" id="agreement-banner">
+        <div class="agreement-icon" id="agreement-icon"></div>
+        <div class="agreement-text" id="agreement-text"></div>
+      </div>
+
+      <!-- FINAL VERDICT (Pro engine takes priority) -->
+      <div class="final-verdict-card hidden" id="final-verdict-card">
+        <span class="analysis-mode-badge ultra-badge" id="final-verdict-badge">KAVACHAM AI PRO</span>
+        <div class="final-verdict-value" id="final-verdict-text">—</div>
+        <div class="final-verdict-source" id="final-verdict-source">Priority: Kavacham AI Pro</div>
+        <div class="final-verdict-conf mono" id="final-verdict-conf">—</div>
+      </div>
+
+      <!-- Combined Assessment -->
+      <div class="card combined-card">
+        <div class="card-header"><h3>Combined Assessment</h3></div>
+        <div class="card-body">
+          <p class="combined-summary" id="combined-summary">—</p>
+        </div>
+      </div>
+
+      <!-- Kavacham AI Pro Explanation Detail -->
+      <div class="ultra-detail-grid">
+        <div class="card">
+          <div class="card-header"><h3>Kavacham AI Pro Explanation</h3></div>
+          <div class="card-body">
+            <p id="gemini-reasoning" class="explanation-text">—</p>
+            <div id="gemini-signals-detail"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Kavacham AI Signals</h3></div>
+          <div class="card-body">
+            <div id="ultra-signals-table"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model Comparison Table -->
+      <div class="card">
+        <div class="card-header"><h3>Model Comparison</h3></div>
+        <div class="card-body">
+          <table class="comparison-table" id="comparison-table"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== GMAIL PAGE ===== -->
+  <section class="page hidden" id="page-gmail">
+    <div class="page-header">
+      <h1 class="page-title">Connect Your Gmail</h1>
+      <p class="page-subtitle">Secure OAuth 2.0 — read-only inbox access</p>
+    </div>
+
+    {% if not is_authenticated %}
+    <!-- ══ DISCONNECTED / CONFIGURATION UNAVAILABLE ══ -->
+    <div class="gmail-connect-screen">
+      <div class="gmail-connect-card">
+        <div class="gmail-icon-large">
+          <svg viewBox="0 0 48 48" width="60" height="60" aria-hidden="true">
+            <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+            <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.43v5.7C8.07 41.07 15.4 46 24 46z"/>
+            <path fill="#FBBC05" d="M11.69 28.18c-.46-1.32-.72-2.73-.72-4.18s.26-2.86.72-4.18v-5.7H4.43C3.15 16.81 2.5 20.28 2.5 24s.65 7.19 1.93 10.18l7.26-6z"/>
+            <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 8.07 6.93 4.43 13.82l7.26 6c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+          </svg>
+        </div>
+        <h2>Connect Your Gmail</h2>
+        <p class="gmail-tagline">You can check any mail message for spam.</p>
+        <p class="gmail-desc">Kavacham AI uses Google's secure OAuth 2.0 protocol to access your inbox in read-only mode. We never request, store, or transmit your Gmail password.</p>
+        <ul class="oauth-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg> Read-only inbox access</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg> No password required</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg> Disconnect anytime</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg> Secure server-side analysis</li>
+        </ul>
+        {% if credentials_configured %}
+        <button type="button" class="google-connect-btn" id="gmail-connect-btn" onclick="connectGmail(this)">
+          <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">
+            <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+            <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.43v5.7C8.07 41.07 15.4 46 24 46z"/>
+            <path fill="#FBBC05" d="M11.69 28.18c-.46-1.32-.72-2.73-.72-4.18s.26-2.86.72-4.18v-5.7H4.43C3.15 16.81 2.5 20.28 2.5 24s.65 7.19 1.93 10.18l7.26-6z"/>
+            <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 8.07 6.93 4.43 13.82l7.26 6c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+          </svg>
+          <span class="gcb-label" id="gmail-connect-label">Connect with Gmail</span>
+          <span class="connect-spinner hidden" id="gmail-connect-spinner"></span>
+        </button>
+        {% else %}
+        <!-- Configuration unavailable — never expose technical internals -->
+        <div class="gmail-config-unavailable">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.6" width="34" height="34"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <h3>Gmail connection is temporarily unavailable.</h3>
+          <p>Google OAuth is not configured on this server.</p>
+        </div>
+        {% endif %}
+        <p class="oauth-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Protected by Google OAuth 2.0</p>
+      </div>
+    </div>
+    {% else %}
+    <!-- ══ CONNECTED ══ -->
+    <div class="gmail-connected-view">
+      <div class="gmail-connected-card">
+        <div class="gmail-icon-large">
+          <svg viewBox="0 0 48 48" width="52" height="52" aria-hidden="true">
+            <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+            <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.43v5.7C8.07 41.07 15.4 46 24 46z"/>
+            <path fill="#FBBC05" d="M11.69 28.18c-.46-1.32-.72-2.73-.72-4.18s.26-2.86.72-4.18v-5.7H4.43C3.15 16.81 2.5 20.28 2.5 24s.65 7.19 1.93 10.18l7.26-6z"/>
+            <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 8.07 6.93 4.43 13.82l7.26 6c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+          </svg>
+        </div>
+        <div class="connected-badge gmail-state-badge"><span class="status-dot green-dot"></span> Gmail Connected</div>
+        <p class="gmail-email mono">{{ session.get('user_email', 'your@email.com') }}</p>
+        <p class="gmail-desc">You can check any mail message for spam. Kavacham AI scans and analyzes messages from your inbox without ever seeing your password.</p>
+        <div class="gmail-actions">
+          <a href="/dashboard" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+            Analyze Emails
+          </a>
+          <a href="/dashboard?refresh=1" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Refresh Inbox
+          </a>
+          <button type="button" class="btn btn-ghost" onclick="disconnectGmail()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Disconnect
+          </button>
+        </div>
+        <p class="oauth-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Read-only access · No password stored · Revoke access from your Google account at any time</p>
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ===== PHISHING CHECKER PAGE ===== -->
+  <section class="page hidden" id="page-phishing">
+    <div class="page-header phishing-header">
+      <div>
+        <h1 class="page-title">Phishing Checker</h1>
+        <p class="page-subtitle">Analyze suspicious emails, links and messages for phishing indicators.</p>
+      </div>
+      {% if model_ready %}
+      <span class="engine-status-badge" title="Local Kavacham AI model loaded — primary classification engine">
+        <span class="engine-status-dot"></span> Kavacham AI Engine Active
+      </span>
+      {% else %}
+      <span class="engine-status-badge off" title="Local model not loaded">
+        <span class="engine-status-dot"></span> Engine Offline
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- ══════ EMAIL PHISHING ANALYZER (LOCAL ML PRIMARY) ══════ -->
+    <div class="card phishing-analyzer-card">
+      <div class="card-header">
+        <span class="threat-card-icon msg-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+        </span>
+        <div>
+          <h3>Email Phishing Analyzer</h3>
+          <span class="threat-card-sub">Local Kavacham AI model + deterministic security indicators</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="phish-sender">Sender</label>
+            <input type="text" class="form-input" id="phish-sender" placeholder="name@example.com" spellcheck="false" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="phish-subject">Subject</label>
+            <input type="text" class="form-input" id="phish-subject" placeholder="Email subject line" autocomplete="off" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="phish-body">Email / Message Content</label>
+          <textarea class="form-textarea" id="phish-body" rows="7" placeholder="Paste the full email message content..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="phish-urls">URL / Advanced Indicators <span class="opt-label">optional</span></label>
+          <input type="text" class="form-input" id="phish-urls" placeholder="https://suspect-domain.example/login — one or more, space separated" spellcheck="false" autocomplete="off" />
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary btn-lg" id="phish-analyze-btn" onclick="runPhishingCheck()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+            Analyze for Phishing
+          </button>
+          <button class="btn btn-ghost" onclick="clearPhishingCheck()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+            Clear
+          </button>
+          <label class="pro-toggle">
+            <input type="checkbox" id="phish-ultra" />
+            <span>Include Kavacham AI Pro explanation</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ ANALYSIS STATE ══════ -->
+    <div class="phishing-stages hidden" id="phishing-stages">
+      <div class="phish-stages-title">
+        <span class="loading-spinner-sm"></span>
+        <span id="phish-stages-msg">Analyzing threat indicators...</span>
+      </div>
+      <ul class="phish-stage-list" id="phish-stage-list"></ul>
+    </div>
+
+    <!-- ══════ PHISHING ANALYSIS RESULT (LOCAL ML PRIMARY) ══════ -->
+    <div class="hidden" id="phishing-result">
+      <div class="result-header" style="margin-top:22px;">
+        <h2>Phishing Analysis Result</h2>
+        <span class="analysis-mode-badge anveshak-badge">KAVACHAM AI</span>
+      </div>
+
+      <!-- Pro-unavailable note (only when Gemini is truly unavailable) -->
+      <div class="phish-pro-note hidden" id="phish-pro-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Kavacham AI Pro unavailable. Kavacham AI local analysis remains active.
+      </div>
+
+      <div class="phishing-result-grid">
+        <div class="card">
+          <div class="card-body phish-classification">
+            <div class="phish-big-icon" id="phish-class-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="34" height="34"><circle cx="12" cy="12" r="9"/><polyline points="12 8 12 12 14.5 14"/></svg>
+            </div>
+            <div class="phish-class-label">Classification</div>
+            <div class="phish-class-value mono" id="phish-classification">—</div>
+            <div class="phish-conf" id="phish-confidence">—</div>
+            <div class="phish-conf-sub" id="phish-prob">—</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:190px;">
+            <div class="threat-score-ring" id="phish-risk-ring" style="--score:0%">
+              <div class="threat-score-num mono" id="phish-risk-num">—</div>
+              <div class="threat-score-max">/ 100</div>
+            </div>
+            <div class="threat-risk-label">PHISHING ASSESSMENT</div>
+            <div class="threat-risk-value" id="phish-verdict">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Threat indicators -->
+      <div class="card">
+        <div class="card-header"><h3>Threat Indicators</h3></div>
+        <div class="card-body">
+          <div class="phish-indicator-grid" id="phish-indicators"></div>
+        </div>
+      </div>
+
+      <!-- Explanation -->
+      <div class="card">
+        <div class="card-header"><h3>Why Kavacham AI flagged this</h3></div>
+        <div class="card-body">
+          <ul class="phish-reasons" id="phish-reasons"></ul>
+          <p class="explanation-text" id="phish-explain" style="margin-top:12px;">—</p>
+          <p class="phish-context-note" id="phish-context-note"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ LINK, FILE & MESSAGE ANALYZERS ══════ -->
+    <div class="phishing-subsection">
+      <h2 class="phishing-subtitle">Link, File &amp; Message Analyzers</h2>
+      <p class="phishing-subdesc">Scan individual URLs, uploaded files and raw messages through the Kavacham AI Pro threat engine (optional add-on). Local Kavacham AI analysis stays fully functional without it.</p>
+    </div>
+
+    <!-- API status line -->
+    <div class="threat-status-line">
+      <div class="threat-status-dot" id="threat-api-dot"></div>
+      <span id="threat-api-text">Checking Kavacham AI Pro threat engine...</span>
+      <button class="btn btn-ghost btn-sm" onclick="checkThreatStatus()" style="margin-left:auto;">Check</button>
+    </div>
+
+    <!-- ══════ THREE ANALYZERS ══════ -->
+    <div class="threat-analyzers-grid">
+
+      <!-- URL ANALYZER -->
+      <div class="card threat-analyzer-card">
+        <div class="card-header">
+          <span class="threat-card-icon url-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><circle cx="12" cy="12" r="9"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.9 5.4 3.9 8.5s-1.4 5.9-3.9 8.5M12 3.5C9.5 6.1 8.1 8.9 8.1 12s1.4 5.9 3.9 8.5"/></svg>
+          </span>
+          <div><h3>URL Analyzer</h3><span class="threat-card-sub">Websites · Login pages · Redirects · Domains</span></div>
+        </div>
+        <div class="card-body">
+          <input type="text" class="form-input" id="threat-url-input"
+                 placeholder="https://example.com/login" spellcheck="false" />
+          <div class="form-actions" style="margin-top:14px;">
+            <button class="btn btn-primary" id="threat-url-btn" onclick="analyzeThreatUrl()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+              Analyze URL
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILE ANALYZER -->
+      <div class="card threat-analyzer-card">
+        <div class="card-header">
+          <span class="threat-card-icon file-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </span>
+          <div><h3>File Analyzer</h3><span class="threat-card-sub">Upload a file for threat screening</span></div>
+        </div>
+        <div class="card-body">
+          <label class="file-drop" id="threat-file-drop">
+            <input type="file" id="threat-file-input" style="display:none;" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="28" height="28"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span id="threat-file-label">Click to choose a file</span>
+            <span class="threat-file-meta" id="threat-file-meta"></span>
+          </label>
+          <div class="form-actions" style="margin-top:14px;">
+            <button class="btn btn-primary" id="threat-file-btn" onclick="analyzeThreatFile()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+              Analyze File
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MESSAGE ANALYZER -->
+      <div class="card threat-analyzer-card">
+        <div class="card-header">
+          <span class="threat-card-icon msg-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          <div><h3>Message Analyzer</h3><span class="threat-card-sub">Emails · SMS · WhatsApp · social engineering</span></div>
+        </div>
+        <div class="card-body">
+          <textarea class="form-textarea" id="threat-message-input" rows="4"
+                    placeholder="Paste a suspicious email, SMS or chat message..."></textarea>
+          <div class="form-actions" style="margin-top:14px;">
+            <button class="btn btn-primary" id="threat-msg-btn" onclick="analyzeThreatMessage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+              Analyze Message
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ ANALYSIS RESULT ══════ -->
+    <div class="hidden" id="threat-result-wrap">
+
+      <!-- Result header -->
+      <div class="result-header" style="margin-top:22px;">
+        <h2>Threat Analysis Result</h2>
+        <span class="analysis-mode-badge ultra-badge">KAVACHAM AI PRO</span>
+      </div>
+
+      <!-- Loading scanner -->
+      <div class="hidden" id="threat-loading">
+        <div class="threat-scanner">
+          <div class="scanner-sweep"></div>
+          <div class="scanner-text">Running threat analysis...</div>
+        </div>
+      </div>
+
+      <!-- Unavailable state -->
+      <div class="card hidden" id="threat-unavailable">
+        <div class="card-body" style="text-align:center;padding:32px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.6" width="40" height="40" style="margin:0 auto 10px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <h3 style="color:var(--text-primary);margin-bottom:6px;"><span style="font-family:var(--font-mono);letter-spacing:.1em;">ANALYSIS UNAVAILABLE</span></h3>
+          <p class="explanation-text" id="threat-unavailable-msg" style="max-width:560px;margin:0 auto;">The threat-analysis engine could not be reached. Please try again later.</p>
+          <button class="btn btn-secondary btn-sm" onclick="retryLastThreatAnalysis()" style="margin-top:16px;">Analyze Again</button>
+        </div>
+      </div>
+
+      <!-- Completed result -->
+      <div class="hidden" id="threat-result">
+        <!-- Security alert -->
+        <div class="threat-alert hidden" id="threat-alert"></div>
+
+        <div class="threat-result-grid">
+          <!-- Risk summary card -->
+          <div class="card threat-risk-card">
+            <div class="card-body" style="text-align:center;">
+              <div class="threat-score-ring" id="threat-score-ring">
+                <div class="threat-score-num mono" id="threat-score-num">—</div>
+                <div class="threat-score-max">/ 100</div>
+              </div>
+              <div class="threat-risk-label">RISK LEVEL</div>
+              <div class="threat-risk-value" id="threat-risk-value">—</div>
+              <div class="threat-classification" id="threat-classification">—</div>
+            </div>
+          </div>
+
+          <!-- Indicators -->
+          <div class="card threat-indicators-card">
+            <div class="card-header"><h3>Threat Indicators</h3></div>
+            <div class="card-body">
+              <ul class="threat-indicator-list" id="threat-indicator-list"></ul>
+              <p class="explanation-text" id="threat-summary" style="margin-top:14px;">—</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric bars -->
+        <div class="card threat-metrics-card">
+          <div class="card-header"><h3>Threat Breakdown</h3></div>
+          <div class="card-body">
+            <div class="threat-metric-row">
+              <span class="threat-metric-label">URL Reputation</span>
+              <span class="threat-metric-value mono" id="tm-url-rep">—</span>
+            </div>
+            <div class="threat-metric-row">
+              <span class="threat-metric-label">Domain Risk</span>
+              <span class="threat-metric-value mono" id="tm-domain-risk">—</span>
+            </div>
+            <div class="threat-metric-row">
+              <span class="threat-metric-label">Phishing Probability</span>
+              <div class="threat-bar-track"><div class="threat-bar-fill" id="tm-phish-bar" style="width:0%"></div></div>
+              <span class="threat-metric-value mono" id="tm-phish-val">—</span>
+            </div>
+            <div class="threat-metric-row">
+              <span class="threat-metric-label">Content Risk</span>
+              <span class="threat-metric-value mono" id="tm-content-risk">—</span>
+            </div>
+            <div class="threat-metric-row">
+              <span class="threat-metric-label">Overall Threat Score</span>
+              <div class="threat-bar-track"><div class="threat-bar-fill" id="tm-score-bar" style="width:0%"></div></div>
+              <span class="threat-metric-value mono" id="tm-score-val">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="threat-actions">
+          <button class="btn btn-primary" id="threat-block-btn" onclick="handleThreatAction('block')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="9"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>
+            Block / Avoid
+          </button>
+          <button class="btn btn-ghost" onclick="retryLastThreatAnalysis()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Analyze Again
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ BROWSER PROTECTION ══════ -->
+    <div class="card browser-protection-card" style="margin-top:24px;">
+      <div class="card-header">
+        <span class="threat-card-icon shield-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </span>
+        <div><h3>Browser Protection</h3><span class="threat-card-sub">Protect suspicious browsing activity with Kavacham.AI.</span></div>
+      </div>
+      <div class="card-body">
+        <div class="browser-chips">
+          <span class="browser-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3a12 12 0 0 0-6.4 10.9"/></svg> Chrome</span>
+          <span class="browser-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><path d="M12 3l9 5-9 13L3 8z"/><path d="M3 8l9 5 9-5"/></svg> Microsoft Edge</span>
+          <span class="browser-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg> Firefox</span>
+        </div>
+        <div class="form-actions" style="margin-top:16px;">
+          <button class="btn btn-secondary" onclick="addToBrowser()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
+            Add to Browser
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ THREAT HISTORY ══════ -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-header">
+        <h3>Threat History</h3>
+        <button class="btn btn-ghost btn-sm" onclick="clearThreatHistory()">Clear</button>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap" style="max-height:360px;overflow-y:auto;">
+          <table class="threat-history-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Target</th>
+                <th>Risk</th>
+                <th>Score</th>
+                <th>Classification</th>
+              </tr>
+            </thead>
+            <tbody id="threat-history-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="threat-history-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <p>No threat analyses yet. Run your first scan above.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HISTORY PAGE ===== -->
+  <section class="page hidden" id="page-history">
+    <div class="page-header">
+      <h1 class="page-title">Analysis History</h1>
+      <p class="page-subtitle">Previous email analyses this session</p>
+    </div>
+    <div class="history-toolbar">
+      <button class="btn btn-ghost btn-sm" onclick="clearHistory()">Clear History</button>
+    </div>
+    <div id="history-list">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+        <p>No analyses yet. <a href="#" onclick="navigateTo('analyze');return false;">Analyze an email</a> first.</p>
+      </div>
+    </div>
+    <!-- History Detail Modal -->
+    <div class="modal-overlay hidden" id="history-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="modal-subject">Analysis Detail</h3>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MODEL PERFORMANCE PAGE ===== -->
+  <section class="page hidden" id="page-performance">
+    <div class="page-header">
+      <h1 class="page-title">Model Performance</h1>
+      <p class="page-subtitle">Actual evaluation metrics from trained model</p>
+    </div>
+
+    <!-- Before / After comparison -->
+    <div class="comparison-banner">
+      <div class="comparison-col before-col">
+        <div class="comparison-label">BEFORE OPTIMIZATION</div>
+        <div class="comparison-metric red-metric">High False Positive Rate</div>
+        <div class="comparison-note">Words like "urgent", "alert", "verify" caused incorrect Spam classification of legitimate emails</div>
+      </div>
+      <div class="comparison-arrow">→</div>
+      <div class="comparison-col after-col">
+        <div class="comparison-label">AFTER OPTIMIZATION</div>
+        <div class="comparison-metric green-metric">0.00% False Positive Rate</div>
+        <div class="comparison-note">Context-aware negation, bigrams/trigrams, and institutional email augmentation fixed keyword bias</div>
+      </div>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-value" id="pm-accuracy">{{ metrics.accuracy | default('99.52') }}%</div>
+        <div class="metric-label">Accuracy</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:{{ metrics.accuracy | default(99.52) }}%"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" id="pm-precision">{{ metrics.precision | default('100.0') }}%</div>
+        <div class="metric-label">Precision</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:{{ metrics.precision | default(100) }}%"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" id="pm-recall">{{ metrics.recall | default('99.03') }}%</div>
+        <div class="metric-label">Recall</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:{{ metrics.recall | default(99.03) }}%"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" id="pm-f1">{{ metrics.f1_score | default('99.51') }}%</div>
+        <div class="metric-label">F1 Score</div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:{{ metrics.f1_score | default(99.51) }}%"></div></div>
+      </div>
+      <div class="metric-card green-metric-card">
+        <div class="metric-value green-text">{{ metrics.false_positive_rate | default('0.00') }}%</div>
+        <div class="metric-label">False Positive Rate</div>
+        <div class="metric-note">Legitimate emails wrongly flagged as Spam</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">{{ (100 - (metrics.recall | default(99.03))) | round(2) }}%</div>
+        <div class="metric-label">False Negative Rate</div>
+        <div class="metric-note">Spam emails missed by the model</div>
+      </div>
+    </div>
+
+    <!-- Performance Charts -->
+    <div class="chart-grid two-up" style="margin-bottom:20px;">
+      <div class="chart-card">
+        <div class="chart-card-head"><h3>Evaluation Metrics</h3><span class="chip">HOLDOUT TEST</span></div>
+        <div class="chart-card-body"><div class="chart-wrap"><canvas id="chart-metrics-bar"></canvas></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-head"><h3>Dataset Split</h3><span class="chip">STRATIFIED</span></div>
+        <div class="chart-card-body"><div class="chart-wrap"><canvas id="chart-split"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- Dataset Info -->
+    <div class="card">
+      <div class="card-header"><h3>Dataset Information</h3></div>
+      <div class="card-body">
+        <div class="info-list">
+          <div class="info-item"><span class="info-label">Total Samples</span><span class="info-val mono">{{ metrics.dataset_total | default(1380) }}</span></div>
+          <div class="info-item"><span class="info-label">Training Set</span><span class="info-val mono">{{ metrics.training_samples | default(965) }}</span></div>
+          <div class="info-item"><span class="info-label">Validation Set</span><span class="info-val mono">{{ metrics.validation_samples | default(208) }}</span></div>
+          <div class="info-item"><span class="info-label">Test Set</span><span class="info-val mono">{{ metrics.test_samples | default(207) }}</span></div>
+          <div class="info-item"><span class="info-label">Algorithm</span><span class="info-val mono">Multinomial Naive Bayes (alpha=0.5)</span></div>
+          <div class="info-item"><span class="info-label">Features</span><span class="info-val mono">TF-IDF Word 1-3 Grams + Char 3-5 Grams (FeatureUnion)</span></div>
+          <div class="info-item"><span class="info-label">Decision Threshold</span><span class="info-val mono">{{ (metrics.decision_threshold | default(0.85)) }}  ({{ ((metrics.decision_threshold | default(0.85)) * 100) | int }}%)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confusion Matrix visual -->
+    <div class="card">
+      <div class="card-header"><h3>Confusion Matrix (Test Set)</h3></div>
+      <div class="card-body">
+        <div class="confusion-matrix">
+          <div class="cm-label-row"><span></span><span class="cm-header">Predicted: Ham</span><span class="cm-header">Predicted: Spam</span></div>
+          <div class="cm-row"><span class="cm-row-label">Actual: Ham</span><span class="cm-cell green-cell">TN</span><span class="cm-cell red-cell">FP: 0</span></div>
+          <div class="cm-row"><span class="cm-row-label">Actual: Spam</span><span class="cm-cell yellow-cell">FN: ~1</span><span class="cm-cell green-cell">TP</span></div>
+        </div>
+        <p class="cm-note">FP = 0 means no legitimate email was classified as Spam in the test set. FN ≈ 1 means approximately 1 spam email was missed.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TEST SUITE PAGE ===== -->
+  <section class="page hidden" id="page-testsuite">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end;">
+      <div>
+        <h1 class="page-title">4-Category Evaluation Test Suite</h1>
+        <p class="page-subtitle">Stress testing model generalization against genuine, spam, and adversarial edge cases</p>
+      </div>
+      <div>
+        <button class="btn btn-primary btn-sm" id="btn-run-all-tests" onclick="runAllTestSuite()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Run Complete Benchmark
+        </button>
+      </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+      <div class="stat-card" style="border-left: 3px solid #22c55e;">
+        <div class="stat-content">
+          <div class="stat-label">Category 1</div>
+          <div style="font-size:14px;font-weight:700;color:#e8ecf4;margin:4px 0;">Real Genuine Mail</div>
+          <div class="stat-label" style="font-size:11px;color:#8b9ab8;">Checks False Positive baseline</div>
+        </div>
+      </div>
+      <div class="stat-card" style="border-left: 3px solid #ef4444;">
+        <div class="stat-content">
+          <div class="stat-label">Category 2</div>
+          <div style="font-size:14px;font-weight:700;color:#e8ecf4;margin:4px 0;">Obvious Fake / Spam</div>
+          <div class="stat-label" style="font-size:11px;color:#8b9ab8;">Checks high-confidence spam recall</div>
+        </div>
+      </div>
+      <div class="stat-card" style="border-left: 3px solid #f97316;">
+        <div class="stat-content">
+          <div class="stat-label">Category 3</div>
+          <div style="font-size:14px;font-weight:700;color:#e8ecf4;margin:4px 0;">Looks Genuine, Is Spam</div>
+          <div class="stat-label" style="font-size:11px;color:#8b9ab8;">Sophisticated phishing / scam check</div>
+        </div>
+      </div>
+      <div class="stat-card" style="border-left: 3px solid #00d4ff;">
+        <div class="stat-content">
+          <div class="stat-label">Category 4</div>
+          <div style="font-size:14px;font-weight:700;color:#e8ecf4;margin:4px 0;">Looks Suspicious, Is Genuine</div>
+          <div class="stat-label" style="font-size:11px;color:#8b9ab8;">6 Adversarial keyword tests</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Benchmark Results Summary Banner -->
+    <div class="card" id="testsuite-summary-card" style="display:none;margin-bottom:20px;border-color:rgba(0,212,255,0.3);">
+      <div class="card-body" style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div id="testsuite-score-badge" class="verdict-value" style="font-size:20px;padding:6px 16px;min-width:auto;">100% Passed</div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#e8ecf4;">Adversarial Benchmark Complete</div>
+            <div id="testsuite-score-text" style="font-size:12px;color:#8b9ab8;">All 10 benchmark test emails evaluated correctly without keyword bias.</div>
+          </div>
+        </div>
+        <div id="testsuite-counts" style="font-family:var(--font-mono);font-size:13px;color:#00d4ff;">
+          10 / 10 Correct (0 False Positives)
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Cases Container -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Benchmark Test Cases (Click 'Test Case' to run or load into Analyzer)</h3>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div style="overflow-x:auto;">
+          <table class="comparison-table" id="testsuite-table">
+            <thead>
+              <tr>
+                <th style="width:110px;">Category</th>
+                <th>Subject & Key Signals</th>
+                <th style="width:120px;">Expected</th>
+                <th style="width:140px;">Kavacham AI Result</th>
+                <th style="width:110px;">Status</th>
+                <th style="width:120px;text-align:right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="testsuite-rows">
+              <!-- Dynamically populated or rendered -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SETTINGS PAGE ===== -->
+  <section class="page hidden" id="page-settings">
+    <div class="page-header">
+      <h1 class="page-title">Settings</h1>
+      <p class="page-subtitle">Configuration and system information</p>
+    </div>
+
+    <div class="settings-grid">
+      <!-- Model Settings -->
+      <div class="card">
+        <div class="card-header"><h3>Model Configuration</h3></div>
+        <div class="card-body">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Algorithm</div>
+              <div class="setting-desc">Multinomial Naive Bayes</div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Decision Threshold</div>
+              <div class="setting-desc">Minimum spam probability to classify as Spam</div>
+            </div>
+            <div class="setting-control">
+              <span class="threshold-display" id="settings-threshold">{{ ((metrics.decision_threshold | default(0.85)) * 100) | int }}%</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Feature Extraction</div>
+              <div class="setting-desc">TF-IDF Word (1-3 grams) + Char (3-5 grams) via FeatureUnion</div>
+            </div>
+          </div>
+          <div class="info-note">The decision threshold is set during model training via validation data optimization. To change it, retrain the model.</div>
+        </div>
+      </div>
+
+      <!-- Kavacham AI Pro Status -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Kavacham AI Pro Engine Status</h3>
+          <button class="btn btn-ghost btn-sm" onclick="checkGeminiStatus()">Check</button>
+        </div>
+        <div class="card-body">
+          <div class="gemini-status-display" id="gemini-status-display">
+            <div class="loading-spinner-sm"></div>
+            <span>Checking Kavacham AI Pro Engine...</span>
+          </div>
+          <div class="info-note">Kavacham AI Pro cloud engine credentials are encrypted server-side and never exposed to the client browser.</div>
+        </div>
+      </div>
+
+      <!-- Gmail Status -->
+      <div class="card">
+        <div class="card-header"><h3>Gmail Connection</h3></div>
+        <div class="card-body">
+          {% if is_authenticated %}
+          <div class="connected-status-row">
+            <span class="status-dot green-dot"></span>
+            <span>Connected as <strong>{{ session.get('user_email', 'Gmail User') }}</strong></span>
+          </div>
+          <a href="/logout" class="btn btn-ghost btn-sm" style="margin-top:12px;">Disconnect Gmail</a>
+          {% else %}
+          <div class="connected-status-row">
+            <span class="status-dot red-dot"></span>
+            <span>Not connected</span>
+          </div>
+          {% if credentials_configured %}
+          <a href="/authorize" class="btn btn-secondary btn-sm" style="margin-top:12px;">Connect Gmail</a>
+          {% else %}
+          <p class="info-note">Gmail connection is temporarily unavailable on this server.</p>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Privacy -->
+      <div class="card">
+        <div class="card-header"><h3>Privacy Information</h3></div>
+        <div class="card-body">
+          <ul class="privacy-list">
+            <li>Email content is processed locally by the ML model on your server</li>
+            <li>Kavacham AI Pro analysis is optional and only activated when you choose Ultra AI mode</li>
+            <li>When Ultra AI is active, the email content is sent to the Kavacham AI Pro cloud engine</li>
+            <li>No email content is stored permanently — history is session-only</li>
+            <li>Gmail access is read-only via OAuth 2.0 — no passwords are stored</li>
+            <li>You can disconnect Gmail at any time via the Disconnect button</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ========== SIDEBAR OVERLAY (mobile) ========== -->
+<div class="sidebar-overlay hidden" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- ========== LOADING OVERLAY ========== -->
+<div class="loading-overlay hidden" id="loading-overlay">
+  <div class="loading-card">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loading-text">Analyzing...</div>
+  </div>
+</div>
+
+<script>
+  // Pass Flask template data to JS
+  const FLASK_DATA = {
+    isAuthenticated: {{ 'true' if is_authenticated else 'false' }},
+    metrics: {{ metrics | tojson | safe }}
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/sound.js') }}"></script>
+<script src="{{ url_for('static', filename='js/background.js') }}"></script>
+<script src="{{ url_for('static', filename='js/radar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/effects.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/carousel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

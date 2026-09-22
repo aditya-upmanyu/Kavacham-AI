@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANVESHAK AI — Intelligent Email Threat Intelligence</title>
+    <title>KAVACHAM AI — Intelligent Email Threat Intelligence</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class', theme: { extend: {} } }
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -19,10 +20,16 @@
 
     <!-- 3D CANVAS BACKGROUND -->
     <canvas id="bg-canvas"></canvas>
+    <!-- AURORA -->
+    <div class="aurora"></div>
     <!-- CYBER GRID OVERLAY -->
     <div class="cyber-grid"></div>
+    <!-- BG VIGNETTE -->
+    <div class="bg-vignette"></div>
     <!-- SCAN LINE -->
     <div class="scan-line"></div>
+    <!-- SECONDARY SCAN -->
+    <div class="scan-line-2"></div>
     <!-- AMBIENT ORBS -->
     <div class="glow-orb-1"></div>
     <div class="glow-orb-2"></div>
@@ -43,7 +50,7 @@
                         </div>
                     </div>
                     <div>
-                        <div class="text-base font-black tracking-widest bg-gradient-to-r from-white via-indigo-200 to-cyan-300 bg-clip-text text-transparent">ANVESHAK AI</div>
+                        <div class="text-base font-black tracking-widest bg-gradient-to-r from-white via-indigo-200 to-cyan-300 bg-clip-text text-transparent">KAVACHAM AI</div>
                         <div class="text-[10px] text-slate-400 tracking-wider">INTELLIGENT THREAT INTELLIGENCE</div>
                     </div>
                 </div>
@@ -88,7 +95,7 @@
                     <span class="bg-gradient-to-r from-indigo-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">Before They Strike.</span>
                 </h1>
                 <p class="text-slate-400 text-base leading-relaxed max-w-2xl mx-auto">
-                    ANVESHAK AI uses a production-trained <strong class="text-slate-200">TF-IDF + Multinomial Naive Bayes</strong> engine trained on 100,000 real email samples to classify every inbox message as Spam or Legitimate with surgical precision.
+                    KAVACHAM AI uses a production-trained <strong class="text-slate-200">TF-IDF + Multinomial Naive Bayes</strong> engine trained on 100,000 real email samples to classify every inbox message as Spam or Legitimate with surgical precision.
                 </p>
             </div>
 
@@ -107,7 +114,8 @@
                             </div>
                             <div>
                                 <div class="text-sm font-bold text-white">Gmail Integration</div>
-                                <div class="text-xs text-slate-400">Read-only · Secure · OAuth 2.0</div>
+                                <div class="text-xs text-cyan-300 font-semibold">You can check any mail message for spam.</div>
+                                <div class="text-[11px] text-slate-400">Read-only · Secure · OAuth 2.0</div>
                             </div>
                         </div>
 
@@ -133,15 +141,16 @@
                         <a href="{{ url_for('dashboard') }}" class="block w-full py-3 rounded-xl font-bold text-sm text-center text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 transition shadow-lg shadow-emerald-500/20">
                             Open Dashboard ↗
                         </a>
-                        {% else %}
+                        {% elif credentials_configured %}
                         <a href="{{ url_for('authorize') }}" class="block w-full py-3 rounded-xl font-bold text-sm text-center text-white bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 transition shadow-lg shadow-indigo-500/20">
                             Connect Gmail
                         </a>
-                        {% endif %}
-
-                        {% if not credentials_configured %}
+                        {% else %}
+                        <button type="button" disabled class="block w-full py-3 rounded-xl font-bold text-sm text-center text-slate-500 bg-slate-800/60 cursor-not-allowed">
+                            Connect Gmail
+                        </button>
                         <div class="text-[11px] text-amber-300/80 bg-amber-950/30 border border-amber-800/30 rounded-lg p-2.5 leading-relaxed">
-                            Place your <code class="font-mono">credentials.json</code> from Google Cloud to enable Gmail scanning. Manual classifier below works without it.
+                            Gmail connection is temporarily unavailable on this server. The manual classifier below continues to work.
                         </div>
                         {% endif %}
                     </div>
@@ -185,7 +194,7 @@
                         <div class="relative">
                             <textarea id="message-input" rows="4"
                                 class="w-full custom-textarea rounded-xl p-4 text-sm placeholder-slate-600 leading-relaxed typing-cursor"
-                                placeholder="Paste any email or SMS text here to analyze with ANVESHAK AI...">
+                                placeholder="Paste any email or SMS text here to analyze with KAVACHAM AI...">
                             </textarea>
                         </div>
 
@@ -353,10 +362,17 @@
 
         <!-- FOOTER -->
         <footer class="border-t border-slate-900/80 bg-slate-950/50 py-5 mt-12 text-center">
-            <div class="text-xs text-slate-500 mono">ANVESHAK AI • Intelligent Email Threat Intelligence • TF-IDF + MultinomialNB • 100K Sample Dataset</div>
+            <div class="text-xs text-slate-500 mono">KAVACHAM AI • Intelligent Email Threat Intelligence • TF-IDF + MultinomialNB • 100K Sample Dataset</div>
         </footer>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/sound.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/background.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/radar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/effects.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/carousel.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Threat Intelligence Dashboard | ANVESHAK AI</title>
+    <title>Threat Intelligence Dashboard | KAVACHAM AI</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -25,6 +25,7 @@
         }
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -35,10 +36,16 @@
 
     <!-- Interactive 3D Canvas Background -->
     <canvas id="bg-canvas"></canvas>
+    <!-- AURORA -->
+    <div class="aurora"></div>
     <!-- CYBER GRID OVERLAY -->
     <div class="cyber-grid"></div>
+    <!-- BG VIGNETTE -->
+    <div class="bg-vignette"></div>
     <!-- SCAN LINE -->
     <div class="scan-line"></div>
+    <!-- SECONDARY SCAN -->
+    <div class="scan-line-2"></div>
     <!-- AMBIENT ORBS -->
     <div class="glow-orb-1"></div>
     <div class="glow-orb-2"></div>
@@ -59,7 +66,7 @@
                         </div>
                         <div>
                             <div class="text-base font-black tracking-widest bg-gradient-to-r from-white via-indigo-200 to-cyan-300 bg-clip-text text-transparent">
-                                ANVESHAK AI
+                                KAVACHAM AI
                             </div>
                             <p class="text-[10px] text-slate-400 mono tracking-wider">LIVE INBOX THREAT ENGINE</p>
                         </div>
@@ -103,7 +110,15 @@
                     <p class="text-xs text-red-300 mt-0.5">{{ error }}</p>
                 </div>
             </div>
-            {% endif %}
+            <!-- NOTICE BANNER -->
+            <div class="p-3.5 px-5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 text-xs flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <span class="font-semibold text-cyan-300">You can check any mail message for spam.</span>
+                    <span class="text-slate-400 hidden sm:inline">Select and inspect individual inbox messages below or use the manual analyzer.</span>
+                </div>
+                <a href="{{ url_for('index') }}" class="text-cyan-400 hover:text-cyan-200 underline font-mono text-[11px] transition">Back to Main Analyzer &rarr;</a>
+            </div>
 
             <!-- REAL-TIME STATS CARDS -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -116,7 +131,7 @@
                 <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-red-500 holo-card">
                     <div class="text-xs uppercase tracking-wider font-semibold text-red-400 mb-1 mono">Spam Threats</div>
                     <div class="text-3xl font-black font-mono text-red-400" data-count="{{ stats.spam }}">{{ stats.spam }}</div>
-                    <div class="text-[11px] text-slate-500 mt-1">Flagged by ANVESHAK AI</div>
+                    <div class="text-[11px] text-slate-500 mt-1">Flagged by KAVACHAM AI</div>
                 </div>
 
                 <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-emerald-500 holo-card">
@@ -130,6 +145,45 @@
                     <div class="text-3xl font-black font-mono text-cyan-300" data-count="{{ stats.avg_confidence }}" data-suffix="%">{{ stats.avg_confidence }}%</div>
                     <div class="text-[11px] text-slate-500 mt-1">Calibrated Threshold: 85%</div>
                 </div>
+            </div>
+
+            <!-- DASHBOARD CHARTS ROW -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 chart-grid three-up reveal-init">
+              <div class="chart-card">
+                <div class="chart-card-head">
+                  <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Threat Distribution</h3>
+                  <span class="chip">Live</span>
+                </div>
+                <div class="chart-card-body">
+                  <div class="chart-wrap">
+                    <canvas id="chart-threat-pie"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chart-card">
+                <div class="chart-card-head">
+                  <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Per-Email Confidence</h3>
+                  <span class="chip">Scan Result</span>
+                </div>
+                <div class="chart-card-body">
+                  <div class="chart-wrap compact">
+                    <canvas id="chart-confidence"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chart-card">
+                <div class="chart-card-head">
+                  <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><circle cx="12" cy="12" r="10"/></svg> Avg Confidence</h3>
+                  <span class="chip">Gauge</span>
+                </div>
+                <div class="chart-card-body">
+                  <div class="chart-wrap compact">
+                    <canvas id="chart-avg-gauge"></canvas>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- TABS & LIVE RADAR SECTION -->
@@ -192,6 +246,15 @@
                                     </div>
 
                                     <div class="flex items-center gap-3 flex-shrink-0">
+                                        <button type="button"
+                                                class="security-analyze-btn px-3 py-1.5 rounded-lg text-[11px] font-bold bg-cyan-950/60 border border-cyan-600/40 text-cyan-200 hover:bg-cyan-900/70 hover:border-cyan-500/60 transition flex items-center gap-1.5"
+                                                data-email-id="{{ email.id }}"
+                                                title="Run full KAVACHAM AI security analysis">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                            </svg>
+                                            Deep Analyze
+                                        </button>
                                         {% if email.prediction == 'Spam' %}
                                         <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-950/80 border border-red-500/50 text-red-300 flex items-center gap-1.5 mono">
                                             <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Spam ({{ email.confidence }}%)
@@ -248,7 +311,7 @@
                                     id="message-input" 
                                     rows="5" 
                                     class="w-full custom-textarea p-4 rounded-2xl text-sm placeholder-slate-500" 
-                                    placeholder="Paste any email or SMS text to test ANVESHAK AI..."
+                                    placeholder="Paste any email or SMS text to test KAVACHAM AI..."
                                 ></textarea>
 
                                 <!-- LIVE STREAM FEATURE -->
@@ -352,7 +415,7 @@
                 </div>
 
                 <div class="space-y-2">
-                    <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mono">ANVESHAK AI Model Analysis</div>
+                    <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mono">KAVACHAM AI Model Analysis</div>
                     <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
                         <span>Confidence: <strong id="modal-confidence" class="text-white font-mono"></strong></span>
                         <span>Key Tokens: <span id="modal-keywords" class="text-indigo-300 font-mono"></span></span>
@@ -366,14 +429,58 @@
             </div>
         </div>
 
+        <!-- SECURITY REPORT MODAL (Unified Email Threat Analysis Engine) -->
+        <div id="security-modal" class="fixed inset-0 z-[60] hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-panel rounded-3xl max-w-3xl w-full p-6 sm:p-8 space-y-4 border border-slate-700 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+                <div class="flex items-center justify-between gap-4 pb-4 border-b border-slate-800 flex-wrap">
+                    <div>
+                        <div class="text-[10px] mono text-cyan-300 tracking-widest">KAVACHAM AI — SECURITY REPORT</div>
+                        <p class="text-xs text-slate-400 mt-0.5">Unified Email Threat Analysis Engine</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-2 cursor-pointer select-none" title="Enable KAVACHAM AI PRO Gemini explanation">
+                            <span class="text-[10px] mono text-slate-400">ULTRA AI</span>
+                            <div class="relative w-10 h-5">
+                                <input id="security-ultra-toggle" type="checkbox" class="peer sr-only">
+                                <div class="w-10 h-5 rounded-full bg-slate-800 border border-slate-700 peer-checked:bg-indigo-600 transition"></div>
+                                <div class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-slate-300 peer-checked:left-[1.375rem] peer-checked:bg-white transition-all"></div>
+                            </div>
+                        </label>
+                        <button type="button" id="security-analyze-btn"
+                                class="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-500 hover:to-cyan-400 transition">
+                            Re-run Analysis
+                        </button>
+                        <button type="button" id="security-close-btn" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/50 hover:bg-slate-800">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Security Report body -->
+                <div id="security-report-body"></div>
+            </div>
+        </div>
+
         <!-- FOOTER -->
         <footer class="border-t border-slate-900 bg-slate-950/60 backdrop-blur-md py-6 mt-12 text-center text-xs text-slate-500 mono">
-            <p>ANVESHAK AI • Intelligent Email Threat Intelligence • 100K Samples Trained Model • Flask & Scikit-Learn</p>
+            <p>KAVACHAM AI • Intelligent Email Threat Intelligence • 100K Samples Trained Model • Flask & Scikit-Learn</p>
         </footer>
     </div>
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/sound.js') }}"></script>
     <script>
+  // Pass Gmail dashboard data to JS for charts
+  window.GMAIL_DASH_DATA = {{ gmail_dash_data | tojson | safe }};
+</script>
+<script src="{{ url_for('static', filename='js/background.js') }}"></script>
+<script src="{{ url_for('static', filename='js/radar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/effects.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/carousel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/security_report.js') }}"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
         // Modal & Tab Logic
         const tabInboxBtn = document.getElementById("tab-inbox-btn");
         const tabManualBtn = document.getElementById("tab-manual-btn");

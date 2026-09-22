@@ -1,0 +1,14 @@
+{
+    "model_name": "Multinomial Naive Bayes",
+    "feature_extraction": "TF-IDF Word (1-3) + Char (3-5) N-Grams",
+    "decision_threshold": 0.85,
+    "accuracy": 99.52,
+    "precision": 100.0,
+    "recall": 99.03,
+    "f1_score": 99.51,
+    "false_positive_rate": 0.0,
+    "training_samples": 965,
+    "validation_samples": 208,
+    "test_samples": 207,
+    "dataset_total": 1380
+}

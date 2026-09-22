@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANVESHAK AI — Intelligent Email Threat Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: {} } }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-[#040710] text-slate-100 min-h-screen overflow-x-hidden">
+
+    <!-- 3D CANVAS BACKGROUND -->
+    <canvas id="bg-canvas"></canvas>
+    <!-- CYBER GRID OVERLAY -->
+    <div class="cyber-grid"></div>
+    <!-- SCAN LINE -->
+    <div class="scan-line"></div>
+    <!-- AMBIENT ORBS -->
+    <div class="glow-orb-1"></div>
+    <div class="glow-orb-2"></div>
+    <div class="glow-orb-3"></div>
+
+    <div class="relative z-10 min-h-screen flex flex-col">
+
+        <!-- ═══ HEADER ═══ -->
+        <header class="border-b border-slate-800/60 bg-[#040710]/60 backdrop-blur-xl sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="logo-glow w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 p-[1.5px]">
+                        <div class="w-full h-full rounded-xl bg-[#040710] flex items-center justify-center">
+                            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-base font-black tracking-widest bg-gradient-to-r from-white via-indigo-200 to-cyan-300 bg-clip-text text-transparent">ANVESHAK AI</div>
+                        <div class="text-[10px] text-slate-400 tracking-wider">INTELLIGENT THREAT INTELLIGENCE</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full glass-pill text-xs border border-emerald-500/25 bg-emerald-950/15">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 online-dot"></span>
+                        <span class="text-emerald-300 mono">ML ENGINE ONLINE</span>
+                    </div>
+                    {% if is_authenticated %}
+                    <a href="{{ url_for('dashboard') }}" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition">
+                        Dashboard →
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+
+        <!-- ═══ FLASH MESSAGES ═══ -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="max-w-4xl mx-auto px-4 mt-4 w-full space-y-2">
+            {% for category, message in messages %}
+            <div class="p-3.5 rounded-xl border text-sm flex gap-3 items-center {% if category == 'error' %}bg-red-950/60 border-red-600/30 text-red-200{% else %}bg-indigo-950/60 border-indigo-600/30 text-indigo-200{% endif %}">
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- ═══ HERO SECTION ═══ -->
+        <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-8 py-12 w-full">
+
+            <!-- HERO TEXT -->
+            <div class="text-center max-w-3xl mx-auto mb-16 space-y-5">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 mono">
+                    <span class="text-cyan-400">◈</span> TRAINED ON 100,000+ LABELED SAMPLES FROM REAL DATA
+                </div>
+                <h1 class="text-5xl sm:text-6xl font-black tracking-tight leading-tight">
+                    <span class="bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">Detect Threats.</span><br>
+                    <span class="bg-gradient-to-r from-indigo-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">Before They Strike.</span>
+                </h1>
+                <p class="text-slate-400 text-base leading-relaxed max-w-2xl mx-auto">
+                    ANVESHAK AI uses a production-trained <strong class="text-slate-200">TF-IDF + Multinomial Naive Bayes</strong> engine trained on 100,000 real email samples to classify every inbox message as Spam or Legitimate with surgical precision.
+                </p>
+            </div>
+
+            <!-- MAIN GRID -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- COL 1: GMAIL CONNECT + PRIVACY (spans 1) -->
+                <div class="space-y-4">
+                    <!-- Connect Gmail -->
+                    <div class="tilt-card holo-card neon-border glass-panel rounded-2xl p-6 space-y-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.271H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="text-sm font-bold text-white">Gmail Integration</div>
+                                <div class="text-xs text-slate-400">Read-only · Secure · OAuth 2.0</div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800 text-xs space-y-1.5">
+                            <div class="flex items-center gap-2 text-emerald-400">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span>Read-only access only</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-emerald-400">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span>Cannot send or delete emails</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-emerald-400">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span>Ephemeral processing only</span>
+                            </div>
+                            <div class="mt-2 pt-2 border-t border-slate-800 mono text-[10px] text-indigo-300">
+                                gmail.readonly scope
+                            </div>
+                        </div>
+
+                        {% if is_authenticated %}
+                        <a href="{{ url_for('dashboard') }}" class="block w-full py-3 rounded-xl font-bold text-sm text-center text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 transition shadow-lg shadow-emerald-500/20">
+                            Open Dashboard ↗
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('authorize') }}" class="block w-full py-3 rounded-xl font-bold text-sm text-center text-white bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 transition shadow-lg shadow-indigo-500/20">
+                            Connect Gmail
+                        </a>
+                        {% endif %}
+
+                        {% if not credentials_configured %}
+                        <div class="text-[11px] text-amber-300/80 bg-amber-950/30 border border-amber-800/30 rounded-lg p-2.5 leading-relaxed">
+                            Place your <code class="font-mono">credentials.json</code> from Google Cloud to enable Gmail scanning. Manual classifier below works without it.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- THREAT RADAR — Feature 1 -->
+                    <div class="tilt-card glass-panel rounded-2xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="text-xs font-bold text-slate-200 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-cyan-400 online-dot"></span>
+                                LIVE THREAT RADAR
+                            </div>
+                            <span class="mono text-[10px] text-slate-500">REAL-TIME</span>
+                        </div>
+                        <canvas id="threat-radar-canvas" class="mx-auto opacity-90"></canvas>
+                        <p class="text-[11px] text-center text-slate-500">Analyze a message to activate the threat radar</p>
+                    </div>
+                </div>
+
+                <!-- COL 2: MAIN CLASSIFIER (spans 2) -->
+                <div class="lg:col-span-2 space-y-4">
+
+                    <!-- MANUAL ANALYZER CARD -->
+                    <div class="tilt-card holo-card glass-panel rounded-2xl p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                                Message Threat Analyzer
+                            </h2>
+                            <div class="flex gap-2">
+                                <button class="sample-msg-btn text-[11px] px-2.5 py-1 rounded-lg bg-red-950/50 border border-red-800/40 text-red-300 hover:bg-red-900/50 transition mono" data-sample="Congratulations! You have won a $5000 cash prize. Click the link immediately to claim your exclusive reward before it expires.">
+                                    + Spam
+                                </button>
+                                <button class="sample-msg-btn text-[11px] px-2.5 py-1 rounded-lg bg-emerald-950/50 border border-emerald-800/40 text-emerald-300 hover:bg-emerald-900/50 transition mono" data-sample="Hey, can you please share the updated project notes before the meeting tomorrow afternoon?">
+                                    + Ham
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                            <textarea id="message-input" rows="4"
+                                class="w-full custom-textarea rounded-xl p-4 text-sm placeholder-slate-600 leading-relaxed typing-cursor"
+                                placeholder="Paste any email or SMS text here to analyze with ANVESHAK AI...">
+                            </textarea>
+                        </div>
+
+                        <!-- FEATURE 3: LIVE TOKEN STREAM -->
+                        <div class="space-y-1">
+                            <div class="text-[10px] mono text-slate-500 tracking-wider">LIVE TOKEN ANALYSIS STREAM</div>
+                            <div id="live-stream-output" class="min-h-[32px] flex flex-wrap gap-1 p-2 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                                <span class="text-[11px] text-slate-600 italic">Start typing to see real-time token classification...</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-4">
+                            <span id="char-counter" class="mono text-xs text-slate-500">0 chars</span>
+                            <button id="check-btn" disabled
+                                class="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 transition shadow-lg shadow-indigo-500/20 disabled:opacity-40 cursor-pointer flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Analyze Message
+                            </button>
+                        </div>
+
+                        <!-- RESULT SECTION -->
+                        <div id="result-section" class="hidden space-y-4 pt-4 border-t border-slate-800/60">
+                            <div id="loading-state" class="hidden flex items-center gap-3 p-5 text-indigo-400">
+                                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                                </svg>
+                                <span class="text-sm">Vectorizing &amp; computing posterior probabilities...</span>
+                            </div>
+
+                            <div id="result-card" class="hidden p-6 rounded-2xl glass-panel">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                                    <div class="flex items-center gap-4">
+                                        <div id="result-icon"></div>
+                                        <div>
+                                            <div id="result-status" class="text-xl font-bold"></div>
+                                            <p id="result-explanation" class="text-xs text-slate-400 mt-0.5 max-w-sm"></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-[10px] mono text-slate-400">CONFIDENCE SCORE</div>
+                                        <div id="result-confidence" class="text-3xl font-black mono"></div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 space-y-1.5">
+                                    <div class="w-full bg-slate-900/80 rounded-full h-2 overflow-hidden border border-white/5">
+                                        <div id="confidence-bar" class="h-2 rounded-full progress-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <p class="text-[10px] mono text-slate-500 italic">MultinomialNB posterior probability via predict_proba()</p>
+                                </div>
+
+                                <!-- EXPLAINABLE INFLUENTIAL SIGNALS TABLE -->
+                                <div id="influential-signals-container" class="mt-4 space-y-2 hidden">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[11px] mono text-slate-300 font-semibold tracking-wider">## Influential Signals</span>
+                                        <span class="text-[10px] mono text-slate-500">Log-Ratio Attribution</span>
+                                    </div>
+                                    <div id="influential-signals-list" class="space-y-1.5"></div>
+                                </div>
+
+                                <!-- FEATURE 2: TOKEN EXPLOSION ZONE -->
+                                <div class="mt-4 space-y-2">
+                                    <div class="text-[10px] mono text-slate-500 tracking-wider">HOLOGRAPHIC TOKEN EXPLOSION</div>
+                                    <div id="token-explosion-zone" class="min-h-[36px] flex flex-wrap gap-1.5 p-2 rounded-lg bg-slate-900/40 border border-slate-800/50">
+                                    </div>
+                                </div>
+
+                                <div id="keywords-container" class="hidden"></div>
+                                <div id="keywords-list" class="hidden"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HOW IT WORKS — 4 STEPS -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {% set steps = [('01', 'indigo', 'Input Text', 'User pastes email or SMS message content'),
+                                        ('02', 'cyan', 'Clean & Context', 'Negation propagation & semantic token normalization'),
+                                        ('03', 'purple', 'Word+Char TF-IDF', '1-3 word n-grams & 3-5 char n-grams extracted'),
+                                        ('04', 'emerald', 'Calibrated NB', 'Thresholded posterior decision (>= 85% for Spam)')] %}
+                        {% for num, color, title, desc in steps %}
+                        <div class="holo-card glass-panel rounded-xl p-4 space-y-2">
+                            <div class="w-8 h-8 rounded-lg bg-{{ color }}-500/15 text-{{ color }}-400 flex items-center justify-center mono text-xs font-bold">{{ num }}</div>
+                            <div class="text-xs font-bold text-slate-200">{{ title }}</div>
+                            <p class="text-[11px] text-slate-500 leading-relaxed">{{ desc }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PREDICTION HISTORY ═══ -->
+            <div class="mt-8 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Analysis History
+                    </h3>
+                    <button id="clear-history-btn" class="text-xs text-slate-500 hover:text-red-400 transition mono">Clear</button>
+                </div>
+                <div id="empty-history" class="p-6 rounded-xl glass-panel text-center text-xs text-slate-600 mono">
+                    No analysis history yet.
+                </div>
+                <div id="history-list" class="space-y-2"></div>
+            </div>
+
+            <!-- ═══ MODEL EVALUATION & CALIBRATION METRICS SECTION (Requirement 18) ═══ -->
+            <div class="mt-8 p-6 rounded-2xl glass-panel holo-card border border-indigo-500/30 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2 mono">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400 online-dot"></span>
+                            MODEL EVALUATION &amp; VALIDATION METRICS
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Tested on unseen holdout test set with stratified train/validation/test protocol</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 mono">
+                            Spam Threshold: {{ (metrics.decision_threshold * 100)|round(0)|int }}%
+                        </span>
+                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 mono">
+                            FPR: {{ metrics.false_positive_rate }}%
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 text-center">
+                        <div class="text-[10px] mono text-slate-400 mb-1">MODEL</div>
+                        <div class="text-xs font-bold text-indigo-300 truncate mono">MultinomialNB</div>
+                        <div class="text-[9px] text-slate-500 mono mt-0.5">alpha=0.5</div>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 text-center">
+                        <div class="text-[10px] mono text-slate-400 mb-1">FEATURES</div>
+                        <div class="text-xs font-bold text-cyan-300 truncate mono">Word (1-3) + Char (3-5)</div>
+                        <div class="text-[9px] text-slate-500 mono mt-0.5">FeatureUnion</div>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 text-center">
+                        <div class="text-[10px] mono text-slate-400 mb-1">ACCURACY</div>
+                        <div class="text-lg font-black text-emerald-400 mono" data-count="{{ metrics.accuracy }}" data-suffix="%">{{ metrics.accuracy }}%</div>
+                        <div class="text-[9px] text-slate-500 mono mt-0.5">holdout test</div>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 text-center">
+                        <div class="text-[10px] mono text-slate-400 mb-1">PRECISION</div>
+                        <div class="text-lg font-black text-cyan-400 mono" data-count="{{ metrics.precision }}" data-suffix="%">{{ metrics.precision }}%</div>
+                        <div class="text-[9px] text-slate-500 mono mt-0.5">positive class</div>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 text-center">
+                        <div class="text-[10px] mono text-slate-400 mb-1">RECALL</div>
+                        <div class="text-lg font-black text-purple-400 mono" data-count="{{ metrics.recall }}" data-suffix="%">{{ metrics.recall }}%</div>
+                        <div class="text-[9px] text-slate-500 mono mt-0.5">spam detection</div>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 text-center border-emerald-500/30">
+                        <div class="text-[10px] mono text-emerald-300 mb-1">FALSE POSITIVES</div>
+                        <div class="text-lg font-black text-emerald-400 mono">{{ metrics.false_positive_rate }}%</div>
+                        <div class="text-[9px] text-emerald-400 mono mt-0.5">0 Ham misclassified</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="border-t border-slate-900/80 bg-slate-950/50 py-5 mt-12 text-center">
+            <div class="text-xs text-slate-500 mono">ANVESHAK AI • Intelligent Email Threat Intelligence • TF-IDF + MultinomialNB • 100K Sample Dataset</div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

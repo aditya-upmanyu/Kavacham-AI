@@ -1,0 +1,307 @@
+/* ==========================================================================
+   ANVESHAK AI - Premium 3D Dark Cyberpunk UI Styles
+   ========================================================================== */
+
+:root {
+  --bg-primary: #040710;
+  --bg-secondary: #080d1c;
+  --card-bg: rgba(10, 18, 38, 0.80);
+  --card-border: rgba(99, 102, 241, 0.25);
+  --accent-cyan: #06b6d4;
+  --accent-indigo: #6366f1;
+  --accent-purple: #a855f7;
+  --accent-emerald: #10b981;
+  --spam-red: #ef4444;
+  --ham-green: #10b981;
+  --neon-glow: rgba(99, 102, 241, 0.6);
+}
+
+/* ===================== SCROLLBAR ===================== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #040710; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+
+/* ===================== BACKGROUND CANVAS ===================== */
+#bg-canvas {
+  position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 0; pointer-events: none;
+}
+
+/* ===================== GRID OVERLAY ===================== */
+.cyber-grid {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: gridShift 20s linear infinite;
+}
+@keyframes gridShift {
+  0% { background-position: 0 0; }
+  100% { background-position: 60px 60px; }
+}
+
+/* ===================== GLASSMORPHISM ===================== */
+.glass-panel {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--card-border);
+  box-shadow:
+    0 25px 50px -15px rgba(0, 0, 0, 0.8),
+    0 0 30px -8px rgba(99, 102, 241, 0.12),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  position: relative;
+  overflow: hidden;
+}
+.glass-panel::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), rgba(6, 182, 212, 0.4), transparent);
+  animation: shimmerTop 4s ease-in-out infinite;
+}
+@keyframes shimmerTop {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.glass-pill {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ===================== GLOWING ORBS ===================== */
+.glow-orb-1 {
+  position: fixed; top: 5%; left: 10%;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+  filter: blur(60px); pointer-events: none; z-index: 1;
+  animation: floatOrb1 15s ease-in-out infinite alternate;
+}
+.glow-orb-2 {
+  position: fixed; bottom: 10%; right: 8%;
+  width: 550px; height: 550px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
+  filter: blur(70px); pointer-events: none; z-index: 1;
+  animation: floatOrb2 18s ease-in-out infinite alternate;
+}
+.glow-orb-3 {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.06) 0%, transparent 70%);
+  filter: blur(80px); pointer-events: none; z-index: 1;
+  animation: floatOrb1 20s ease-in-out infinite;
+}
+@keyframes floatOrb1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -50px) scale(1.15); }
+  100% { transform: translate(-30px, 30px) scale(0.9); }
+}
+@keyframes floatOrb2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-50px, 40px) scale(1.1); }
+  100% { transform: translate(30px, -20px) scale(0.95); }
+}
+
+/* ===================== 3D TILT CARD ===================== */
+.tilt-card {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  transition: transform 0.12s ease-out, box-shadow 0.25s ease;
+}
+.tilt-card:hover {
+  box-shadow:
+    0 35px 70px -20px rgba(0,0,0,0.9),
+    0 0 40px -10px rgba(99, 102, 241, 0.25);
+}
+
+/* ===================== NEON BORDER ANIMATED ===================== */
+.neon-border {
+  position: relative;
+}
+.neon-border::after {
+  content: '';
+  position: absolute; inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #6366f1, #06b6d4, #a855f7, #6366f1);
+  background-size: 300% 300%;
+  animation: borderRotate 4s linear infinite;
+  z-index: -1;
+  opacity: 0.7;
+}
+@keyframes borderRotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ===================== THREAT RADAR ===================== */
+#threat-radar-canvas {
+  display: block;
+  margin: 0 auto;
+}
+
+/* ===================== TEXTAREA ===================== */
+.custom-textarea {
+  background: rgba(5, 10, 25, 0.9);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  color: #f1f5f9;
+  resize: vertical;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+.custom-textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow:
+    0 0 0 3px rgba(99, 102, 241, 0.2),
+    0 0 25px rgba(99, 102, 241, 0.15);
+}
+
+/* ===================== PROGRESS BAR ===================== */
+.progress-bar-fill {
+  transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ===================== ONLINE PULSE DOT ===================== */
+@keyframes onlinePulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.online-dot { animation: onlinePulse 2s infinite; }
+
+/* ===================== TOKEN BURST ANIMATION ===================== */
+@keyframes tokenBurst {
+  0% { transform: scale(0) translate(0,0); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: scale(1) translate(var(--tx), var(--ty)); opacity: 1; }
+}
+.token-burst {
+  animation: tokenBurst 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ===================== STAT COUNTER ANIMATION ===================== */
+@keyframes countUp {
+  from { transform: translateY(15px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.stat-counter { animation: countUp 0.6s ease forwards; }
+
+/* ===================== HOLOGRAPHIC SHIMMER ON CARDS ===================== */
+.holo-card {
+  position: relative;
+  overflow: hidden;
+}
+.holo-card::after {
+  content: '';
+  position: absolute; top: -100%; left: -100%;
+  width: 60%; height: 200%;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.04) 50%, transparent 60%);
+  animation: holoShimmer 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes holoShimmer {
+  0% { transform: translateX(-100%) skewX(-20deg); }
+  30%, 100% { transform: translateX(400%) skewX(-20deg); }
+}
+
+/* ===================== RESULT CARD ENTRANCE ===================== */
+@keyframes resultEntrance {
+  0% { transform: scale(0.94) translateY(12px); opacity: 0; }
+  60% { transform: scale(1.02) translateY(-2px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.result-entrance { animation: resultEntrance 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* ===================== TYPING CURSOR ===================== */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.typing-cursor::after {
+  content: '|';
+  animation: blink 0.8s step-end infinite;
+  color: #6366f1;
+  font-weight: 300;
+  margin-left: 1px;
+}
+
+/* ===================== EMAIL CARD HOVER ===================== */
+.email-item-card {
+  transition: all 0.25s ease;
+  border: 1px solid rgba(99, 102, 241, 0.12);
+}
+.email-item-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateX(4px);
+  box-shadow: -4px 0 20px -5px rgba(99, 102, 241, 0.3);
+}
+
+/* ===================== SCAN LINE ANIMATION ===================== */
+@keyframes scanLine {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+.scan-line {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), rgba(6, 182, 212, 0.3), transparent);
+  z-index: 2; pointer-events: none;
+  animation: scanLine 8s linear infinite;
+}
+
+/* ===================== FLOATING BADGE ===================== */
+@keyframes floatBadge {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+.float-badge { animation: floatBadge 3s ease-in-out infinite; }
+
+/* ===================== WORD CLOUD TAG ===================== */
+.wc-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: monospace;
+  background: rgba(99,102,241,0.12);
+  border: 1px solid rgba(99,102,241,0.25);
+  color: #a5b4fc;
+  transition: all 0.2s;
+  cursor: default;
+}
+.wc-tag:hover {
+  background: rgba(99,102,241,0.25);
+  transform: scale(1.05);
+}
+.wc-tag.spam-tag {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.3);
+  color: #fca5a5;
+}
+
+/* ===================== LOADING BAR ===================== */
+@keyframes loadingBar {
+  0% { width: 0%; }
+  30% { width: 40%; }
+  70% { width: 75%; }
+  90% { width: 92%; }
+}
+.loading-bar-anim { animation: loadingBar 2s ease-out forwards; }
+
+/* ===================== ANVESHAK LOGO PULSE ===================== */
+@keyframes logoPulse {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(99,102,241,0.5)); }
+  50% { filter: drop-shadow(0 0 20px rgba(6,182,212,0.7)); }
+}
+.logo-glow { animation: logoPulse 3s ease-in-out infinite; }

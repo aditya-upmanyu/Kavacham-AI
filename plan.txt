@@ -1,0 +1,1119 @@
+# Build a Complete, Working, Demo-Ready Gmail Spam Detection ML Web Application
+
+Build a complete, production-style, demo-ready ML web application that connects to a real Gmail inbox using the official Gmail API and Google OAuth 2.0, fetches recent inbox emails, and classifies them as `Spam` or `Not Spam` using a genuinely trained `TF-IDF + Multinomial Naive Bayes` model.
+
+This must be a REAL end-to-end application.
+
+Do NOT create:
+
+* Fake Gmail data
+* Mock OAuth
+* Fake API responses
+* Hardcoded predictions
+* Dummy confidence values
+* Simulated inbox messages
+* TODO comments
+* Placeholder functions
+* "Coming soon" features
+
+Every core feature must actually work.
+
+---
+
+# 1. PROJECT GOAL
+
+Create a web application called:
+
+`Gmail Spam Detector`
+
+The application should allow a user to:
+
+1. Open the web application.
+2. Understand what Gmail permission is required.
+3. Click `Connect Gmail`.
+4. Authenticate using a real Google account through OAuth 2.0.
+5. Grant ONLY Gmail read-only permission.
+6. Fetch recent real inbox emails using the Gmail API.
+7. Extract sender, subject, snippet and readable body text.
+8. Run every email through the trained spam detection model.
+9. Display:
+
+   * Sender
+   * Subject
+   * Email snippet/body preview
+   * Spam / Not Spam prediction
+   * Confidence percentage
+10. Manually paste any message and classify it using the same trained model.
+
+The final application should be suitable for a college faculty demonstration.
+
+---
+
+# 2. REQUIRED TECHNOLOGY STACK
+
+Backend:
+
+* Python 3.10+
+* Flask
+
+Authentication:
+
+* Google OAuth 2.0
+* google-auth
+* google-auth-oauthlib
+* google-auth-httplib2
+
+Gmail:
+
+* Gmail API
+* google-api-python-client
+* Scope: `https://www.googleapis.com/auth/gmail.readonly`
+
+Machine Learning:
+
+* scikit-learn
+* pandas
+* numpy
+* NLTK
+* TfidfVectorizer
+* MultinomialNB
+
+Frontend:
+
+* HTML5
+* Tailwind CSS via CDN
+* Vanilla JavaScript
+* Fetch API
+* CSS animations where useful
+
+Do NOT use:
+
+* React
+* Vue
+* Angular
+* Node.js backend
+* MongoDB
+* MySQL
+* PostgreSQL
+* Any external database
+
+Use Flask sessions for application state.
+
+---
+
+# 3. MACHINE LEARNING PIPELINE
+
+Create:
+
+`train_model.py`
+
+The script must actually train the model.
+
+Dataset:
+
+* Use an SMS Spam Collection-style dataset.
+* Prefer `dataset.csv` included in the project.
+* If creating/downloading the dataset automatically is necessary, clearly document the source and expected format.
+* Dataset must contain a label and message/text column.
+
+Expected labels:
+
+* `spam`
+* `ham`
+
+Normalize labels internally to:
+
+`Spam`
+`Not Spam`
+
+## Text preprocessing
+
+Implement a reusable preprocessing function.
+
+Steps:
+
+1. Convert text to lowercase.
+2. Handle null/empty values safely.
+3. Remove punctuation.
+4. Remove unnecessary special characters.
+5. Normalize whitespace.
+6. Remove English stopwords using NLTK.
+7. If NLTK stopwords are unavailable, gracefully fall back to a built-in stopword set instead of crashing.
+8. Return cleaned text.
+
+Do not over-clean text to the point that important spam indicators disappear.
+
+## Training
+
+Use:
+
+* 80/20 stratified train-test split
+* `random_state=42`
+* `TfidfVectorizer`
+* `MultinomialNB`
+
+Example pipeline:
+
+`raw text → preprocessing → TF-IDF → MultinomialNB`
+
+The model must be trained ONLY by `train_model.py`.
+
+Save:
+
+`model.pkl`
+
+and
+
+`vectorizer.pkl`
+
+Flask must load these files when the application starts.
+
+NEVER retrain the model during every request.
+
+## Evaluation
+
+After training, print:
+
+* Accuracy
+* Precision
+* Recall
+* F1 Score
+* Confusion Matrix
+
+Use appropriate binary classification metrics.
+
+Also print the number of training and testing samples.
+
+Example console output:
+
+`Model Training Complete`
+`Accuracy: XX.XX%`
+`Precision: XX.XX%`
+`Recall: XX.XX%`
+`F1 Score: XX.XX%`
+`Confusion Matrix: ...`
+
+Do not hardcode these values.
+
+---
+
+# 4. GOOGLE CLOUD + OAUTH2 SETUP
+
+The README must contain a complete beginner-friendly setup guide.
+
+Explain:
+
+## Step 1 — Create Google Cloud Project
+
+Explain how to:
+
+* Open Google Cloud Console.
+* Create a new project.
+* Select the project.
+
+## Step 2 — Enable Gmail API
+
+Explain:
+
+* APIs & Services
+* Library
+* Search for Gmail API
+* Enable it.
+
+## Step 3 — Configure OAuth Consent Screen
+
+Explain:
+
+* Create OAuth consent screen.
+* Configure application information.
+* Select appropriate user type.
+* Put the application into Testing mode for development/demo.
+* Add the developer's own Google account as a test user.
+
+Clearly explain that a Testing-mode OAuth application can be limited to added test users.
+
+## Step 4 — Create OAuth Credentials
+
+Explain how to create an OAuth 2.0 Client ID.
+
+Support the selected credential type consistently with the Flask callback implementation.
+
+Use:
+
+`credentials.json`
+
+Place it in the project root.
+
+The application must detect missing credentials and display a clear setup error instead of crashing.
+
+## Step 5 — Required Scope
+
+The ONLY Gmail scope allowed is:
+
+`https://www.googleapis.com/auth/gmail.readonly`
+
+Never request:
+
+* send
+* delete
+* modify
+* compose
+* settings
+* full Gmail access
+
+The UI must explicitly tell the user:
+
+"Read-only Gmail access is required only to analyze your inbox. This application cannot send, delete, modify, or move your emails."
+
+---
+
+# 5. OAUTH FLOW
+
+Implement a real OAuth 2.0 flow.
+
+Routes:
+
+`GET /`
+
+* Landing/login page.
+
+`GET /authorize`
+
+* Start Google OAuth authorization.
+
+`GET /oauth2callback`
+
+* Handle Google's OAuth callback.
+* Validate the returned authorization.
+* Create Google credentials.
+* Store credentials securely for the current demo session.
+
+`GET /dashboard`
+
+* Require authentication.
+* Load Gmail data.
+* Run ML classification.
+* Render dashboard.
+
+`GET /logout`
+
+* Clear authentication/session state.
+
+Do not fake authentication.
+
+Handle:
+
+* User denies permission.
+* OAuth callback error.
+* Expired credentials.
+* Revoked credentials.
+* Invalid credentials.
+* Missing credentials.json.
+* Session expiration.
+
+If credentials are expired and a refresh token exists, refresh them appropriately.
+
+Do not expose access tokens in the frontend.
+
+---
+
+# 6. GMAIL API INTEGRATION
+
+Use the official Gmail API.
+
+Fetch real inbox messages using Gmail API methods such as:
+
+`users.messages.list`
+
+and:
+
+`users.messages.get`
+
+Only inspect inbox messages.
+
+Use a configurable limit such as:
+
+`N = 20`
+
+Do not download the entire mailbox.
+
+Prefer querying messages using an appropriate Gmail query such as inbox-related filtering.
+
+For every email retrieve:
+
+* Message ID
+* Sender
+* Subject
+* Date if available
+* Snippet
+* Body text
+
+Extract headers safely.
+
+Handle missing:
+
+* From
+* Subject
+* Date
+* Body
+
+without crashing.
+
+---
+
+# 7. EMAIL BODY PARSING
+
+This part must be implemented properly.
+
+Gmail messages can be:
+
+* Plain text
+* HTML
+* Multipart
+* Nested multipart
+* Base64url encoded
+
+Create a robust email body extraction function.
+
+Requirements:
+
+1. Decode Gmail's base64url body encoding.
+2. Recursively inspect multipart payloads.
+3. Prefer `text/plain`.
+4. If only `text/html` exists, convert HTML to readable plain text.
+5. Remove unnecessary HTML markup.
+6. Handle malformed/empty payloads safely.
+7. Never crash because one email has an unusual MIME structure.
+
+Do not display raw base64 or raw HTML to the user.
+
+The text sent to the ML model should be readable email text.
+
+---
+
+# 8. SPAM CLASSIFICATION
+
+Create a reusable prediction function.
+
+Input:
+
+`email_text`
+
+Process:
+
+`email_text`
+→ preprocessing
+→ loaded TF-IDF vectorizer
+→ loaded Naive Bayes model
+→ prediction
+→ probability
+
+Return:
+
+```text
+label
+confidence
+```
+
+Prediction must come from:
+
+`model.predict()`
+
+Confidence must come from the actual model probability:
+
+`model.predict_proba()`
+
+Do NOT invent confidence percentages.
+
+Convert the probability into a user-friendly percentage.
+
+Example:
+
+`Spam — 94.21%`
+
+or:
+
+`Not Spam — 97.43%`
+
+The exact values must come from the model.
+
+---
+
+# 9. DASHBOARD API / DATA FLOW
+
+The dashboard must display real Gmail data.
+
+Recommended backend flow:
+
+`Google OAuth`
+→ `Gmail API`
+→ `Email extraction`
+→ `Text preprocessing`
+→ `TF-IDF`
+→ `Naive Bayes`
+→ `Prediction`
+→ `Dashboard`
+
+The backend should keep ML inference logic separate from Gmail fetching logic.
+
+Create clean helper functions such as:
+
+* `get_google_credentials()`
+* `get_gmail_service()`
+* `fetch_inbox_messages()`
+* `parse_email_message()`
+* `extract_email_body()`
+* `clean_text()`
+* `predict_spam()`
+
+Use clean architecture and avoid putting everything inside one giant Flask route.
+
+---
+
+# 10. MANUAL MESSAGE PREDICTION
+
+Keep a standalone manual prediction feature.
+
+Route:
+
+`POST /predict`
+
+Accept JSON such as:
+
+```json
+{
+  "message": "Congratulations! You won..."
+}
+```
+
+Return JSON containing:
+
+* prediction
+* confidence
+
+Example structure:
+
+```json
+{
+  "prediction": "Spam",
+  "confidence": 96.42
+}
+```
+
+The frontend should have a:
+
+`Check a Message`
+
+section where the user can paste a message.
+
+The manual prediction must use the EXACT SAME trained model and preprocessing pipeline used for Gmail emails.
+
+Do not create a second fake classifier.
+
+---
+
+# 11. FRONTEND — OVERALL DESIGN
+
+Create a modern dark glassmorphism UI.
+
+Visual direction:
+
+* Dark background
+* Glass cards
+* Soft gradients
+* Subtle borders
+* Modern typography
+* Smooth hover effects
+* Responsive layout
+* Clean spacing
+* Professional dashboard appearance
+
+Use Tailwind CSS via CDN.
+
+Do not use React.
+
+Use vanilla JavaScript.
+
+The interface should look like a real cybersecurity/AI product rather than a basic college HTML project.
+
+---
+
+# 12. LANDING / LOGIN SCREEN
+
+Create:
+
+`templates/login.html`
+
+Include:
+
+* Application logo/icon
+* `Gmail Spam Detector`
+* Short project description
+* AI/ML explanation
+* `Connect Gmail` button
+* Privacy notice
+* Read-only permission explanation
+
+Clearly show:
+
+`🔒 Read-only Gmail access`
+
+And explain:
+
+"This application can read emails for spam analysis, but it cannot send, delete, modify, or move your emails."
+
+Add a small:
+
+`How It Works`
+
+section:
+
+1. Connect Gmail
+2. Fetch recent inbox emails
+3. Extract email content
+4. Run ML classifier
+5. Display Spam / Not Spam
+
+---
+
+# 13. DASHBOARD UI
+
+Create:
+
+`templates/dashboard.html`
+
+Dashboard should include:
+
+## Header
+
+* Gmail Spam Detector
+* Connected account indicator if available
+* Refresh button
+* Logout button
+
+## Statistics cards
+
+Display dynamically:
+
+* Emails Scanned
+* Spam Detected
+* Not Spam
+* Average Confidence
+
+These must be calculated from actual predictions.
+
+Do not hardcode statistics.
+
+## Inbox Results
+
+Display real emails as cards.
+
+Each card should show:
+
+* Sender
+* Subject
+* Date
+* Snippet
+* Prediction badge
+* Confidence
+* Confidence progress bar
+
+Use:
+
+Spam → red visual treatment
+
+Not Spam → green visual treatment
+
+But keep the overall UI accessible and professional.
+
+---
+
+# 14. EMAIL CARD INTERACTION
+
+Make email cards interactive.
+
+When clicked, show an expanded section/modal containing:
+
+* Sender
+* Subject
+* Date
+* Snippet
+* Analyzed text preview
+* Prediction
+* Confidence
+
+Do not expose unnecessary sensitive information.
+
+Never display access tokens.
+
+Do not persist raw email content.
+
+---
+
+# 15. MANUAL CHECK TAB
+
+Add a dedicated dashboard section/tab:
+
+`Check a Message`
+
+Include:
+
+* Large textarea
+* Character counter
+* `Analyze Message` button
+* Loading state
+* Prediction result
+* Confidence percentage
+* Confidence progress bar
+
+Example demo message:
+
+"Congratulations! You have won a $1000 reward. Click here immediately to claim your prize."
+
+The example should be only a UI example; the actual result must still come from the trained model.
+
+Do not hardcode the result.
+
+---
+
+# 16. HOW IT WORKS SECTION
+
+Add a visual pipeline:
+
+`Gmail OAuth`
+↓
+`Gmail API`
+↓
+`Email Extraction`
+↓
+`Text Cleaning`
+↓
+`TF-IDF`
+↓
+`Naive Bayes`
+↓
+`Spam Prediction`
+
+Explain each step in simple language.
+
+---
+
+# 17. MODEL INFORMATION SECTION
+
+Display:
+
+* Algorithm: Multinomial Naive Bayes
+* Feature Extraction: TF-IDF
+* Dataset type
+* Train/Test Split: 80/20
+* Random State: 42
+* Text preprocessing steps
+
+If evaluation metrics are made available by the backend, display the actual trained model metrics.
+
+Never fabricate metrics.
+
+---
+
+# 18. LOADING STATES
+
+The UI must have proper loading states.
+
+For example:
+
+`Connecting to Gmail...`
+
+`Fetching inbox...`
+
+`Analyzing emails...`
+
+`Loading results...`
+
+Buttons should become disabled while relevant requests are running.
+
+Use skeleton loaders or animated placeholders where appropriate.
+
+---
+
+# 19. ERROR HANDLING
+
+Handle all major failures gracefully.
+
+Frontend should show user-friendly messages for:
+
+* Gmail authorization denied
+* OAuth failure
+* Missing credentials.json
+* Expired session
+* Expired/revoked Google token
+* Gmail API quota error
+* Gmail API unavailable
+* Empty inbox
+* Invalid email data
+* ML model missing
+* Vectorizer missing
+* Prediction failure
+* Network failure
+
+Never show raw Python stack traces to the user.
+
+During development, useful errors may still be logged server-side.
+
+---
+
+# 20. SECURITY REQUIREMENTS
+
+Follow these strictly.
+
+### Gmail permissions
+
+ONLY:
+
+`gmail.readonly`
+
+Never request write permissions.
+
+### Tokens
+
+Do not expose:
+
+* access token
+* refresh token
+* client secret
+
+to the frontend.
+
+### Email data
+
+Do NOT:
+
+* write raw email bodies to logs
+* save raw emails in a database
+* create unnecessary persistent copies
+* send email content to external AI APIs
+
+Raw email content should remain in memory for the current request/session.
+
+### Credentials
+
+Add to `.gitignore`:
+
+`credentials.json`
+
+`token.json`
+
+`.env`
+
+`__pycache__/`
+
+`*.pyc`
+
+`model.pkl`
+
+`vectorizer.pkl`
+
+If the chosen architecture requires model files to be committed for demo purposes, document that decision clearly.
+
+Never commit Google's OAuth client secret.
+
+### Secret key
+
+Use an environment variable:
+
+`FLASK_SECRET_KEY`
+
+Provide a safe development fallback only if necessary, and clearly document that production deployments must use a strong secret.
+
+---
+
+# 21. PRIVACY NOTICE
+
+Include a visible privacy note in the UI:
+
+"This demo requests read-only Gmail access solely to analyze recent inbox messages. It cannot send, delete, modify, or move emails."
+
+README must additionally explain:
+
+* What Gmail permission is requested.
+* Why it is requested.
+* What data is processed.
+* What is not stored.
+* That this is an educational/demo application.
+* That production Gmail applications may require Google's verification and appropriate OAuth configuration.
+
+Do not claim the project is production-ready.
+
+---
+
+# 22. PROJECT STRUCTURE
+
+Generate the complete project with this structure:
+
+```text
+spam-detector-gmail/
+│
+├── app.py
+├── train_model.py
+├── model.pkl
+├── vectorizer.pkl
+├── dataset.csv
+├── credentials.json
+├── requirements.txt
+├── README.md
+├── .gitignore
+├── .env.example
+│
+├── templates/
+│   ├── login.html
+│   └── dashboard.html
+│
+└── static/
+    ├── css/
+    │   └── style.css
+    └── js/
+        └── script.js
+```
+
+Important:
+
+`credentials.json` must NOT contain fake credentials.
+
+Provide a clear indication that the user must place their own Google OAuth credentials there.
+
+Do not generate fake Google client IDs or secrets.
+
+---
+
+# 23. REQUIREMENTS.TXT
+
+Include all required dependencies.
+
+At minimum:
+
+```text
+Flask
+scikit-learn
+pandas
+numpy
+nltk
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+python-dotenv
+beautifulsoup4
+```
+
+Pin versions only when appropriate and compatible.
+
+Avoid unnecessary packages.
+
+---
+
+# 24. README.MD
+
+Create a comprehensive but beginner-friendly README.
+
+Include:
+
+## Project Overview
+
+Explain what the project does.
+
+## Features
+
+List:
+
+* Real Gmail OAuth
+* Gmail API
+* Read-only access
+* Real inbox scanning
+* ML spam classification
+* TF-IDF
+* Multinomial Naive Bayes
+* Confidence score
+* Manual message analysis
+* Responsive dashboard
+
+## Architecture
+
+Explain the complete data flow.
+
+## Requirements
+
+Explain:
+
+* Python version
+* Google account
+* Google Cloud project
+* Gmail API
+* OAuth credentials
+
+## Google Cloud Setup
+
+Give step-by-step instructions.
+
+## Credentials Setup
+
+Explain exactly where:
+
+`credentials.json`
+
+must be placed.
+
+## Installation
+
+Example:
+
+```bash
+python -m venv venv
+```
+
+Windows activation:
+
+```bash
+venv\Scripts\activate
+```
+
+Install:
+
+```bash
+pip install -r requirements.txt
+```
+
+## NLTK Setup
+
+Explain how required NLTK resources are downloaded automatically or how the fallback works.
+
+## Train Model
+
+```bash
+python train_model.py
+```
+
+Explain that this creates:
+
+```text
+model.pkl
+vectorizer.pkl
+```
+
+## Run Application
+
+```bash
+python app.py
+```
+
+Then explain how to open the local Flask URL.
+
+## OAuth Redirect URI
+
+Clearly explain the exact redirect URI required by the implementation.
+
+Do not leave the user guessing.
+
+## Gmail Testing
+
+Explain how to add the developer's Google account as a test user when the OAuth application is in Testing mode.
+
+## Security
+
+Explain all privacy/security considerations.
+
+## Troubleshooting
+
+Include solutions for:
+
+* credentials.json missing
+* OAuth redirect mismatch
+* access denied
+* app not configured
+* test user not added
+* expired credentials
+* Gmail API disabled
+* model files missing
+* NLTK resource missing
+* empty inbox
+
+---
+
+# 25. FLASK IMPLEMENTATION QUALITY
+
+Write clean, readable Python.
+
+Requirements:
+
+* Functions should have clear responsibilities.
+* Avoid duplicated code.
+* Use constants for configuration.
+* Use environment variables where appropriate.
+* Validate incoming requests.
+* Handle exceptions.
+* Return appropriate HTTP status codes for API errors.
+* Keep ML code separate from Gmail code.
+* Keep frontend JavaScript separate from HTML.
+* Use semantic HTML.
+
+Do not create a giant 1000-line function.
+
+---
+
+# 26. API RESPONSE FORMAT
+
+For frontend/API communication, use consistent JSON structures.
+
+Successful prediction:
+
+```json
+{
+  "success": true,
+  "prediction": "Spam",
+  "confidence": 94.21
+}
+```
+
+Successful Gmail result should contain enough information for the dashboard, for example:
+
+```json
+{
+  "success": true,
+  "emails": [...]
+}
+```
+
+Errors:
+
+```json
+{
+  "success": false,
+  "error": "Human-readable error message"
+}
+```
+
+Do not leak internal secrets or stack traces.
+
+---
+
+# 27. DEMO MODE REQUIREMENT
+
+The application must work without Gmail for the manual classifier.
+
+Therefore:
+
+### Mode 1
+
+Manual message → ML model → prediction
+
+### Mode 2
+
+Google OAuth → Gmail API → real inbox → ML model → dashboard
+
+Do not create a fake Gmail mode.
+
+The manual mode exists only as an independent demonstration of the trained ML model.
+
+---
+
+# 28. FACULTY DEMO FLOW
+
+The final project should

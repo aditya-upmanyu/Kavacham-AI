@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Spam Detector | Machine Learning Message Security</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            cyan: '#06b6d4',
+                            indigo: '#6366f1',
+                            purple: '#a855f7',
+                            dark: '#070913',
+                            panel: 'rgba(15, 23, 42, 0.75)'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Custom 3D & Glass Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-[#070913] text-slate-100 min-h-screen relative overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+
+    <!-- Interactive 3D Canvas Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Dynamic Ambient Glowing Orbs -->
+    <div class="glow-orb-1"></div>
+    <div class="glow-orb-2"></div>
+
+    <div class="relative z-10 flex flex-col min-h-screen">
+        <!-- TOP NAVIGATION / HEADER -->
+        <header class="border-b border-slate-800/80 bg-slate-950/40 backdrop-blur-md sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 p-[1px] shadow-lg shadow-indigo-500/20">
+                        <div class="w-full h-full bg-slate-950 rounded-xl flex items-center justify-center text-cyan-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+                            AI Spam Detector
+                        </h1>
+                        <p class="text-xs text-slate-400 hidden sm:block">Machine Learning Powered Message Security</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 px-3 py-1.5 rounded-full glass-pill text-xs font-medium text-slate-300 border border-emerald-500/30 bg-emerald-950/20">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 online-dot"></span>
+                        <span>ML Model Online</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main class="flex-grow max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-12">
+            
+            <!-- HERO SECTION -->
+            <div class="text-center space-y-4 max-w-2xl mx-auto">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                    <span class="text-cyan-400">✦</span> Naive Bayes + TF-IDF Vectorization
+                </div>
+                <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent leading-tight">
+                    Detect Spam Before It Tricks You.
+                </h2>
+                <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+                    Analyze suspicious SMS and email messages using machine learning and get an instant prediction with probability scoring and pattern explanation.
+                </p>
+            </div>
+
+            <!-- MAIN PREDICTION CARD (3D TILT EFFECT) -->
+            <div class="tilt-card glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+                <form id="spam-form" onsubmit="return false;" class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label for="message-input" class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                            </svg>
+                            Message Content
+                        </label>
+                        <span id="char-counter" class="text-xs text-slate-400 font-mono">0 characters</span>
+                    </div>
+
+                    <div class="relative">
+                        <textarea 
+                            id="message-input" 
+                            rows="5" 
+                            class="w-full custom-textarea p-4 rounded-2xl text-sm sm:text-base placeholder-slate-500 leading-relaxed" 
+                            placeholder="Paste an SMS or email message here... (e.g., 'Congratulations! You won a free prize!')"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                        <p class="text-xs text-slate-400">
+                            Tip: Press <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">Ctrl+Enter</kbd> to quickly analyze.
+                        </p>
+                        <button 
+                            type="button" 
+                            id="check-btn" 
+                            disabled
+                            class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 transition-all duration-200 shadow-lg shadow-indigo-500/25 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                            <svg class="w-5 h-5 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Check Message
+                        </button>
+                    </div>
+                </form>
+
+                <!-- DYNAMIC RESULT CONTAINER -->
+                <div id="result-section" class="mt-8 hidden space-y-4 pt-6 border-t border-slate-800/80">
+                    
+                    <!-- Loading Indicator -->
+                    <div id="loading-state" class="hidden flex items-center justify-center p-8 space-x-3 text-indigo-400">
+                        <svg class="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <span class="font-medium text-sm">Extracting features & computing probabilities...</span>
+                    </div>
+
+                    <!-- Dynamic Card (Spam / Ham) -->
+                    <div id="result-card" class="hidden p-6 rounded-2xl transition-all duration-300">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-white/10">
+                            <div class="flex items-center space-x-4">
+                                <div id="result-icon" class="flex-shrink-0"></div>
+                                <div>
+                                    <div id="result-status" class="text-2xl font-bold tracking-tight"></div>
+                                    <p id="result-explanation" class="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl"></p>
+                                </div>
+                            </div>
+                            <div class="sm:text-right flex-shrink-0">
+                                <div class="text-xs text-slate-400 font-medium">Confidence Score</div>
+                                <div id="result-confidence" class="text-2xl font-black font-mono"></div>
+                            </div>
+                        </div>
+
+                        <!-- Animated Progress Bar -->
+                        <div class="mt-5 space-y-2">
+                            <div class="w-full bg-slate-900/80 rounded-full h-3 p-0.5 overflow-hidden border border-white/5">
+                                <div id="confidence-bar" class="h-2 rounded-full progress-bar-fill" style="width: 0%;"></div>
+                            </div>
+                            <p class="text-[11px] text-slate-400 italic">
+                                Note: Confidence represents the model's prediction probability based on learned patterns.
+                            </p>
+                        </div>
+
+                        <!-- Matched Keywords / Tokens Display -->
+                        <div id="keywords-container" class="mt-5 pt-4 border-t border-white/10 hidden">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                                Influential Tokens Detected:
+                            </span>
+                            <div id="keywords-list" class="flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SAMPLE MESSAGE BUTTONS -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Try an Example
+                    </h3>
+                    <span class="text-xs text-slate-400">Click any example to test immediately</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Spam Samples -->
+                    <button type="button" class="sample-msg-btn text-left p-3.5 rounded-xl bg-slate-900/60 border border-red-500/20 hover:border-red-500/50 hover:bg-red-950/20 transition group" data-sample="Congratulations! You have won a free cash prize of $5000. Call 0800123456 to claim now!">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-red-400 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Spam Example 1
+                            </span>
+                            <span class="text-[11px] text-slate-500 group-hover:text-slate-300 transition">Use this ↗</span>
+                        </div>
+                        <p class="text-xs text-slate-300 line-clamp-2">
+                            "Congratulations! You have won a free cash prize of $5000. Call 0800123456 to claim now!"
+                        </p>
+                    </button>
+
+                    <button type="button" class="sample-msg-btn text-left p-3.5 rounded-xl bg-slate-900/60 border border-red-500/20 hover:border-red-500/50 hover:bg-red-950/20 transition group" data-sample="URGENT! Your account has been selected for a reward. Click the link to claim your bonus now.">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-red-400 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Spam Example 2
+                            </span>
+                            <span class="text-[11px] text-slate-500 group-hover:text-slate-300 transition">Use this ↗</span>
+                        </div>
+                        <p class="text-xs text-slate-300 line-clamp-2">
+                            "URGENT! Your account has been selected for a reward. Click the link to claim your bonus now."
+                        </p>
+                    </button>
+
+                    <!-- Legitimate Samples -->
+                    <button type="button" class="sample-msg-btn text-left p-3.5 rounded-xl bg-slate-900/60 border border-emerald-500/20 hover:border-emerald-500/50 hover:bg-emerald-950/20 transition group" data-sample="Hey, are we still meeting at 5 PM today?">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Not Spam Example 1
+                            </span>
+                            <span class="text-[11px] text-slate-500 group-hover:text-slate-300 transition">Use this ↗</span>
+                        </div>
+                        <p class="text-xs text-slate-300 line-clamp-2">
+                            "Hey, are we still meeting at 5 PM today?"
+                        </p>
+                    </button>
+
+                    <button type="button" class="sample-msg-btn text-left p-3.5 rounded-xl bg-slate-900/60 border border-emerald-500/20 hover:border-emerald-500/50 hover:bg-emerald-950/20 transition group" data-sample="Your assignment submission deadline is tomorrow. Don't forget to submit it.">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Not Spam Example 2
+                            </span>
+                            <span class="text-[11px] text-slate-500 group-hover:text-slate-300 transition">Use this ↗</span>
+                        </div>
+                        <p class="text-xs text-slate-300 line-clamp-2">
+                            "Your assignment submission deadline is tomorrow. Don't forget to submit it."
+                        </p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- HOW IT WORKS SECTION -->
+            <div class="pt-6 space-y-6">
+                <div class="text-center space-y-2">
+                    <h3 class="text-2xl font-bold tracking-tight text-white">How It Works</h3>
+                    <p class="text-xs sm:text-sm text-slate-400">End-to-end Machine Learning Text Classification Pipeline</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass-panel p-5 rounded-2xl space-y-3">
+                        <div class="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm">
+                            01
+                        </div>
+                        <h4 class="font-bold text-sm text-slate-200">Enter Message</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            User enters raw SMS or email content into the input dashboard.
+                        </p>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl space-y-3">
+                        <div class="w-9 h-9 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-sm">
+                            02
+                        </div>
+                        <h4 class="font-bold text-sm text-slate-200">Clean Text</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Lowercasing, punctuation stripping, digits removal, and English stopwords filtering.
+                        </p>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl space-y-3">
+                        <div class="w-9 h-9 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-sm">
+                            03
+                        </div>
+                        <h4 class="font-bold text-sm text-slate-200">TF-IDF Analysis</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Converts clean text into sparse numerical vectors using term frequency-inverse document frequency.
+                        </p>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl space-y-3">
+                        <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">
+                            04
+                        </div>
+                        <h4 class="font-bold text-sm text-slate-200">ML Prediction</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Multinomial Naive Bayes computes conditional probabilities and outputs Spam vs. Ham.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODEL INFORMATION (FACULTY DEMO HIGHLIGHT) -->
+            <div class="pt-4 space-y-4">
+                <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                    </svg>
+                    Model Architecture & Specifications
+                </h3>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="p-4 rounded-xl glass-panel text-center">
+                        <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Algorithm</div>
+                        <div class="text-sm font-bold text-indigo-300">Multinomial Naive Bayes</div>
+                    </div>
+
+                    <div class="p-4 rounded-xl glass-panel text-center">
+                        <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Feature Extraction</div>
+                        <div class="text-sm font-bold text-cyan-300">TF-IDF (1-2 N-grams)</div>
+                    </div>
+
+                    <div class="p-4 rounded-xl glass-panel text-center">
+                        <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Dataset</div>
+                        <div class="text-sm font-bold text-purple-300">SMS Spam Collection</div>
+                    </div>
+
+                    <div class="p-4 rounded-xl glass-panel text-center">
+                        <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Task</div>
+                        <div class="text-sm font-bold text-emerald-300">Binary Classification</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT CHECKS (CLIENT-SIDE HISTORY) -->
+            <div class="pt-4 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Recent Checks
+                    </h3>
+                    <button 
+                        type="button" 
+                        id="clear-history-btn" 
+                        class="text-xs text-slate-400 hover:text-red-400 transition cursor-pointer"
+                    >
+                        Clear History
+                    </button>
+                </div>
+
+                <div id="empty-history" class="p-8 rounded-2xl glass-panel text-center text-slate-500 text-xs">
+                    No recent predictions yet. Analyze a message above to see your history.
+                </div>
+
+                <div id="history-list" class="space-y-2"></div>
+            </div>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="border-t border-slate-900 bg-slate-950/60 backdrop-blur-md py-6 mt-12 text-center text-xs text-slate-400">
+            <p>AI Spam Detector • Academic Machine Learning Project • Flask & Scikit-Learn</p>
+        </footer>
+    </div>
+
+    <!-- Application JavaScript -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

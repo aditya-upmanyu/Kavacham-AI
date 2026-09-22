@@ -1,0 +1,40 @@
+# Credentials & tokens (Do NOT commit real keys)
+credentials.json
+token.json
+.env
+.env.local
+.env.*.local
+
+# API Keys & Secrets
+gemini_api_key
+api_keys.json
+
+# Python bytecode & cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+
+# Model serialization (can be generated via python train_model.py)
+*.pkl
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

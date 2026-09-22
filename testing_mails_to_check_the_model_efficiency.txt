@@ -1,0 +1,221 @@
+Bilkul bhai. Model ki efficiency test karne ke liye 4 categories banana best rahega. Har category mein multiple mails test karo, especially Category 3 & 4 adversarial cases hain.
+
+## Category 1 — Real Genuine Mail
+
+Clearly legitimate mail, with normal language and no intentional spam signals.
+
+### Mail 1 — University Meeting
+
+Subject: Project Review Meeting
+
+Hi Aditya,
+
+This is a reminder that the project review meeting is scheduled for Friday at 11:00 AM in Lab 204.
+
+Please bring your current project files and be prepared to explain the work completed so far.
+
+Regards,
+Project Coordinator
+
+### Mail 2 — Assignment Reminder
+
+Subject: Assignment Submission Reminder
+
+Dear Students,
+
+This is a reminder that the database assignment is due on Monday.
+
+Please submit your completed assignment through the university portal before the deadline.
+
+Regards,
+Department Coordinator
+
+---
+
+# Category 2 — Fake Mail / Obvious Spam
+
+These should contain classic spam/phishing patterns.
+
+### Mail 1 — Fake Lottery
+
+Subject: Congratulations! You Won ₹50,00,000!
+
+CONGRATULATIONS!!!
+
+Your email address has been randomly selected as the winner of ₹50,00,000.
+
+To claim your prize, send your full name, phone number, bank account details and OTP immediately.
+
+Your reward will expire in 24 hours.
+
+Claim your prize NOW!
+
+Prize Department
+
+### Mail 2 — Fake Bank Alert
+
+Subject: URGENT: Your Bank Account Will Be Blocked
+
+Dear Customer,
+
+Your bank account will be permanently blocked today due to suspicious activity.
+
+Verify your account immediately by providing your login password, debit card number and OTP.
+
+Failure to verify within 2 hours will result in permanent account suspension.
+
+Security Department
+
+---
+
+# Category 3 — Looks Genuine But Is Actually Spam
+
+🔥 Ye sabse important category hai.
+
+Mail professional lagega, but underlying intention fraudulent hai.
+
+### Mail 1 — Fake HR Recruitment
+
+Subject: Application Update – Cybersecurity Internship
+
+Dear Aditya,
+
+Thank you for applying for our Cybersecurity Internship Program.
+
+After reviewing your profile, we are pleased to inform you that you have been shortlisted for the next stage.
+
+To complete your candidate verification, please pay a refundable registration fee of ₹499 through the attached payment form.
+
+Once payment is confirmed, our recruitment team will schedule your technical interview.
+
+Regards,
+Talent Acquisition Team
+
+### Mail 2 — Fake IT Support
+
+Subject: Microsoft 365 Account Verification
+
+Hello,
+
+Our security monitoring system detected unusual activity associated with your institutional account.
+
+To maintain uninterrupted access to your email and cloud services, please complete the mandatory verification process today.
+
+During verification, you will be asked to confirm your username, password and authentication code.
+
+Thank you,
+IT Support
+
+### Mail 3 — Fake Delivery
+
+Subject: Delivery Confirmation – Action Required
+
+Dear Customer,
+
+Your package is currently being held at our regional facility because the delivery address could not be confirmed.
+
+Please review your delivery information and pay the small processing charge required to reschedule delivery.
+
+Your package will remain on hold until the verification process is completed.
+
+Customer Support Team
+
+---
+
+# Category 4 — Looks Fake But Is Actually Genuine
+
+🔥🔥 This is the reverse adversarial test.
+
+These mails deliberately use words that normally trigger spam detection but are completely legitimate.
+
+### Mail 1 — Real Security Alert
+
+Subject: URGENT SECURITY ALERT – New Login Detected
+
+Hi Aditya,
+
+This is a legitimate security notification from the university IT department.
+
+A new login to your institutional account was detected from a device that has not previously been registered.
+
+If you recognize this activity, no action is required.
+
+If you do not recognize it, contact the IT help desk through the official university contact information.
+
+We will never ask you to provide your password, OTP or recovery code by email.
+
+Regards,
+University IT Security Team
+
+### Mail 2 — Real Payment Confirmation
+
+Subject: PAYMENT CONFIRMATION – Registration Successfully Completed
+
+Dear Aditya,
+
+Your registration payment of ₹500 has been successfully received and recorded in our system.
+
+This email is only a payment confirmation for your records.
+
+No further payment is required.
+
+Please do not share your card number, password or OTP with anyone claiming to represent the organization.
+
+Regards,
+Accounts Department
+
+### Mail 3 — Real Prize/Event Announcement
+
+Subject: Congratulations – Your Project Has Been Selected
+
+Dear Aditya,
+
+Congratulations! Your project has been selected for the final presentation round of the university technology competition.
+
+There is no registration fee, payment requirement or purchase associated with this selection.
+
+The final presentation schedule and judging criteria are available through the official university event portal.
+
+Please bring your project demonstration on the scheduled date.
+
+Regards,
+Competition Organizing Committee
+
+### Mail 4 — Real Workshop
+
+Subject: LIMITED SEATS – Cybersecurity Workshop Registration
+
+Dear Students,
+
+Registration is now open for the upcoming cybersecurity awareness workshop.
+
+The workshop will cover phishing detection, password security, malware awareness and incident reporting.
+
+Seats are limited to 50 participants. Registration is completely free and will close once all seats are filled.
+
+This is an official academic workshop organized by the department.
+
+Regards,
+Training & Development Cell
+
+---
+
+## 📊 How to evaluate your AI
+
+Use a matrix like this:
+
+| Category                | Actual | Expected AI |
+| ----------------------- | ------ | ----------- |
+| 1 — Genuine             | Ham    | 🟢 Ham      |
+| 2 — Obvious Spam        | Spam   | 🔴 Spam     |
+| 3 — Looks Genuine, Spam | Spam   | 🔴 Spam     |
+| 4 — Looks Fake, Genuine | Ham    | 🟢 Ham      |
+
+The most valuable metrics for your project are:
+
+**Category 1:** False Positive check
+**Category 2:** Basic Spam detection
+**Category 3:** False Negative / sophisticated spam check
+**Category 4:** Adversarial False Positive check
+
+For a Naive Bayes project, **Category 3 + Category 4 are the real stress tests** because they test whether your model has learned patterns/context rather than simply memorizing words like `urgent`, `security`, `payment`, `verify`, `winner`, and `limited`.

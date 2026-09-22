@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Intelligence Dashboard | ANVESHAK AI</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            cyan: '#06b6d4',
+                            indigo: '#6366f1',
+                            purple: '#a855f7',
+                            dark: '#040710',
+                            panel: 'rgba(10, 18, 38, 0.80)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-[#040710] text-slate-100 min-h-screen relative overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+
+    <!-- Interactive 3D Canvas Background -->
+    <canvas id="bg-canvas"></canvas>
+    <!-- CYBER GRID OVERLAY -->
+    <div class="cyber-grid"></div>
+    <!-- SCAN LINE -->
+    <div class="scan-line"></div>
+    <!-- AMBIENT ORBS -->
+    <div class="glow-orb-1"></div>
+    <div class="glow-orb-2"></div>
+    <div class="glow-orb-3"></div>
+
+    <div class="relative z-10 flex flex-col min-h-screen">
+        <!-- TOP NAVIGATION -->
+        <header class="border-b border-slate-800/80 bg-[#040710]/70 backdrop-blur-xl sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <a href="{{ url_for('dashboard') }}" class="flex items-center space-x-3 group">
+                        <div class="logo-glow w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 p-[1.5px] group-hover:scale-105 transition">
+                            <div class="w-full h-full bg-[#040710] rounded-xl flex items-center justify-center text-cyan-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-base font-black tracking-widest bg-gradient-to-r from-white via-indigo-200 to-cyan-300 bg-clip-text text-transparent">
+                                ANVESHAK AI
+                            </div>
+                            <p class="text-[10px] text-slate-400 mono tracking-wider">LIVE INBOX THREAT ENGINE</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <!-- Connected User Badge -->
+                    <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-full glass-pill text-xs text-slate-300 border border-slate-700/60">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 online-dot"></span>
+                        <span class="mono text-[11px] truncate max-w-[200px]">{{ user_email }}</span>
+                    </div>
+
+                    <!-- Rescan Button -->
+                    <a href="{{ url_for('dashboard') }}" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/30 text-indigo-300 transition flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Refresh Inbox
+                    </a>
+
+                    <!-- Disconnect / Logout -->
+                    <a href="{{ url_for('logout') }}" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-950/30 hover:bg-red-900/40 border border-red-500/30 text-red-300 transition">
+                        Disconnect
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD BODY -->
+        <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
+            
+            <!-- ERROR ALERT IF ANY -->
+            {% if error %}
+            <div class="p-4 rounded-2xl bg-red-950/60 border border-red-500/40 text-red-200 text-sm flex items-start gap-3">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div>
+                    <h4 class="font-bold">Error Fetching Inbox</h4>
+                    <p class="text-xs text-red-300 mt-0.5">{{ error }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- REAL-TIME STATS CARDS -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-panel p-5 rounded-2xl holo-card">
+                    <div class="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-1 mono">Emails Scanned</div>
+                    <div class="text-3xl font-black font-mono text-white" data-count="{{ stats.total }}">{{ stats.total }}</div>
+                    <div class="text-[11px] text-slate-500 mt-1">Live Gmail INBOX Items</div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-red-500 holo-card">
+                    <div class="text-xs uppercase tracking-wider font-semibold text-red-400 mb-1 mono">Spam Threats</div>
+                    <div class="text-3xl font-black font-mono text-red-400" data-count="{{ stats.spam }}">{{ stats.spam }}</div>
+                    <div class="text-[11px] text-slate-500 mt-1">Flagged by ANVESHAK AI</div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-emerald-500 holo-card">
+                    <div class="text-xs uppercase tracking-wider font-semibold text-emerald-400 mb-1 mono">Legitimate (Ham)</div>
+                    <div class="text-3xl font-black font-mono text-emerald-400" data-count="{{ stats.ham }}">{{ stats.ham }}</div>
+                    <div class="text-[11px] text-slate-500 mt-1">Safe communications</div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-cyan-500 holo-card">
+                    <div class="text-xs uppercase tracking-wider font-semibold text-cyan-400 mb-1 mono">Avg. Confidence</div>
+                    <div class="text-3xl font-black font-mono text-cyan-300" data-count="{{ stats.avg_confidence }}" data-suffix="%">{{ stats.avg_confidence }}%</div>
+                    <div class="text-[11px] text-slate-500 mt-1">Calibrated Threshold: 85%</div>
+                </div>
+            </div>
+
+            <!-- TABS & LIVE RADAR SECTION -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                
+                <!-- LEFT RADAR WIDGET -->
+                <div class="tilt-card glass-panel rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="text-xs font-bold text-slate-200 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400 online-dot"></span>
+                            INBOX THREAT RADAR
+                        </div>
+                        <span class="mono text-[10px] text-slate-500">LIVE SWEEP</span>
+                    </div>
+                    <canvas id="threat-radar-canvas" class="mx-auto opacity-95"></canvas>
+                    <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                        <div class="flex justify-between">
+                            <span>Threat Level:</span>
+                            <strong class="{% if stats.spam > 0 %}text-red-400{% else %}text-emerald-400{% endif %} mono">
+                                {% if stats.total > 0 %}{{ ((stats.spam / stats.total) * 100)|round(1) }}%{% else %}0%{% endif %}
+                            </strong>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Model Corpus:</span>
+                            <span class="text-indigo-300 mono">100K Records</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT MAIN CONTENT (EMAILS OR MANUAL) -->
+                <div class="lg:col-span-3 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div class="flex space-x-2">
+                            <button type="button" id="tab-inbox-btn" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 transition">
+                                Scanned Inbox ({{ stats.total }})
+                            </button>
+                            <button type="button" id="tab-manual-btn" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white bg-slate-900/60 hover:bg-slate-800 transition">
+                                Manual Threat Analyzer
+                            </button>
+                        </div>
+
+                        <span class="text-xs text-slate-400 hidden sm:block mono">
+                            Click any item for full payload inspection
+                        </span>
+                    </div>
+
+                    <!-- VIEW 1: INBOX RESULTS -->
+                    <div id="inbox-view" class="space-y-3">
+                        {% if emails %}
+                            {% for email in emails %}
+                            <div class="tilt-card glass-panel rounded-2xl p-5 hover:border-slate-700 transition cursor-pointer email-item-card" data-email-id="{{ email.id }}">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+                                    <div class="overflow-hidden space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-sm text-slate-200 truncate">{{ email.subject }}</span>
+                                        </div>
+                                        <div class="text-xs text-slate-400 truncate">
+                                            <span class="text-slate-500">From:</span> {{ email.sender }}
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 flex-shrink-0">
+                                        {% if email.prediction == 'Spam' %}
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-950/80 border border-red-500/50 text-red-300 flex items-center gap-1.5 mono">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Spam ({{ email.confidence }}%)
+                                        </span>
+                                        {% else %}
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 flex items-center gap-1.5 mono">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Not Spam ({{ email.confidence }}%)
+                                        </span>
+                                        {% endif %}
+                                        <span class="text-[11px] text-slate-500 font-mono hidden md:inline">{{ email.date[:16] }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Snippet -->
+                                <p class="text-xs text-slate-300 mt-3 line-clamp-2 leading-relaxed">
+                                    {{ email.snippet }}
+                                </p>
+
+                                <!-- Hidden Expandable Modal / Drawer Data -->
+                                <div class="hidden email-detail-data"
+                                     data-subject="{{ email.subject }}"
+                                     data-sender="{{ email.sender }}"
+                                     data-date="{{ email.date }}"
+                                     data-snippet="{{ email.snippet }}"
+                                     data-body="{{ email.body }}"
+                                     data-prediction="{{ email.prediction }}"
+                                     data-confidence="{{ email.confidence }}"
+                                     data-keywords="{{ email.matched_keywords|join(', ') }}">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="p-12 rounded-3xl glass-panel text-center space-y-3">
+                                <div class="text-slate-400 text-sm">No emails found or inbox is currently empty.</div>
+                                <a href="{{ url_for('dashboard') }}" class="inline-block px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white">
+                                    Reload Inbox
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- VIEW 2: MANUAL PREDICTION TAB -->
+                    <div id="manual-view" class="hidden space-y-4">
+                        <div class="tilt-card holo-card glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+                            <form id="spam-form" onsubmit="return false;" class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <label for="message-input" class="text-sm font-semibold text-slate-200">
+                                        Manual Message Threat Tester
+                                    </label>
+                                    <span id="char-counter" class="text-xs text-slate-400 font-mono">0 characters</span>
+                                </div>
+
+                                <textarea 
+                                    id="message-input" 
+                                    rows="5" 
+                                    class="w-full custom-textarea p-4 rounded-2xl text-sm placeholder-slate-500" 
+                                    placeholder="Paste any email or SMS text to test ANVESHAK AI..."
+                                ></textarea>
+
+                                <!-- LIVE STREAM FEATURE -->
+                                <div class="space-y-1">
+                                    <div class="text-[10px] mono text-slate-500 tracking-wider">LIVE TOKEN STREAM</div>
+                                    <div id="live-stream-output" class="min-h-[30px] flex flex-wrap gap-1 p-2 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                                        <span class="text-[11px] text-slate-600 italic">Type above to see streaming token analysis...</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+                                    <div class="flex gap-2">
+                                        <button type="button" class="sample-msg-btn text-xs px-2.5 py-1 rounded-lg bg-red-950/40 border border-red-800/40 text-red-300 mono" data-sample="Congratulations! You have won a $5000 cash prize. Click the link immediately to claim your exclusive reward before it expires.">
+                                            Spam Sample
+                                        </button>
+                                        <button type="button" class="sample-msg-btn text-xs px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 mono" data-sample="Appointment follow-up. The meeting is scheduled for tomorrow afternoon in the office. I appreciate your time.">
+                                            Not Spam Sample
+                                        </button>
+                                    </div>
+                                    <button 
+                                        type="button" 
+                                        id="check-btn" 
+                                        disabled
+                                        class="w-full sm:w-auto px-6 py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 transition shadow-lg shadow-indigo-500/25 disabled:opacity-50 cursor-pointer"
+                                    >
+                                        Analyze Message
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- Dynamic Result Card -->
+                            <div id="result-section" class="mt-6 hidden space-y-4 pt-6 border-t border-slate-800/80">
+                                <div id="loading-state" class="hidden flex items-center justify-center p-6 space-x-3 text-indigo-400">
+                                    <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium">Computing posterior probabilities with Naive Bayes...</span>
+                                </div>
+
+                                <div id="result-card" class="hidden p-6 rounded-2xl">
+                                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                                        <div class="flex items-center space-x-3">
+                                            <div id="result-icon"></div>
+                                            <div>
+                                                <div id="result-status" class="text-xl font-bold"></div>
+                                                <p id="result-explanation" class="text-xs text-slate-300 mt-0.5"></p>
+                                            </div>
+                                        </div>
+                                        <div class="sm:text-right">
+                                            <div class="text-[11px] text-slate-400 font-medium mono">CONFIDENCE</div>
+                                            <div id="result-confidence" class="text-2xl font-black font-mono"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 space-y-2">
+                                        <div class="w-full bg-slate-900/80 rounded-full h-2.5 overflow-hidden border border-white/5">
+                                            <div id="confidence-bar" class="h-2.5 rounded-full progress-bar-fill" style="width: 0%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- INFLUENTIAL SIGNALS TABLE -->
+                                    <div id="influential-signals-container" class="mt-4 space-y-2 hidden">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[11px] mono text-slate-300 font-semibold tracking-wider">## Influential Signals</span>
+                                            <span class="text-[10px] mono text-slate-500">Log-Ratio Attribution</span>
+                                        </div>
+                                        <div id="influential-signals-list" class="space-y-1.5"></div>
+                                    </div>
+
+                                    <!-- TOKEN EXPLOSION ZONE -->
+                                    <div class="mt-4 space-y-2">
+                                        <div class="text-[10px] mono text-slate-500 tracking-wider">HOLOGRAPHIC TOKEN EXPLOSION</div>
+                                        <div id="token-explosion-zone" class="min-h-[30px] flex flex-wrap gap-1.5 p-2 rounded-lg bg-slate-900/40 border border-slate-800/50">
+                                        </div>
+                                    </div>
+                                    <div id="keywords-container" class="hidden"></div>
+                                    <div id="keywords-list" class="hidden"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- EMAIL DETAIL MODAL -->
+        <div id="email-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-panel rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-5 border border-slate-700 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+                <div class="flex items-start justify-between gap-4 pb-4 border-b border-slate-800">
+                    <div>
+                        <span id="modal-prediction-badge" class="px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider mono"></span>
+                        <h3 id="modal-subject" class="text-lg font-bold text-white mt-2"></h3>
+                        <p id="modal-sender" class="text-xs text-slate-400 mt-0.5"></p>
+                        <p id="modal-date" class="text-[11px] text-slate-500 font-mono"></p>
+                    </div>
+                    <button type="button" id="close-modal-btn" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/50 hover:bg-slate-800">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mono">ANVESHAK AI Model Analysis</div>
+                    <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
+                        <span>Confidence: <strong id="modal-confidence" class="text-white font-mono"></strong></span>
+                        <span>Key Tokens: <span id="modal-keywords" class="text-indigo-300 font-mono"></span></span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mono">Extracted Email Content</div>
+                    <div id="modal-body" class="p-4 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-300 font-sans leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="border-t border-slate-900 bg-slate-950/60 backdrop-blur-md py-6 mt-12 text-center text-xs text-slate-500 mono">
+            <p>ANVESHAK AI • Intelligent Email Threat Intelligence • 100K Samples Trained Model • Flask & Scikit-Learn</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        // Modal & Tab Logic
+        const tabInboxBtn = document.getElementById("tab-inbox-btn");
+        const tabManualBtn = document.getElementById("tab-manual-btn");
+        const inboxView = document.getElementById("inbox-view");
+        const manualView = document.getElementById("manual-view");
+
+        if (tabInboxBtn && tabManualBtn) {
+            tabInboxBtn.addEventListener("click", () => {
+                tabInboxBtn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 transition";
+                tabManualBtn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white bg-slate-900/60 hover:bg-slate-800 transition";
+                inboxView.classList.remove("hidden");
+                manualView.classList.add("hidden");
+            });
+
+            tabManualBtn.addEventListener("click", () => {
+                tabManualBtn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 transition";
+                tabInboxBtn.className = "px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white bg-slate-900/60 hover:bg-slate-800 transition";
+                manualView.classList.remove("hidden");
+                inboxView.classList.add("hidden");
+            });
+        }
+
+        // Email detail modal
+        const modal = document.getElementById("email-modal");
+        const closeModalBtn = document.getElementById("close-modal-btn");
+        const modalSubject = document.getElementById("modal-subject");
+        const modalSender = document.getElementById("modal-sender");
+        const modalDate = document.getElementById("modal-date");
+        const modalBadge = document.getElementById("modal-prediction-badge");
+        const modalConfidence = document.getElementById("modal-confidence");
+        const modalKeywords = document.getElementById("modal-keywords");
+        const modalBody = document.getElementById("modal-body");
+
+        document.querySelectorAll(".email-item-card").forEach(card => {
+            card.addEventListener("click", () => {
+                const detail = card.querySelector(".email-detail-data");
+                if (detail) {
+                    modalSubject.textContent = detail.getAttribute("data-subject");
+                    modalSender.textContent = "From: " + detail.getAttribute("data-sender");
+                    modalDate.textContent = detail.getAttribute("data-date");
+                    const pred = detail.getAttribute("data-prediction");
+                    modalConfidence.textContent = detail.getAttribute("data-confidence") + "%";
+                    modalKeywords.textContent = detail.getAttribute("data-keywords") || "None";
+                    modalBody.textContent = detail.getAttribute("data-body") || detail.getAttribute("data-snippet");
+
+                    if (pred === "Spam") {
+                        modalBadge.className = "px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider bg-red-950 text-red-300 border border-red-700/50";
+                        modalBadge.textContent = "Spam Detected";
+                    } else {
+                        modalBadge.className = "px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-700/50";
+                        modalBadge.textContent = "Not Spam";
+                    }
+
+                    modal.classList.remove("hidden");
+                }
+            });
+        });
+
+        if (closeModalBtn && modal) {
+            closeModalBtn.addEventListener("click", () => modal.classList.add("hidden"));
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) modal.classList.add("hidden");
+            });
+        }
+
+        // Initialize radar with inbox threat ratio
+        {% if stats.total > 0 %}
+        window.addEventListener("load", () => {
+            if (window.setRadarThreat) {
+                window.setRadarThreat({{ ((stats.spam / stats.total) * 100)|round(1) }});
+            }
+        });
+        {% endif %}
+    </script>
+</body>
+</html>

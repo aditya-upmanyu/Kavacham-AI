@@ -1,5 +1,5 @@
-/* ====================================================================
-   ANVESHAK AI — Premium Security Dashboard CSS
+﻿/* ====================================================================
+   ANVESHAK AI â€” Premium Security Dashboard CSS
    Dark cybersecurity aesthetic with glassmorphism + clean typography
    ==================================================================== */
 
@@ -600,7 +600,7 @@ body {
   display: flex; align-items: flex-start; gap: 8px;
   font-size: 13px; color: var(--text-secondary); line-height: 1.5;
 }
-.signal-list-item::before { content: '•'; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+.signal-list-item::before { content: 'â€¢'; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
 .signal-list-item.sus::before { color: var(--red); }
 .signal-list-item.leg::before { color: var(--green); }
 
@@ -810,7 +810,7 @@ body {
 
 .privacy-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
 .privacy-list li { font-size: 13px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 10px; line-height: 1.5; }
-.privacy-list li::before { content: '—'; color: var(--accent); flex-shrink: 0; }
+.privacy-list li::before { content: 'â€”'; color: var(--accent); flex-shrink: 0; }
 
 /* ====================================================================
    SHARED UTILITY
@@ -989,7 +989,7 @@ body {
 
 .phish-reasons { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .phish-reasons li { display: flex; gap: 8px; font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
-.phish-reasons li::before { content: '›'; color: var(--accent); font-weight: 700; flex: none; }
+.phish-reasons li::before { content: 'â€º'; color: var(--accent); font-weight: 700; flex: none; }
 .phish-context-note { font-size: 12px; color: var(--text-muted); margin-top: 14px; font-style: italic; }
 
 .phishing-subsection { margin: 28px 0 6px; }
@@ -1221,4 +1221,6 @@ body {
 .btn-primary:hover::after {
   left: 100%;
 }
+
+
 

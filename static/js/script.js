@@ -596,6 +596,13 @@ function closeModal() {
   document.getElementById('history-modal').classList.add('hidden');
 }
 
+function closePhishModal(e) {
+  const overlay = document.getElementById('phish-modal-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  setTimeout(() => overlay.classList.add('hidden'), 250);
+}
+
 function clearHistory() {
   analysisHistory = [];
   fetch('/api/history', { method: 'DELETE' }).catch(() => {});
@@ -1596,7 +1603,7 @@ function renderPhishingResult(data) {
   const reasonsEl = document.getElementById('phish-reasons');
   const reasons = (data.top_reasons && data.top_reasons.length) ? data.top_reasons : [];
   reasonsEl.innerHTML = reasons.length
-    ? reasons.map(r => `<li>${escHtml(r)}</li>`).join('')
+    ? reasons.map(r => `<li style="--bullet:${sevColor(r.severity || r.reason && 'low')};">${escHtml(r.reason || r)}</li>`).join('')
     : `<li>No strong threat signals were detected by the local engines.</li>`;
 
   const explainEl = document.getElementById('phish-explain');
@@ -1612,6 +1619,18 @@ function renderPhishingResult(data) {
   } else {
     explainEl.textContent = 'The result reflects the local Kavacham AI model and deterministic security indicators.';
     contextEl.textContent = '';
+  }
+
+  // High-risk alert modal for SPAM / HIGH RISK
+  const isHighRisk = (verdict === 'HIGH RISK' || (score >= 70 && isSpam));
+  if (isHighRisk) {
+    const msgEl = document.getElementById('phish-modal-msg');
+    if (msgEl) msgEl.textContent = 'This message contains strong indicators of phishing or credential theft. Do not click any links, do not provide credentials, and report to your IT security team.';
+    const overlay = document.getElementById('phish-modal-overlay');
+    if (overlay) {
+      overlay.classList.remove('hidden');
+      requestAnimationFrame(() => overlay.classList.add('open'));
+    }
   }
 }
 

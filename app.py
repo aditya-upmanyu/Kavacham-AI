@@ -22,7 +22,7 @@ import pickle
 import base64
 import uuid
 import joblib
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import (
     Flask, render_template, request, redirect,
@@ -558,7 +558,7 @@ def predict():
             "classification": res["prediction"],
             "confidence": res["confidence"],
             "analysis_mode": "anveshak",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         return jsonify({
@@ -619,7 +619,7 @@ def analyze_email_simple():
             "classification": res["prediction"],
             "confidence": res["confidence"],
             "analysis_mode": "anveshak",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         return jsonify({
@@ -733,7 +733,7 @@ def ultra_analyze():
             "classification": anveshak_result["prediction"],
             "confidence": anveshak_result["confidence"],
             "analysis_mode": "ultra",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         return jsonify({
@@ -833,7 +833,7 @@ def api_analyze_email():
             "analysis_mode": "unified-engine",
             "security_verdict": report["security"]["verdict"],
             "risk_score": report["security"]["risk_score"],
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         return jsonify(report), 200
@@ -916,7 +916,7 @@ def api_phishing_check():
             "analysis_mode": "phishing-check",
             "security_verdict": report["security"]["verdict"],
             "risk_score": report["security"]["risk_score"],
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         return jsonify(report), 200

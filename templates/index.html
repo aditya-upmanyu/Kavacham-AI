@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KAVACHAM AI — Intelligent Email Threat Discovery</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -746,6 +747,17 @@
       <div class="hidden" id="threat-result">
         <!-- Security alert -->
         <div class="threat-alert hidden" id="threat-alert"></div>
+
+        <!-- High-risk alert modal -->
+        <div class="phish-modal-overlay hidden" id="phish-modal-overlay" onclick="closePhishModal(event)">
+          <div class="phish-modal danger" id="phish-modal" onclick="event.stopPropagation()">
+            <button class="phish-modal-close" onclick="closePhishModal()">&times;</button>
+            <div class="phish-modal-icon">!</div>
+            <div class="phish-modal-title">HIGH RISK DETECTED</div>
+            <div class="phish-modal-msg" id="phish-modal-msg">This content contains strong indicators of phishing or credential theft.</div>
+            <button class="phish-modal-btn" onclick="closePhishModal()">I UNDERSTAND</button>
+          </div>
+        </div>
 
         <div class="threat-result-grid">
           <!-- Risk summary card -->

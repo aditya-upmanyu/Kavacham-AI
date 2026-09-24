@@ -40,8 +40,8 @@ def section(title):
 section("Test 1 — Database & Migrations")
 # ===========================================================================
 applied = db.migrate()
-check("initial migration applied", 1 in applied, applied)
-check("schema version is 1", db.current_version() == 1, db.current_version())
+check("initial migration applied", 1 in applied and 2 in applied, applied)
+check("schema version is 2", db.current_version() == 2, db.current_version())
 
 re_run = db.migrate()
 check("migrations idempotent (no re-apply)", re_run == [], re_run)
@@ -329,6 +329,18 @@ expected_methods = {
     "/lab/api/analysis":                  {"GET", "POST"},
     "/lab/api/analysis/meta":             {"GET"},
     "/lab/api/analysis/<analysis_ref>":   {"GET"},
+    # Phase 8 — intelligence
+    "/lab/intel/iocs":                    {"GET"},
+    "/lab/intel/correlation":             {"GET"},
+    "/lab/intel/attack-chains":           {"GET"},
+    "/lab/intel/graph":                   {"GET"},
+    "/lab/api/intel/iocs":                {"GET"},
+    "/lab/api/intel/iocs/<int:ioc_id>":   {"GET", "PATCH"},
+    "/lab/api/intel/iocs/<int:ioc_id>/cases": {"POST"},
+    "/lab/api/intel/sync":                {"POST"},
+    "/lab/api/intel/correlation":         {"GET"},
+    "/lab/api/intel/graph":               {"GET"},
+    "/lab/api/intel/attack-chain":        {"GET"},
 }
 expected_rules = sorted(expected_methods)
 
@@ -861,6 +873,250 @@ check("lab analysis pages render with real content",
 # Restore the real environment state for any later sections.
 _vt_svc.VIRUSTOTAL_API_KEY = _saved_vt_key
 ans._vt_state = _saved_vt_state
+
+# ===========================================================================
+section("Test 7D — Phase 8 Intelligence (Sections 24-28)")
+# ===========================================================================
+from lab import intel_service as ins                        # noqa: E402
+
+# --- classification vocabulary (Section 26) ---
+check("classify: 9 spec types + OTHER supported",
+      all(t in ins.IOC_TYPES for t in
+          ["IPv4", "IPv6", "DOMAIN", "URL", "EMAIL",
+           "SHA-256", "SHA-1", "MD5", "FILENAME"]))
+check("classify: ipv4",
+      ins.classify_ioc("185.234.72.19") == ("IPv4", "185.234.72.19"))
+check("classify: ipv6",
+      ins.classify_ioc("2001:db8::1") == ("IPv6", "2001:db8::1"))
+check("classify: url",
+      ins.classify_ioc("http://evil.example/x") == ("URL", "http://evil.example/x"))
+check("classify: email",
+      ins.classify_ioc("a@b.example") == ("EMAIL", "a@b.example"))
+check("classify: sha256",
+      ins.classify_ioc("a" * 64) == ("SHA-256", "a" * 64))
+check("classify: sha1",
+      ins.classify_ioc("b" * 40) == ("SHA-1", "b" * 40))
+check("classify: md5",
+      ins.classify_ioc("c" * 32) == ("MD5", "c" * 32))
+check("classify: domain",
+      ins.classify_ioc("example.org") == ("DOMAIN", "example.org"))
+check("classify: filename via hint",
+      ins.classify_ioc("payload.exe", hint="filename") == ("FILENAME", "payload.exe"))
+check("classify: timestamp is NOT ipv6 (real octet/group guard)",
+      ins.classify_ioc("18:31:08") == ("OTHER", "18:31:08"),
+      ins.classify_ioc("18:31:08"))
+
+# --- vault sync (real extraction, idempotent) ---
+sync1 = ins.sync_iocs(actor="qa")
+check("sync: observations indexed", int(sync1["observations"]) > 0,
+      sync1["observations"])
+check("sync: IOCs ledger populated", int(sync1["iocs_total"]) >= 5,
+      sync1["iocs_total"])
+check("sync: case refs reported", set(sync1["cases_affected"]) >= {case1["case_ref"]},
+      sync1["cases_affected"])
+sync2 = ins.sync_iocs(actor="qa")
+check("sync: idempotent (no double counting)", sync2["iocs_total"] == sync1["iocs_total"],
+      (sync1["iocs_total"], sync2["iocs_total"]))
+check("sync: audited",
+      any(a["action"] == "IOC_SYNC" for a in cs.list_audit(limit=300)["items"]))
+
+# --- reading the ledger back (real related cases/evidence) ---
+lst = ins.list_iocs()
+check("list: non-empty catalogue", lst["total"] >= 5, lst["total"])
+check("list: every item has fields",
+      all(set(("ioc_id", "ioc_type", "value", "status", "first_seen",
+               "last_seen", "source", "case_count", "evidence_count"))
+          <= set(i) for i in lst["items"][:8]))
+
+hash_list = ins.list_iocs(ioc_type="SHA-256")
+check("list: type filter", all(i["ioc_type"] == "SHA-256" for i in hash_list["items"]))
+check("list: file hash indexed",
+      any(i["value"] == ev_file["sha256"] for i in hash_list["items"]))
+
+the_hash = next(i for i in hash_list["items"] if i["value"] == ev_file["sha256"])
+check("list: hash linked to case", the_hash["case_count"] >= 1,
+      the_hash["related_cases"])
+
+detail = ins.get_ioc(the_hash["ioc_id"])
+check("detail: status default OBSERVED", detail["status"] == "OBSERVED")
+check("detail: related evidence real",
+      any(e["evidence_ref"] == ev_file["evidence_ref"]
+          for e in detail["related_evidence"]),
+      [e["evidence_ref"] for e in detail["related_evidence"][:5]])
+check("detail: related cases real",
+      any(c["case_ref"] == case1["case_ref"] for c in detail["related_cases"]))
+check("detail: intel envelope honest",
+      isinstance(detail["intel"], dict) and "configured" in detail["intel"],
+      detail["intel"])
+
+# --- Section 26 actions ---
+st = ins.set_ioc_status(the_hash["ioc_id"], "VERIFIED", actor="qa")
+check("status: VERIFIED applied", st["status"] == "VERIFIED")
+check("status: persisted", ins.get_ioc(the_hash["ioc_id"])["status"] == "VERIFIED")
+try:
+    ins.set_ioc_status(the_hash["ioc_id"], "BOGUS")
+    check("status: invalid value rejected", False, "accepted")
+except ins.IntelError as exc:
+    check("status: invalid value rejected", exc.code == "INVALID_STATUS", exc.code)
+
+add1 = ins.add_ioc_to_case(the_hash["ioc_id"], case2["case_ref"], actor="qa")
+check("add_to_case: linked", add1["linked"] is True, add1)
+add2 = ins.add_ioc_to_case(the_hash["ioc_id"], case2["case_ref"], actor="qa")
+check("add_to_case: idempotent", add2["linked"] is False)
+try:
+    ins.add_ioc_to_case(the_hash["ioc_id"], "KAV-CASE-2099-99999")
+    check("add_to_case: unknown case rejected", False, "accepted")
+except ins.IntelError as exc:
+    check("add_to_case: unknown case rejected", exc.code == "CASE_NOT_FOUND", exc.code)
+
+# --- Section 27 cross-case correlation ---
+corr = ins.correlation()
+check("correlation: shared IOC surface",
+      any(c["ioc_id"] == the_hash["ioc_id"] for c in corr["correlations"]),
+      [(c["ioc_type"], c["value"], c["case_count"]) for c in corr["correlations"][:3]])
+shared = next(c for c in corr["correlations"] if c["ioc_id"] == the_hash["ioc_id"])
+check("correlation: precise language",
+      shared["statement"] == "Same IOC observed across multiple cases.")
+check("correlation: related cases both real",
+      {c["case_ref"] for c in shared["related_cases"]}
+      == {case1["case_ref"], case2["case_ref"]})
+check("correlation: not attribution",
+      "attribution" in corr["note"] and "campaign" in corr["note"],
+      corr["note"][:80])
+
+# --- Section 25 entity graph (evidence-backed only) ---
+gcases = ins.entity_graph()
+check("graph: case picker data", isinstance(gcases["cases"], list)
+      and any(c["case_ref"] == case1["case_ref"] for c in gcases["cases"]))
+g1 = ins.entity_graph(case1["case_ref"])
+_g = g1["graph"]
+check("graph: nodes include case root",
+      any(n["type"] == "CASE" and n["value"] == case1["case_ref"]
+          for n in _g["nodes"]))
+check("graph: evidence nodes rendered",
+      any(n["type"] == "EVIDENCE" and any(e in n["label"] for e in
+          (ev_text["evidence_ref"], ev_url["evidence_ref"]))
+          for n in _g["nodes"]))
+check("graph: ioc nodes rendered",
+      any(n["type"] in ("URL", "DOMAIN", "IPv4", "SHA-256")
+          for n in _g["nodes"]),
+      sorted({n["type"] for n in _g["nodes"]}))
+case_ev_edges = [e for e in _g["edges"] if e["relation"] == "contains"
+                 and e["from"].startswith("case:")]
+check("graph: case->evidence edges", len(case_ev_edges) >= 1, len(case_ev_edges))
+check("graph: nodes carry provenance fields",
+      all(set(("type", "value", "first_seen", "related_evidence",
+               "related_cases", "risk")) <= set(n) for n in _g["nodes"]))
+try:
+    ins.entity_graph("KAV-CASE-2099-99999")
+    check("graph: unknown case rejected", False, "accepted")
+except ins.IntelError as exc:
+    check("graph: unknown case rejected", exc.code == "CASE_NOT_FOUND", exc.code)
+
+# --- Section 28 attack chains (evidence-backed, honest empty) ---
+gcases2 = ins.attack_chain()
+check("chain: case picker data", isinstance(gcases2["cases"], list))
+ch1 = ins.attack_chain(case1["case_ref"])
+check("chain: derived from real analyses",
+      ch1["state"] == "chain" and len(ch1["chain"]) >= 2, ch1["state"])
+check("chain: every stage cites evidence",
+      all(s["evidence_refs"] and all(e.startswith("KAV-EVD-") for e in s["evidence_refs"])
+          for s in ch1["chain"]))
+check("chain: supporting evidence list",
+      len(ch1["supporting_evidence"]) >= 1)
+check("chain: ordered stages",
+      [s["rank"] for s in ch1["chain"]] == sorted(s["rank"] for s in ch1["chain"]))
+
+case3 = cs.create_case({
+    "title": "Empty vault probe",
+    "case_type": "PHISHING",
+    "priority": "LOW",
+})
+ch_empty = ins.attack_chain(case3["case_ref"])
+check("chain: honest insufficient state",
+      ch_empty["state"] == "insufficient" and ch_empty["chain"] == [],
+      ch_empty["state"])
+check("chain: honest message, no fabrication",
+      "Insufficient evidence" in ch_empty["note"], ch_empty["note"])
+
+# --- Section 49 envelopes + pages via the real app ---
+_client2 = app_module.app.test_client()
+r = _client2.get("/lab/api/intel/iocs")
+_b = r.get_json()
+check("api: ioc list envelope",
+      r.status_code == 200 and _b["success"] is True
+      and isinstance(_b["data"]["items"], list) and _b["data"]["total"] >= 5)
+
+r = _client2.get("/lab/api/intel/iocs?type=SHA-256")
+_b = r.get_json()
+check("api: ioc type filter",
+      all(i["ioc_type"] == "SHA-256" for i in _b["data"]["items"]))
+
+_email_io = next((i for i in ins.list_iocs(ioc_type="EMAIL")["items"]), None)
+if _email_io:
+    r = _client2.get("/lab/api/intel/iocs/%d" % _email_io["ioc_id"])
+    _b = r.get_json()
+    check("api: ioc detail envelope",
+          r.status_code == 200 and _b["success"] is True
+          and _b["data"]["ioc"]["ioc_id"] == _email_io["ioc_id"])
+else:
+    check("api: ioc detail envelope", True, "no EMAIL ioc to probe")
+
+r = _client2.patch("/lab/api/intel/iocs/%d" % the_hash["ioc_id"],
+                   json={"status": "FALSE_POSITIVE"})
+_b = r.get_json()
+check("api: status patch envelope",
+      r.status_code == 200 and _b["success"] is True
+      and _b["data"]["ioc"]["status"] == "FALSE_POSITIVE")
+ins.set_ioc_status(the_hash["ioc_id"], "VERIFIED", actor="qa")  # restore
+
+r = _client2.post("/lab/api/intel/sync", json={})
+_b = r.get_json()
+check("api: sync envelope",
+      r.status_code == 200 and _b["success"] is True
+      and _b["data"]["iocs_total"] >= 5)
+
+r = _client2.get("/lab/api/intel/correlation")
+_b = r.get_json()
+check("api: correlation envelope",
+      r.status_code == 200 and _b["success"] is True
+      and _b["data"]["statement"] == ins.CORRELATION_STATEMENT)
+
+r = _client2.get("/lab/api/intel/graph?case=%s" % case1["case_ref"])
+_b = r.get_json()
+check("api: graph envelope",
+      r.status_code == 200 and _b["success"] is True
+      and _b["data"]["graph"]["node_count"] >= 2)
+
+r = _client2.get("/lab/api/intel/attack-chain?case=%s" % case1["case_ref"])
+_b = r.get_json()
+check("api: chain envelope",
+      r.status_code == 200 and _b["success"] is True
+      and _b["data"]["state"] == "chain")
+
+r = _client2.patch("/lab/api/intel/iocs/%d" % the_hash["ioc_id"],
+                   json={"status": "WAT"})
+_b = r.get_json()
+check("api: invalid status error envelope",
+      r.status_code == 400 and _b["success"] is False
+      and _b["error"]["code"] == "INVALID_STATUS")
+
+for url, marker in [
+    ("/lab/intel/iocs", "IOC INTELLIGENCE"),
+    ("/lab/intel/correlation", "POTENTIAL CORRELATIONS"),
+    ("/lab/intel/attack-chains", "ATTACK CHAINS"),
+    ("/lab/intel/graph", "ENTITY GRAPH"),
+]:
+    rr = _client2.get(url)
+    _html = rr.get_data(as_text=True)
+    check("page: %s renders" % url,
+          rr.status_code == 200 and marker in _html)
+
+# --- nav integrity: every intel link resolves (Section 81) ---
+_intel_links = sum(len(g["links"]) for g in lab_routes.NAV_STRUCTURE
+                   if g["group"] in ("THREAT INTELLIGENCE", "INTELLIGENCE"))
+check("intel nav has 4 live links",
+      _intel_links == 4, _intel_links)
 
 # ===========================================================================
 print("\n" + "=" * 64)

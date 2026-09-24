@@ -1,0 +1,65 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Entity Graph</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">ENTITY GRAPH</h1>
+    <p class="lab-subtitle">Relationships rendered only where a real vault link exists — case&nbsp;→&nbsp;evidence → indicators and senders.</p>
+  </div>
+</div>
+
+<section class="lab-panel" style="margin-bottom:14px;">
+  <div class="lab-panel-body">
+    <div class="lab-filter-row">
+      <div class="lab-field" style="margin-bottom:0;flex:1 1 340px;">
+        <label class="lab-label" for="graph-case">CASE</label>
+        <select class="lab-select" id="graph-case">
+          <option value="">LOADING CASES…</option>
+        </select>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 0 auto;">
+        <label class="lab-label">&nbsp;</label>
+        <button class="lab-btn lab-btn-sm" id="graph-reload" type="button">REFRESH</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="lab-grow" style="display:flex;gap:14px;align-items:flex-start;">
+  <section class="lab-panel" style="flex:2 1 620px;min-width:0;">
+    <div class="lab-panel-head">
+      <h2 class="lab-section-title">GRAPH</h2>
+      <span class="lab-xs lab-dim" id="graph-counts">—</span>
+    </div>
+    <div class="lab-panel-body" id="graph-canvas">
+      <div class="lab-panel-body">
+        <div class="lab-skeleton lab-skeleton-line" style="width:80%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:64%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:72%;"></div>
+      </div>
+    </div>
+    <div class="lab-panel-foot" id="graph-foot">Select a case to draw its graph.</div>
+  </section>
+
+  <section class="lab-panel" style="flex:1 1 300px;min-width:220px;position:sticky;top:14px;">
+    <div class="lab-panel-head">
+      <h2 class="lab-section-title">NODE DETAIL</h2>
+    </div>
+    <div class="lab-panel-body" id="graph-node">
+      <p class="lab-xs lab-dim" style="margin:0;">Select a node on the graph to inspect its real provenance — evidence, cases, analyses and risk.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_graph.js') }}"></script>
+{% endblock %}

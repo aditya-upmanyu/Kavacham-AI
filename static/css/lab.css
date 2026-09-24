@@ -387,3 +387,57 @@
 @keyframes labToastIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
 .lab-toast.is-leaving { animation: labToastOut 0.18s ease-in forwards; }
 @keyframes labToastOut { to { opacity: 0; transform: translateX(24px); } }
+
+/* ====================================================================
+   PHASE 8 — INTELLIGENCE COMPONENTS (Sections 25-28)
+   ==================================================================== */
+.lab-link { color: var(--lab-blue); text-decoration: none; }
+.lab-link:hover { text-decoration: underline; }
+
+.lab-dl { display: grid; grid-template-columns: minmax(120px, auto) 1fr; gap: 7px 16px; font-size: 12.5px; }
+.lab-dl dt { color: var(--lab-text-4); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 2px; }
+.lab-dl dd { margin: 0; color: var(--lab-text-2); word-break: break-word; min-width: 0; }
+
+.lab-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lab-list li { font-size: 12.5px; color: var(--lab-text-2); word-break: break-word; }
+
+.lab-tile {
+  background: var(--lab-bg-2); border: 1px solid var(--lab-line-1);
+  border-radius: var(--lab-r-2); padding: 14px;
+}
+
+.lab-subsection {
+  font-size: 11px; font-weight: 650; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--lab-text-4); margin: 0;
+}
+
+.lab-btn-xs {
+  font-size: 10.5px; padding: 3px 9px; border-radius: var(--lab-r-1);
+  border: 1px solid var(--lab-line-2); background: var(--lab-bg-3);
+  color: var(--lab-text-2); cursor: pointer; font-family: inherit;
+  letter-spacing: 0.04em;
+}
+.lab-btn-xs:hover { border-color: var(--lab-line-3); color: var(--lab-text-1); }
+
+.lab-select-sm { font-size: 12px; padding: 4px 8px; border-radius: var(--lab-r-1); }
+
+.lab-grow { display: flex; gap: 14px; align-items: flex-start; }
+@media (max-width: 860px) { .lab-grow { flex-direction: column; } }
+
+/* Attack chain (Section 28) */
+.lab-chain { display: flex; flex-direction: column; align-items: stretch; }
+.lab-chain-step {
+  border: 1px solid var(--lab-line-1); border-left-width: 3px;
+  border-left-color: var(--lab-blue); border-radius: var(--lab-r-2);
+  background: var(--lab-bg-2); padding: 11px 14px;
+}
+.lab-chain-step-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lab-chain-seq {
+  font-family: var(--lab-mono); font-size: 11px; color: var(--lab-text-4);
+  border: 1px solid var(--lab-line-2); border-radius: 4px; padding: 2px 6px;
+}
+.lab-chain-label { font-size: 13px; }
+.lab-chain-arrow {
+  text-align: center; color: var(--lab-text-4); font-size: 14px;
+  padding: 3px 0; line-height: 1;
+}

@@ -1,0 +1,50 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Correlation</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">CROSS-CASE CORRELATION</h1>
+    <p class="lab-subtitle">Indicators observed in two or more investigations.</p>
+  </div>
+</div>
+
+<section class="lab-panel" style="margin-bottom:14px;">
+  <div class="lab-panel-body">
+    <p class="lab-xs lab-dim" id="corr-statement" style="margin:0 0 6px;">
+      <strong>“Same IOC observed across multiple cases.”</strong>
+    </p>
+    <p class="lab-xs lab-dim" id="corr-note" style="margin:0;">
+      Correlation is not attribution. A shared indicator shows overlap in
+      observed material only; it does not prove a shared attacker, campaign
+      or organization.
+    </p>
+  </div>
+</section>
+
+<section class="lab-panel">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title">POTENTIAL CORRELATIONS</h2>
+    <span class="lab-xs lab-dim" id="corr-total">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="corr-body">
+    <div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:74%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:56%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:66%;"></div>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="corr-foot">Computing correlations…</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_correlation.js') }}"></script>
+{% endblock %}

@@ -20,6 +20,7 @@ from lab import health as health_service
 from lab import case_service
 from lab import evidence_service
 from lab import analysis_service
+from lab import intel_service
 
 
 # ---------------------------------------------------------------------------
@@ -54,6 +55,20 @@ NAV_STRUCTURE = [
         "links": [
             {"id": "analysis-workbench", "label": "Analysis Workbench", "url": "/lab/analysis", "ready": True},
             {"id": "run-analysis", "label": "Run Analysis", "url": "/lab/analysis/new", "ready": True},
+        ],
+    },
+    {
+        "group": "THREAT INTELLIGENCE",
+        "links": [
+            {"id": "ioc-intelligence", "label": "IOC Intelligence", "url": "/lab/intel/iocs", "ready": True},
+        ],
+    },
+    {
+        "group": "INTELLIGENCE",
+        "links": [
+            {"id": "correlation", "label": "Correlation", "url": "/lab/intel/correlation", "ready": True},
+            {"id": "attack-chains", "label": "Attack Chains", "url": "/lab/intel/attack-chains", "ready": True},
+            {"id": "entity-graph", "label": "Entity Graph", "url": "/lab/intel/graph", "ready": True},
         ],
     },
     {
@@ -639,6 +654,152 @@ def api_meta():
         "access_level": "RESTRICTED",
         "generated_at": health_service._now_iso(),
     })
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 — intelligence pages (Sections 24-28)
+# ---------------------------------------------------------------------------
+
+@lab_bp.route("/intel/iocs", strict_slashes=False)
+def intel_iocs_page():
+    return render_template("lab/intel_iocs.html", **_shell_context(
+        nav_id="ioc-intelligence",
+        page_title="IOC Intelligence",
+        intel_types=intel_service.IOC_TYPES,
+    ))
+
+
+@lab_bp.route("/intel/correlation", strict_slashes=False)
+def intel_correlation_page():
+    return render_template("lab/intel_correlation.html", **_shell_context(
+        nav_id="correlation",
+        page_title="Cross-Case Correlation",
+    ))
+
+
+@lab_bp.route("/intel/attack-chains", strict_slashes=False)
+def intel_chains_page():
+    return render_template("lab/intel_chains.html", **_shell_context(
+        nav_id="attack-chains",
+        page_title="Attack Chains",
+    ))
+
+
+@lab_bp.route("/intel/graph", strict_slashes=False)
+def intel_graph_page():
+    return render_template("lab/intel_graph.html", **_shell_context(
+        nav_id="entity-graph",
+        page_title="Entity Graph",
+    ))
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 — intelligence APIs (Sections 26-28)
+# ---------------------------------------------------------------------------
+
+@lab_bp.route("/api/intel/iocs", methods=["GET"])
+def api_intel_iocs():
+    try:
+        data = intel_service.list_iocs(
+            search=(request.args.get("q") or "").strip() or None,
+            ioc_type=(request.args.get("type") or "").strip() or None,
+            case_ref=(request.args.get("case") or "").strip() or None,
+            status=(request.args.get("status") or "").strip() or None,
+            limit=request.args.get("limit", 100),
+            offset=request.args.get("offset", 0))
+    except Exception:
+        return api_error("IOC_QUERY_FAILED",
+                         "Indicators could not be retrieved.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/intel/iocs/<int:ioc_id>", methods=["GET"])
+def api_intel_ioc_get(ioc_id):
+    try:
+        data = intel_service.get_ioc(ioc_id)
+    except intel_service.IntelError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("IOC_READ_FAILED",
+                         "The indicator could not be retrieved.", 500)
+    return api_ok({"ioc": data})
+
+
+@lab_bp.route("/api/intel/iocs/<int:ioc_id>", methods=["PATCH"])
+def api_intel_ioc_patch(ioc_id):
+    payload = request.get_json(silent=True) or {}
+    status = (payload.get("status") or "").strip()
+    try:
+        data = intel_service.set_ioc_status(
+            ioc_id, status, actor="analyst", ip_address=_client_ip())
+    except intel_service.IntelError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("IOC_UPDATE_FAILED",
+                         "The indicator could not be updated.", 500)
+    return api_ok({"ioc": data})
+
+
+@lab_bp.route("/api/intel/iocs/<int:ioc_id>/cases", methods=["POST"])
+def api_intel_ioc_add_case(ioc_id):
+    payload = request.get_json(silent=True) or {}
+    case_ref = (payload.get("case_ref") or "").strip()
+    try:
+        data = intel_service.add_ioc_to_case(
+            ioc_id, case_ref, actor="analyst", ip_address=_client_ip())
+    except intel_service.IntelError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("IOC_LINK_FAILED",
+                         "The indicator could not be linked.", 500)
+    return api_ok({"ioc": data}, status=201)
+
+
+@lab_bp.route("/api/intel/sync", methods=["POST"])
+def api_intel_sync():
+    try:
+        data = intel_service.sync_iocs(actor="analyst",
+                                       ip_address=_client_ip())
+    except Exception:
+        return api_error("IOC_SYNC_FAILED",
+                         "The vault scan could not be completed.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/intel/correlation", methods=["GET"])
+def api_intel_correlation():
+    try:
+        data = intel_service.correlation()
+    except Exception:
+        return api_error("CORRELATION_FAILED",
+                         "Correlation could not be computed.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/intel/graph", methods=["GET"])
+def api_intel_graph():
+    try:
+        data = intel_service.entity_graph(
+            (request.args.get("case") or "").strip() or None)
+    except intel_service.IntelError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("GRAPH_FAILED",
+                         "The entity graph could not be built.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/intel/attack-chain", methods=["GET"])
+def api_intel_chain():
+    try:
+        data = intel_service.attack_chain(
+            (request.args.get("case") or "").strip() or None)
+    except intel_service.IntelError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("CHAIN_FAILED",
+                         "The attack chain could not be derived.", 500)
+    return api_ok(data)
 
 
 @lab_bp.errorhandler(404)

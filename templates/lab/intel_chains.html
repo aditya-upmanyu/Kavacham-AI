@@ -1,0 +1,54 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Attack Chains</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">ATTACK CHAINS</h1>
+    <p class="lab-subtitle">Evidence-backed stages derived from a case’s records — a stage is only rendered when supporting evidence exists.</p>
+  </div>
+</div>
+
+<section class="lab-panel" style="margin-bottom:14px;">
+  <div class="lab-panel-body">
+    <div class="lab-filter-row">
+      <div class="lab-field" style="margin-bottom:0;flex:1 1 320px;">
+        <label class="lab-label" for="chain-case">CASE</label>
+        <select class="lab-select" id="chain-case">
+          <option value="">LOADING CASES…</option>
+        </select>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 0 auto;">
+        <label class="lab-label">&nbsp;</label>
+        <button class="lab-btn lab-btn-sm" id="chain-reload" type="button">REFRESH</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lab-panel">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title">CHAIN</h2>
+    <span class="lab-xs lab-dim" id="chain-state">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="chain-body">
+    <div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:60%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:44%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:55%;"></div>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="chain-foot">Select a case to derive its chain.</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_chains.js') }}"></script>
+{% endblock %}

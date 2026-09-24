@@ -160,5 +160,11 @@
   if (els.status) els.status.addEventListener('change', load);
   if (els.clear) els.clear.addEventListener('click', clearFilters);
 
+  // Prefill from ?q= (IOC "ANALYZE" actions deep-link here)
+  var params = new URLSearchParams(location.search);
+  if (params.get('q') && els.search) {
+    els.search.value = params.get('q');
+  }
+
   load();
 })();

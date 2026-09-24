@@ -65,6 +65,10 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev-secret-key-spam-dete
 from lab import lab_bp  # noqa: E402
 app.register_blueprint(lab_bp)
 
+# Apply KAVACHAM LAB schema migrations at startup (idempotent, versioned).
+from lab import db as lab_db  # noqa: E402
+lab_db.bootstrap()
+
 # Local testing OAuth allow HTTP transport
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", "1")
 

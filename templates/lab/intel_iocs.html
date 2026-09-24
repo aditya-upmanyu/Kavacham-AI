@@ -1,0 +1,96 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">IOC Intelligence</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">IOC INTELLIGENCE</h1>
+    <p class="lab-subtitle">Indicators observed in the case vault — every value below was found in real evidence or case records, never invented.</p>
+  </div>
+  <div class="lab-page-head-actions">
+    <button class="lab-btn lab-btn-sm" id="ioc-sync" type="button">⟳ RESCAN VAULT</button>
+  </div>
+</div>
+
+<section class="lab-panel" style="margin-bottom:14px;">
+  <div class="lab-panel-body">
+    <div class="lab-filter-row">
+      <div class="lab-field" style="margin-bottom:0;flex:1 1 220px;">
+        <label class="lab-label" for="ioc-search">SEARCH VALUE / CASE</label>
+        <input class="lab-input mono" id="ioc-search" type="search"
+               placeholder="IP, domain, URL, hash, email, KAV-CASE-…" autocomplete="off" />
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 150px;">
+        <label class="lab-label" for="ioc-type">TYPE</label>
+        <select class="lab-select" id="ioc-type">
+          <option value="">ALL TYPES</option>
+          {% for t in intel_types %}
+          <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 150px;">
+        <label class="lab-label" for="ioc-status">STATUS</label>
+        <select class="lab-select" id="ioc-status">
+          <option value="">ANY</option>
+          <option value="OBSERVED">OBSERVED</option>
+          <option value="VERIFIED">VERIFIED</option>
+          <option value="FALSE_POSITIVE">FALSE POSITIVE</option>
+        </select>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 190px;">
+        <label class="lab-label" for="ioc-case">CASE REF</label>
+        <input class="lab-input mono" id="ioc-case" type="search"
+               placeholder="KAV-CASE-…" autocomplete="off" />
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 0 auto;">
+        <label class="lab-label">&nbsp;</label>
+        <button class="lab-btn lab-btn-sm" id="ioc-clear" type="button">CLEAR</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lab-panel">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title">INDICATOR CATALOGUE</h2>
+    <span class="lab-xs lab-dim" id="ioc-total">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="ioc-body">
+    <div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:70%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:52%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:63%;"></div>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="ioc-foot">Rescanning the vault…</div>
+</section>
+
+<!-- IOC detail modal -->
+<div class="lab-modal-overlay" id="ioc-modal" hidden>
+  <div class="lab-modal wide" role="dialog" aria-modal="true" aria-labelledby="ioc-modal-title">
+    <div class="lab-modal-head">
+      <h3 class="lab-section-title" id="ioc-modal-title">INDICATOR DETAIL</h3>
+      <button class="lab-modal-x" id="ioc-modal-x" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="lab-modal-body" id="ioc-modal-body">
+      <div class="lab-panel-body">
+        <div class="lab-skeleton lab-skeleton-line" style="width:60%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:80%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:45%;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_intel.js') }}"></script>
+{% endblock %}

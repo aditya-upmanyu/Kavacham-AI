@@ -349,6 +349,14 @@ MIGRATIONS = [
 
         CREATE INDEX IF NOT EXISTS idx_alerts_created ON alerts(created_at DESC);
     """),
+    (2, "ioc status workflow", """
+        -- Section 26: each IOC carries an analyst-managed STATUS
+        -- (OBSERVED / VERIFIED / FALSE_POSITIVE). Auto-detected IOCs start
+        -- OBSERVED; VIRUSTOTAL/analyst actions may promote or demote them.
+        ALTER TABLE iocs ADD COLUMN status TEXT NOT NULL DEFAULT 'OBSERVED';
+
+        CREATE INDEX IF NOT EXISTS idx_iocs_status ON iocs(status);
+    """),
 ]
 
 # Constraint / enum documentation (enforced at service layer, verified by tests).

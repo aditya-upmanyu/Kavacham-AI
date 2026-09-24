@@ -315,8 +315,7 @@ ATTACK CHAIN tabs (Q); model registry/dataset registry surfaces (BD/BE).
 
 * Git `main` = `kavacham` (Kavacham-AI) = `origin` (Anweshak-AI).
   All commits GPG-signed (key `5359FC122398973E`, public key in
-  `pubkey.asc`); the Risk milestone is commit `4620b92` and the
-  Reporting milestone follows this doc update (see `git log -1`).
+  `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`.
 * Lab suite: **309/309 passing** — 275 after Phase 9 (Risk), +34 in
   Test 7F covering reports, export packages, manifest + integrity,
   audit events, route inventory and page renders.

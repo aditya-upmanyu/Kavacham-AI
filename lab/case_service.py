@@ -213,6 +213,8 @@ def _case_row(row):
         "priority": row["priority"],
         "status": row["status"],
         "risk_level": row.get("risk_level"),
+        "risk_score": row.get("risk_score"),
+        "risk_assessed_at": row.get("risk_assessed_at"),
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
         "closed_at": row.get("closed_at"),

@@ -1,0 +1,74 @@
+{% extends "lab/base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lab_risk.css') }}" />
+{% endblock %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a><span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Risk Assessment</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">RISK ASSESSMENT</h1>
+    <p class="lab-subtitle">
+      Central risk engine — scores are computed only from stored analyses, their findings
+      and the case IOC ledger. Independent classifications are never conflated with the score.
+    </p>
+  </div>
+  <div class="lab-page-head-actions">
+    <span class="lab-xs lab-dim lab-mono" id="risk-engine-meta">kavacham-risk-engine</span>
+  </div>
+</div>
+
+<!-- Register filter -->
+<div class="lab-strip" style="margin-bottom:14px;">
+  <label class="lab-label" for="risk-filter" style="margin-right:8px;">FILTER</label>
+  <input class="lab-input" id="risk-filter" type="search" placeholder="Case ID or title…"
+         autocomplete="off" style="max-width:320px;" />
+  <span class="lab-xs lab-dim" id="risk-total"></span>
+</div>
+
+<div class="lab-grid risk-grid">
+  <!-- Register (all cases) -->
+  <section class="lab-panel" aria-labelledby="risk-register-title">
+    <div class="lab-panel-head">
+      <h2 class="lab-section-title" id="risk-register-title">RISK REGISTER</h2>
+      <span class="lab-xs lab-dim" id="risk-register-ts">—</span>
+    </div>
+    <div class="lab-panel-body flush" id="risk-register-body">
+      <div class="lab-panel-body">
+        <div class="lab-skeleton lab-skeleton-line" style="width:80%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:60%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:70%;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Case assessment detail -->
+  <section class="lab-panel" aria-labelledby="risk-detail-title">
+    <div class="lab-panel-head">
+      <h2 class="lab-section-title" id="risk-detail-title">ASSESSMENT</h2>
+      <span class="lab-xs lab-dim" id="risk-detail-ref">—</span>
+    </div>
+    <div class="lab-panel-body" id="risk-detail-body">
+      <div class="lab-panel-body">
+        <div class="lab-skeleton lab-skeleton-line" style="width:52%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:74%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:63%;"></div>
+        <p class="lab-xs lab-dim" style="margin-top:10px;">
+          Select a case from the register to load its full evidence-first assessment.
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_risk.js') }}"></script>
+{% endblock %}

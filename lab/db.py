@@ -357,6 +357,11 @@ MIGRATIONS = [
 
         CREATE INDEX IF NOT EXISTS idx_iocs_status ON iocs(status);
     """),
+    (3, "case risk snapshot (central risk engine), Section AZ", """
+        ALTER TABLE cases ADD COLUMN risk_score REAL;
+        ALTER TABLE cases ADD COLUMN risk_assessed_at TEXT;
+        CREATE INDEX IF NOT EXISTS idx_cases_risk ON cases(risk_level);
+    """),
 ]
 
 # Constraint / enum documentation (enforced at service layer, verified by tests).

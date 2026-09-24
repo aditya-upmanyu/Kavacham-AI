@@ -1,0 +1,163 @@
+/* ====================================================================
+   KAVACHAM LAB — Phase 9 risk components (Sections AZ, BA)
+   Band scale, score strip, evidence-first finding cards.
+   ==================================================================== */
+
+.risk-grid {
+  grid-template-columns: minmax(360px, 5fr) minmax(520px, 7fr);
+  align-items: start;
+}
+@media (max-width: 1080px) {
+  .risk-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- band scale / score strip ---------- */
+.risk-scale {
+  display: flex;
+  height: 8px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--lab-slate-2, #151c25);
+  margin: 10px 0 14px;
+}
+.risk-scale > span {
+  height: 100%;
+  flex: 1;
+}
+.risk-scale .rs-low { background: var(--lab-ok, #2f9e6e); }
+.risk-scale .rs-suspicious { background: var(--lab-warn, #d9a53c); }
+.risk-scale .rs-high { background: var(--lab-danger, #d9554d); }
+
+.risk-scale-marker {
+  position: relative;
+  height: 8px;
+  border-radius: 6px;
+  background: var(--lab-slate-2, #151c25);
+  margin: 12px 0 6px;
+}
+.risk-scale-marker > span {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--lab-ink, #e8edf4);
+}
+.risk-scale-marker[data-score]::after {
+  content: attr(data-score);
+  position: absolute;
+  top: -22px;
+  font-family: var(--lab-mono, "JetBrains Mono", monospace);
+  font-size: 11px;
+  color: var(--lab-dim, #9aa7b8);
+}
+
+.risk-score-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.risk-score-big {
+  font-family: var(--lab-mono, "JetBrains Mono", monospace);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+.risk-score-big.is-low { color: var(--lab-ok, #2f9e6e); }
+.risk-score-big.is-suspicious { color: var(--lab-warn, #d9a53c); }
+.risk-score-big.is-high { color: var(--lab-danger, #d9554d); }
+
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.risk-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.risk-badge.is-low { color: var(--lab-ok, #2f9e6e); background: rgba(47,158,110,.12); border-color: rgba(47,158,110,.35); }
+.risk-badge.is-suspicious { color: var(--lab-warn, #d9a53c); background: rgba(217,165,60,.12); border-color: rgba(217,165,60,.35); }
+.risk-badge.is-high { color: var(--lab-danger, #d9554d); background: rgba(217,85,77,.12); border-color: rgba(217,85,77,.35); }
+.risk-badge.is-muted { color: var(--lab-dim, #9aa7b8); background: rgba(154,167,184,.10); border-color: rgba(154,167,184,.30); }
+
+/* ---------- register table ---------- */
+.risk-row {
+  cursor: pointer;
+}
+.risk-row.is-selected td {
+  background: rgba(80,140,220,.08);
+}
+.risk-level-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.risk-level-dot.is-low { background: var(--lab-ok, #2f9e6e); }
+.risk-level-dot.is-suspicious { background: var(--lab-warn, #d9a53c); }
+.risk-level-dot.is-high { background: var(--lab-danger, #d9554d); }
+.risk-level-dot.is-muted { background: var(--lab-dim, #9aa7b8); }
+
+/* micro bar inside register cells */
+.risk-cell-bar { display: flex; align-items: center; gap: 8px; min-width: 150px; }
+.risk-cell-track { flex: 1; height: 5px; border-radius: 3px; background: var(--lab-slate-2, #151c25); overflow: hidden; }
+.risk-cell-fill { height: 100%; border-radius: 3px; }
+.risk-cell-fill.is-low { background: var(--lab-ok, #2f9e6e); }
+.risk-cell-fill.is-suspicious { background: var(--lab-warn, #d9a53c); }
+.risk-cell-fill.is-high { background: var(--lab-danger, #d9554d); }
+
+/* ---------- components / provenance ---------- */
+.risk-kv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.risk-kv { background: var(--lab-slate-1, #0b1017); border: 1px solid var(--lab-line, #1e2835); border-radius: 8px; padding: 10px 12px; }
+.risk-kv .rk-label { font-size: 10.5px; letter-spacing: .1em; color: var(--lab-dim, #9aa7b8); }
+.risk-kv .rk-value { font-family: var(--lab-mono, "JetBrains Mono", monospace); font-size: 13px; margin-top: 3px; }
+
+/* ---------- evidence-first finding cards (BA) ---------- */
+.risk-finding {
+  border: 1px solid var(--lab-line, #1e2835);
+  border-left: 3px solid var(--lab-slate-2, #151c25);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,.015);
+}
+.risk-finding.is-high { border-left-color: var(--lab-danger, #d9554d); }
+.risk-finding.is-medium { border-left-color: var(--lab-warn, #d9a53c); }
+.risk-finding.is-low, .risk-finding.is-info { border-left-color: var(--lab-line, #2a3542); }
+
+.risk-finding-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.risk-finding-title { font-weight: 600; font-size: 13px; }
+.risk-finding-ref { font-family: var(--lab-mono, "JetBrains Mono", monospace); font-size: 11px; color: var(--lab-dim, #9aa7b8); }
+
+.risk-finding dl { margin: 6px 0 0; }
+.risk-finding dt { font-size: 10px; letter-spacing: .12em; color: var(--lab-dim, #9aa7b8); margin-top: 7px; }
+.risk-finding dd { margin: 2px 0 0; font-size: 12.5px; line-height: 1.5; }
+.risk-finding dd .lab-chip {
+  display: inline-block;
+  background: var(--lab-slate-1, #0b1017);
+  border: 1px solid var(--lab-line, #1e2835);
+  border-radius: 5px;
+  padding: 1px 7px;
+  margin: 2px 4px 0 0;
+  font-family: var(--lab-mono, "JetBrains Mono", monospace);
+  font-size: 11px;
+}
+
+/* ---------- status line under the detail ---------- */
+.risk-provenance-line {
+  font-family: var(--lab-mono, "JetBrains Mono", monospace);
+  font-size: 11px;
+  color: var(--lab-dim, #9aa7b8);
+  border-top: 1px solid var(--lab-line, #1e2835);
+  margin-top: 16px;
+  padding-top: 10px;
+}

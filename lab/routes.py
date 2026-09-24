@@ -21,6 +21,7 @@ from lab import case_service
 from lab import evidence_service
 from lab import analysis_service
 from lab import intel_service
+from lab import risk_service
 
 
 # ---------------------------------------------------------------------------
@@ -69,6 +70,7 @@ NAV_STRUCTURE = [
             {"id": "correlation", "label": "Correlation", "url": "/lab/intel/correlation", "ready": True},
             {"id": "attack-chains", "label": "Attack Chains", "url": "/lab/intel/attack-chains", "ready": True},
             {"id": "entity-graph", "label": "Entity Graph", "url": "/lab/intel/graph", "ready": True},
+            {"id": "risk-assessment", "label": "Risk Assessment", "url": "/lab/risk", "ready": True},
         ],
     },
     {
@@ -799,6 +801,34 @@ def api_intel_chain():
     except Exception:
         return api_error("CHAIN_FAILED",
                          "The attack chain could not be derived.", 500)
+    return api_ok(data)
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 — central risk engine (Sections AZ, BA)
+# ---------------------------------------------------------------------------
+
+@lab_bp.route("/risk", strict_slashes=False)
+def risk_page():
+    return render_template("lab/risk.html", **_shell_context(
+        nav_id="risk-assessment",
+        page_title="Risk Assessment",
+        risk_levels=risk_service.RISK_LEVELS,
+    ))
+
+
+@lab_bp.route("/api/risk")
+def api_risk():
+    """Risk register (?case= omitted) or one case's full assessment."""
+    case_ref = (request.args.get("case") or "").strip() or None
+    try:
+        data = (risk_service.case_risk(case_ref) if case_ref
+                else risk_service.risk_register())
+    except risk_service.RiskError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("RISK_COMPUTE_FAILED",
+                         "Risk could not be computed.", 500)
     return api_ok(data)
 
 

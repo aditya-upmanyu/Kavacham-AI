@@ -40,8 +40,8 @@ def section(title):
 section("Test 1 — Database & Migrations")
 # ===========================================================================
 applied = db.migrate()
-check("initial migration applied", 1 in applied and 2 in applied, applied)
-check("schema version is 2", db.current_version() == 2, db.current_version())
+check("initial migration applied", 1 in applied and 2 in applied and 3 in applied, applied)
+check("schema version is 3", db.current_version() == 3, db.current_version())
 
 re_run = db.migrate()
 check("migrations idempotent (no re-apply)", re_run == [], re_run)
@@ -341,6 +341,9 @@ expected_methods = {
     "/lab/api/intel/correlation":         {"GET"},
     "/lab/api/intel/graph":               {"GET"},
     "/lab/api/intel/attack-chain":        {"GET"},
+    # Phase 9 — central risk engine (Sections AZ, BA)
+    "/lab/risk":                          {"GET"},
+    "/lab/api/risk":                      {"GET"},
 }
 expected_rules = sorted(expected_methods)
 
@@ -1115,8 +1118,151 @@ for url, marker in [
 # --- nav integrity: every intel link resolves (Section 81) ---
 _intel_links = sum(len(g["links"]) for g in lab_routes.NAV_STRUCTURE
                    if g["group"] in ("THREAT INTELLIGENCE", "INTELLIGENCE"))
-check("intel nav has 4 live links",
-      _intel_links == 4, _intel_links)
+check("intel+risk nav has 5 live links",
+      _intel_links == 5, _intel_links)
+check("risk nav link resolves",
+      any(l["url"] == "/lab/risk"
+          for g in lab_routes.NAV_STRUCTURE for l in g["links"]))
+
+# ===========================================================================
+section("Test 7E — Phase 9 Risk (Sections AZ, BA)")
+# ===========================================================================
+from lab import risk_service as rks                                    # noqa: E402
+
+# --- band model (Section AZ) ---
+check("risk: band vocabulary",
+      rks.RISK_LEVELS == ("LOW", "SUSPICIOUS", "HIGH"))
+check("risk: LOW boundary 0-30",
+      rks.risk_level(0) == "LOW" and rks.risk_level(30) == "LOW",
+      (rks.risk_level(0), rks.risk_level(30)))
+check("risk: SUSPICIOUS boundary 31-60",
+      rks.risk_level(31) == "SUSPICIOUS" and rks.risk_level(60) == "SUSPICIOUS",
+      (rks.risk_level(31), rks.risk_level(60)))
+check("risk: HIGH boundary 61-100",
+      rks.risk_level(61) == "HIGH" and rks.risk_level(100) == "HIGH",
+      (rks.risk_level(61), rks.risk_level(100)))
+check("risk: out-of-range scores clamped",
+      rks.risk_level(250) == "HIGH" and rks.risk_level(-5) == "LOW")
+
+# --- independent classifications (never conflated with score) ---
+check("risk: classification vocabulary",
+      set(rks.CLASSIFICATIONS) == {"SPAM", "PHISHING", "MALWARE", "SCAM",
+                                   "BEC", "SECURITY_RISK"})
+check("risk: analysis type -> classification mapping",
+      rks.classify_analysis("PHISHING") == "PHISHING"
+      and rks.classify_analysis("SPAM") == "SPAM"
+      and rks.classify_analysis("FILE") == "MALWARE"
+      and rks.classify_analysis("BEC") == "BEC")
+
+# --- full assessment on the analysed case (evidence-first) ---
+assess = rks.case_risk(case1["case_ref"])
+check("risk: score is a bounded int",
+      isinstance(assess["risk_score"], int) and 0 <= assess["risk_score"] <= 100,
+      assess["risk_score"])
+check("risk: level matches the score band",
+      assess["risk_level"] == rks.risk_level(assess["risk_score"]),
+      assess["risk_level"])
+check("risk: engine + version recorded",
+      assess["engine"] == rks.ENGINE and bool(assess["engine_version"]),
+      assess["engine_version"])
+check("risk: components exposed",
+      {"highest", "mean", "analysis_count", "verified_count", "observed_count"}
+      <= set(assess["components"]), assess["components"])
+check("risk: score driven by highest stored analysis",
+      assess["risk_score"] >= round(0.6 * assess["components"]["highest"]),
+      (assess["risk_score"], assess["components"]["highest"]))
+check("risk: primary classification from vocabulary",
+      assess["primary_classification"] in rks.CLASSIFICATIONS
+      or assess["primary_classification"] is None,
+      assess["primary_classification"])
+check("risk: case snapshot materialized on record",
+      db.query_one("SELECT risk_level, risk_score, risk_assessed_at "
+                   "FROM cases WHERE case_ref = ?",
+                   (case1["case_ref"],))["risk_score"] == assess["risk_score"])
+
+_finds = assess["findings"]
+check("risk: findings present for analysed case", len(_finds) >= 1, len(_finds))
+check("risk: every finding carries BA provenance keys",
+      all({"what", "why", "source", "impact", "limitation"} <= set(f)
+          for f in _finds))
+check("risk: finding cites real evidence",
+      any(f.get("evidence") and f["evidence"] for f in _finds))
+check("risk: findings trace to real analysis refs",
+      any(str(f.get("analysis_ref", "")).startswith("KAV-ANL-") for f in _finds))
+check("risk: explanations derived from stored facts",
+      len(assess["explanations"]) >= 1
+      and any("analysis" in e.lower() or "indicator" in e.lower()
+              for e in assess["explanations"]),
+      assess["explanations"][:2])
+check("risk: limitations are honest (no calibration claim)",
+      any("calibrated" in l.lower() for l in assess["limitations"]))
+check("risk: per-analysis assessments carry classification",
+      all("classification" in a and "findings" in a
+          for a in assess["analyses"]))
+
+# --- IOC disposition drives the score (evidence-driven + reversible) ---
+_score_v = rks.case_risk(case1["case_ref"])["risk_score"]
+ins.set_ioc_status(the_hash["ioc_id"], "FALSE_POSITIVE", actor="qa")
+_score_fp = rks.case_risk(case1["case_ref"])["risk_score"]
+check("risk: FALSE_POSITIVE removes verified points",
+      _score_fp < _score_v, (_score_fp, _score_v))
+ins.set_ioc_status(the_hash["ioc_id"], "VERIFIED", actor="qa")  # restore
+check("risk: restoring VERIFIED returns score",
+      rks.case_risk(case1["case_ref"])["risk_score"] == _score_v,
+      rks.case_risk(case1["case_ref"])["risk_score"])
+
+# --- empty vault: honest 0 / LOW, never invented ---
+_empty = rks.case_risk(case3["case_ref"])
+check("risk: empty case scores 0 LOW",
+      _empty["risk_score"] == 0 and _empty["risk_level"] == "LOW",
+      (_empty["risk_score"], _empty["risk_level"]))
+check("risk: empty case has no findings", _empty["findings"] == [])
+check("risk: empty case explains insufficient data",
+      any("Insufficient data" in e for e in _empty["explanations"]))
+check("risk: empty case has null classification",
+      _empty["primary_classification"] is None)
+
+try:
+    rks.case_risk("KAV-CASE-2099-99999")
+    check("risk: unknown case rejected", False, "accepted")
+except rks.RiskError as exc:
+    check("risk: unknown case rejected", exc.code == "CASE_NOT_FOUND", exc.code)
+
+# --- register ---
+_reg = rks.risk_register()
+check("risk: register covers analysed case",
+      any(c["case_ref"] == case1["case_ref"] for c in _reg["items"]))
+check("risk: register sorted highest first",
+      [c["risk_score"] for c in _reg["items"]] ==
+      sorted((c["risk_score"] for c in _reg["items"]), reverse=True))
+
+# --- Section 49 envelopes + page via the real app ---
+_client3 = app_module.app.test_client()
+r = _client3.get("/lab/api/risk")
+_b = r.get_json()
+check("api: risk register envelope",
+      r.status_code == 200 and _b["success"] is True
+      and isinstance(_b["data"]["items"], list)
+      and _b["data"]["engine"] == rks.ENGINE)
+
+r = _client3.get("/lab/api/risk?case=" + case1["case_ref"])
+_b = r.get_json()
+check("api: risk detail envelope",
+      r.status_code == 200 and _b["success"] is True
+      and _b["data"]["case"]["case_ref"] == case1["case_ref"]
+      and "findings" in _b["data"] and "explanations" in _b["data"])
+
+r = _client3.get("/lab/api/risk?case=KAV-CASE-2099-99999")
+_b = r.get_json()
+check("api: unknown case error envelope",
+      r.status_code == 400 and _b["success"] is False
+      and _b["error"]["code"] == "CASE_NOT_FOUND", _b)
+
+r = _client3.get("/lab/risk")
+_html = r.get_data(as_text=True)
+check("page: risk register renders",
+      r.status_code == 200 and "RISK ASSESSMENT" in _html
+      and "risk-register-body" in _html)
 
 # ===========================================================================
 print("\n" + "=" * 64)

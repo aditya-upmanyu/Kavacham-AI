@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>{% block title %}{{ page_title }}{% endblock %} — KAVACHAM LAB</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/lab.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/lab_shell.css') }}" />
+  {% block head %}{% endblock %}
+</head>
+<body class="lab-body">
+<div id="lab-root" class="lab-shell">
+
+  <!-- ==================================================================
+       LAB HEADER (Section 11) — every value is real, never fabricated
+       ================================================================== -->
+  <header class="lab-header">
+    <button class="lab-burger" id="lab-burger" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="lab-brand">
+      <div class="lab-brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.5 4 6v5.5c0 4.6 3.2 8.8 8 9.9 4.8-1.1 8-5.3 8-9.9V6l-8-3.5Z"/>
+          <path d="M9.2 12.2l1.9 1.9 3.7-3.9"/>
+        </svg>
+      </div>
+      <div class="lab-brand-text">
+        <span class="lab-brand-name">KAVACHAM LAB</span>
+        <span class="lab-brand-sub">CYBER INVESTIGATION &amp; THREAT INTELLIGENCE</span>
+      </div>
+    </div>
+
+    <div class="lab-classification" title="Environment classification">RESTRICTED ENVIRONMENT</div>
+
+    <div class="lab-header-status">
+      <div class="lab-hstat">
+        <span class="lab-label">SYSTEM STATUS</span>
+        <span class="lab-status lab-status-dot {{ 'is-live' if system_status_key == 'operational' }}"
+              id="lab-system-status"
+              data-key="{{ system_status_key }}">{{ system_status or 'CHECKING' }}</span>
+      </div>
+      <div class="lab-hstat lab-hide-sm">
+        <span class="lab-label">ACCESS LEVEL</span>
+        <span class="lab-hstat-val">RESTRICTED</span>
+      </div>
+      <div class="lab-hstat lab-hide-md">
+        <span class="lab-label">ENVIRONMENT</span>
+        <span class="lab-hstat-val">SECURE</span>
+      </div>
+      <div class="lab-hstat lab-hide-lg">
+        <span class="lab-label">LAST HEALTH CHECK</span>
+        <span class="lab-hstat-val lab-mono" id="lab-last-check">
+          {%- if last_health_check -%}
+            {{ last_health_check[:19].replace('T', ' ') }} UTC
+          {%- else -%}
+            <span class="lab-state-inline">UNAVAILABLE</span>
+          {%- endif -%}
+        </span>
+      </div>
+    </div>
+
+    <a class="lab-return lab-btn lab-btn-sm" href="/" title="Return to KAVACHAM AI">
+      <span class="lab-return-full">RETURN TO KAVACHAM AI</span>
+      <span class="lab-return-short">← AI</span>
+    </a>
+  </header>
+
+  <div class="lab-body-row">
+
+    <!-- ================================================================
+         SIDEBAR (Section 12)
+         ================================================================ -->
+    <div class="lab-scrim" id="lab-scrim" hidden></div>
+
+    <nav class="lab-sidebar" id="lab-sidebar" aria-label="Lab navigation">
+      <div class="lab-sidebar-scroll">
+        {% for group in nav %}
+        <div class="lab-nav-group">
+          <div class="lab-nav-group-title">{{ group.group }}</div>
+          <ul class="lab-nav-list">
+            {% for item in group.links %}
+            <li>
+              <a class="lab-nav-item{% if item.active %} is-active{% endif %}"
+                 href="{{ item.url }}"
+                 {% if item.active %}aria-current="page"{% endif %}
+                 title="{{ item.label }}">
+                <span class="lab-nav-label">{{ item.label }}</span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="lab-sidebar-foot">
+        <a class="lab-nav-item lab-nav-return" href="/" title="Return to KAVACHAM AI">
+          <span class="lab-nav-label">← RETURN TO KAVACHAM AI</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- ================================================================
+         CONTENT AREA
+         ================================================================ -->
+    <main class="lab-main" id="lab-main">
+      {% block breadcrumb %}{% endblock %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Toast host -->
+  <div class="lab-toasts" id="lab-toasts" aria-live="polite" aria-atomic="false"></div>
+</div>
+
+<script src="{{ url_for('static', filename='js/lab_shell.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

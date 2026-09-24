@@ -357,6 +357,15 @@
 .lab-dot-sep { color: var(--lab-text-4); padding: 0 6px; }
 .lab-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lab-grid { display: grid; gap: 14px; }
+
+/* Command Center layout — dense panels, not giant cards (Section 14) */
+.cc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.cc-grid > section:first-child { grid-column: 1 / -1; }
+@media (max-width: 900px) { .cc-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Severity emphasis for summary counts (state colour only) */
+.lab-strip-value.lab-state-crit { color: var(--lab-red); }
+.lab-strip-value.lab-state-warn { color: var(--lab-amber); }
 .lab-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .lab-row.tight { gap: 8px; }
 .lab-spacer { flex: 1; }

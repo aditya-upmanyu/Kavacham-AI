@@ -1,0 +1,192 @@
+/* ====================================================================
+   KAVACHAM LAB — SHELL LAYOUT (Phase 3)
+   Header / sidebar / content frame. Reusable across all Lab modules.
+   ==================================================================== */
+
+.lab-body { margin: 0; background: var(--lab-bg-0); }
+
+.lab-shell {
+  display: flex; flex-direction: column;
+  min-height: 100vh; height: 100vh;
+  overflow: hidden;
+}
+
+/* ====================================================================
+   HEADER (Section 11)
+   ==================================================================== */
+.lab-header {
+  display: flex; align-items: center; gap: 16px;
+  height: var(--lab-header-h); flex: none;
+  padding: 0 14px;
+  background: var(--lab-bg-1);
+  border-bottom: 1px solid var(--lab-line-2);
+  position: relative; z-index: 40;
+}
+
+.lab-burger {
+  display: none; flex-direction: column; justify-content: center; gap: 4px;
+  width: 30px; height: 30px; padding: 5px;
+  background: transparent; border: 1px solid var(--lab-line-2);
+  border-radius: var(--lab-r-2); cursor: pointer; flex: none;
+}
+.lab-burger span { display: block; height: 1.5px; background: var(--lab-text-2); border-radius: 2px; transition: transform var(--lab-transition), opacity var(--lab-transition); }
+.lab-burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+.lab-burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.lab-burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+
+.lab-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.lab-brand-mark {
+  width: 30px; height: 30px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--lab-bg-3); border: 1px solid var(--lab-line-2);
+  border-radius: var(--lab-r-2); color: var(--lab-blue);
+}
+.lab-brand-text { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.lab-brand-name { font-size: 13.5px; font-weight: 700; letter-spacing: 0.08em; color: var(--lab-text-1); white-space: nowrap; }
+.lab-brand-sub { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; color: var(--lab-text-4); white-space: nowrap; }
+
+/* Classification strip */
+.lab-classification {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em;
+  color: var(--lab-amber); background: var(--lab-amber-dim);
+  border: 1px solid rgba(214,138,30,0.45);
+  padding: 4px 9px; border-radius: var(--lab-r-1); white-space: nowrap;
+}
+
+.lab-header-status { display: flex; align-items: center; gap: 18px; margin-left: auto; }
+.lab-hstat { display: flex; flex-direction: column; gap: 2px; line-height: 1.3; min-width: 0; }
+.lab-hstat .lab-label { font-size: 8.5px; letter-spacing: 0.1em; }
+.lab-hstat-val { font-size: 11.5px; font-weight: 600; color: var(--lab-text-2); white-space: nowrap; letter-spacing: 0.04em; }
+.lab-state-inline { color: var(--lab-gray); font-weight: 600; }
+
+/* Status dot in header */
+.lab-status.lab-status-dot.is-live::before { box-shadow: 0 0 0 3px rgba(47,168,85,0.15); }
+
+.lab-return { flex: none; letter-spacing: 0.05em; font-size: 11px; }
+.lab-return-short { display: none; }
+
+/* ====================================================================
+   BODY ROW
+   ==================================================================== */
+.lab-body-row { display: flex; flex: 1; min-height: 0; position: relative; }
+
+/* ====================================================================
+   SIDEBAR (Section 12)
+   ==================================================================== */
+.lab-sidebar {
+  width: var(--lab-sidebar-w); flex: none;
+  background: var(--lab-bg-1);
+  border-right: 1px solid var(--lab-line-2);
+  display: flex; flex-direction: column; min-height: 0;
+  transition: width var(--lab-transition), transform var(--lab-transition);
+  z-index: 30;
+}
+.lab-sidebar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 9px; }
+
+.lab-nav-group { margin-bottom: 16px; }
+.lab-nav-group-title {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.13em;
+  color: var(--lab-text-4); padding: 0 9px; margin-bottom: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lab-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+
+.lab-nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 9px; border-radius: var(--lab-r-2);
+  color: var(--lab-text-2); text-decoration: none;
+  font-size: 12.5px; font-weight: 500; letter-spacing: 0.01em;
+  border-left: 2px solid transparent;
+  transition: background var(--lab-transition), color var(--lab-transition);
+  white-space: nowrap; overflow: hidden;
+}
+.lab-nav-item:hover { background: var(--lab-bg-3); color: var(--lab-text-1); }
+.lab-nav-item.is-active {
+  background: var(--lab-bg-3); color: var(--lab-text-1);
+  border-left-color: var(--lab-blue); font-weight: 600;
+}
+.lab-nav-label { overflow: hidden; text-overflow: ellipsis; }
+
+.lab-sidebar-foot {
+  flex: none; padding: 9px; border-top: 1px solid var(--lab-line-2);
+  background: var(--lab-bg-0);
+}
+.lab-nav-return { color: var(--lab-text-3); font-size: 11.5px; letter-spacing: 0.05em; }
+.lab-nav-return:hover { color: var(--lab-text-1); }
+
+/* Scrim for mobile drawer */
+.lab-scrim {
+  position: fixed; inset: var(--lab-header-h) 0 0 0;
+  background: rgba(3,5,8,0.6); z-index: 25;
+  animation: labFade 0.15s ease-out;
+}
+@keyframes labFade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ====================================================================
+   MAIN CONTENT
+   ==================================================================== */
+.lab-main {
+  flex: 1; min-width: 0;
+  overflow-y: auto; overflow-x: hidden;
+  background: var(--lab-bg-0);
+  padding: 18px 20px 32px;
+}
+
+/* Breadcrumb */
+.lab-crumb {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  font-size: 11.5px; color: var(--lab-text-4); margin-bottom: 14px;
+}
+.lab-crumb a { color: var(--lab-text-3); text-decoration: none; }
+.lab-crumb a:hover { color: var(--lab-text-1); text-decoration: underline; }
+.lab-crumb-sep { color: var(--lab-text-4); }
+.lab-crumb-current { color: var(--lab-text-2); font-weight: 600; }
+
+/* Page header */
+.lab-page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.lab-page-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ====================================================================
+   COLLAPSED SIDEBAR (desktop toggle)
+   ==================================================================== */
+.lab-shell.is-collapsed .lab-sidebar { width: var(--lab-sidebar-w-collapsed); }
+.lab-shell.is-collapsed .lab-nav-group-title { opacity: 0; height: 0; margin: 0; padding: 0; }
+.lab-shell.is-collapsed .lab-nav-label { opacity: 0; width: 0; }
+.lab-shell.is-collapsed .lab-nav-item { justify-content: center; padding: 8px 4px; }
+.lab-shell.is-collapsed .lab-nav-group { margin-bottom: 10px; }
+
+/* ====================================================================
+   RESPONSIVE (Section 57)
+   ==================================================================== */
+@media (max-width: 1180px) {
+  .lab-hide-lg { display: none; }
+}
+
+@media (max-width: 980px) {
+  .lab-hide-md { display: none; }
+  .lab-classification { display: none; }
+  .lab-burger { display: flex; }
+  .lab-sidebar {
+    position: fixed; top: var(--lab-header-h); bottom: 0; left: 0;
+    transform: translateX(-100%);
+    box-shadow: 8px 0 28px -12px rgba(0,0,0,0.8);
+  }
+  .lab-sidebar.is-open { transform: none; }
+  .lab-main { padding: 16px 14px 28px; }
+}
+
+@media (max-width: 680px) {
+  .lab-hide-sm { display: none; }
+  .lab-brand-sub { display: none; }
+  .lab-return-full { display: none; }
+  .lab-return-short { display: inline; }
+  .lab-header { gap: 10px; padding: 0 10px; }
+  .lab-header-status { gap: 12px; }
+  .lab-main { padding: 14px 11px 24px; }
+  .lab-page-head { flex-direction: column; align-items: stretch; }
+}
+
+@media (max-width: 440px) {
+  .lab-brand-name { font-size: 12px; letter-spacing: 0.05em; }
+  .lab-classification { display: none; }
+}

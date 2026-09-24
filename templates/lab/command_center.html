@@ -1,0 +1,120 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <span class="lab-crumb-current">COMMAND CENTER</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">COMMAND CENTER</h1>
+    <p class="lab-subtitle">Cyber Investigation &amp; Threat Intelligence Operations</p>
+  </div>
+  <div class="lab-page-head-actions">
+    <button class="lab-btn lab-btn-sm" id="cc-refresh" type="button">REFRESH</button>
+  </div>
+</div>
+
+<!-- Operational alerts — derived from live backend conditions (Section 52) -->
+<section aria-labelledby="cc-alerts-title" style="margin-bottom:16px;">
+  <h2 class="lab-section-title" id="cc-alerts-title" style="margin-bottom:9px;">OPERATIONAL ALERTS</h2>
+  <div id="cc-alerts">
+    <div class="lab-panel"><div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:70%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:45%;"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- Classification strip (Section 60) — counts come from real queries -->
+<section aria-labelledby="cc-summary-title" style="margin-bottom:16px;">
+  <h2 class="lab-section-title" id="cc-summary-title" style="margin-bottom:9px;">SYSTEM SUMMARY</h2>
+  <div class="lab-strip" id="cc-summary">
+    <div class="lab-strip-item"><span class="lab-label">SERVICES OPERATIONAL</span><span class="lab-strip-value lab-skeleton" style="display:inline-block;width:46px;height:14px;"></span></div>
+    <div class="lab-strip-item"><span class="lab-label">SERVICES UNAVAILABLE</span><span class="lab-strip-value lab-skeleton" style="display:inline-block;width:46px;height:14px;"></span></div>
+    <div class="lab-strip-item"><span class="lab-label">NOT CONFIGURED</span><span class="lab-strip-value lab-skeleton" style="display:inline-block;width:46px;height:14px;"></span></div>
+    <div class="lab-strip-item"><span class="lab-label">ACTIVE CASES</span><span class="lab-strip-value lab-skeleton" style="display:inline-block;width:46px;height:14px;"></span></div>
+    <div class="lab-strip-item"><span class="lab-label">EVIDENCE RECORDS</span><span class="lab-strip-value lab-skeleton" style="display:inline-block;width:46px;height:14px;"></span></div>
+  </div>
+</section>
+
+<div class="lab-grid cc-grid">
+  <!-- System health (Section 51) -->
+  <section class="lab-panel" aria-labelledby="cc-health-title">
+    <div class="lab-panel-head">
+      <h2 class="lab-section-title" id="cc-health-title">SYSTEM HEALTH</h2>
+      <span class="lab-xs lab-dim" id="cc-health-ts">—</span>
+    </div>
+    <div class="lab-panel-body flush">
+      <div class="lab-table-wrap">
+        <table class="lab-table" id="cc-health-table">
+          <thead>
+            <tr>
+              <th scope="col">Service</th>
+              <th scope="col">Status</th>
+              <th scope="col">Latency</th>
+              <th scope="col">Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" style="padding:16px;">
+              <div class="lab-skeleton lab-skeleton-line" style="width:80%;"></div>
+              <div class="lab-skeleton lab-skeleton-line" style="width:65%;"></div>
+              <div class="lab-skeleton lab-skeleton-line" style="width:72%;"></div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="lab-panel-foot" id="cc-health-foot">Retrieving system status…</div>
+  </section>
+
+  <!-- Active investigations — real query, honest empty state (Sections 61/63) -->
+  <section class="lab-panel" aria-labelledby="cc-cases-title">
+    <div class="lab-panel-head">
+      <h2 class="lab-section-title" id="cc-cases-title">ACTIVE INVESTIGATIONS</h2>
+      <span class="lab-xs lab-dim" id="cc-cases-count">—</span>
+    </div>
+    <div class="lab-panel-body flush" id="cc-cases-body">
+      <div class="lab-panel-body">
+        <div class="lab-skeleton lab-skeleton-line" style="width:55%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:40%;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recent analyses — real session history, honest empty state -->
+  <section class="lab-panel" aria-labelledby="cc-recent-title">
+    <div class="lab-panel-head">
+      <h2 class="lab-section-title" id="cc-recent-title">RECENT ANALYSES</h2>
+      <span class="lab-xs lab-dim" id="cc-recent-count">—</span>
+    </div>
+    <div class="lab-panel-body flush" id="cc-recent-body">
+      <div class="lab-panel-body">
+        <div class="lab-skeleton lab-skeleton-line" style="width:70%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:50%;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Model health — real metrics from metrics.json -->
+  <section class="lab-panel" aria-labelledby="cc-model-title">
+    <div class="lab-panel-head">
+      <h2 class="lab-section-title" id="cc-model-title">MODEL HEALTH</h2>
+      <span class="lab-xs lab-dim" id="cc-model-ts">—</span>
+    </div>
+    <div class="lab-panel-body flush" id="cc-model-body">
+      <div class="lab-panel-body">
+        <div class="lab-skeleton lab-skeleton-line" style="width:60%;"></div>
+        <div class="lab-skeleton lab-skeleton-line" style="width:48%;"></div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_command_center.js') }}"></script>
+{% endblock %}

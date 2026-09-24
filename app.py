@@ -58,6 +58,13 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev-secret-key-spam-detector-2026-secure-session"
 
+# --------------------------------------------------------------------------
+# KAVACHAM LAB — isolated blueprint (Product B). Registered separately so
+# Product A's routes, APIs and templates remain untouched.
+# --------------------------------------------------------------------------
+from lab import lab_bp  # noqa: E402
+app.register_blueprint(lab_bp)
+
 # Local testing OAuth allow HTTP transport
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", "1")
 

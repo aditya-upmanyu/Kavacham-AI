@@ -16,6 +16,8 @@ import traceback
 # Isolate the database BEFORE importing lab modules (db.py reads env at import).
 _TMP_DIR = tempfile.mkdtemp(prefix="kavacham_lab_test_")
 os.environ["KAVACHAM_LAB_DB"] = os.path.join(_TMP_DIR, "test_lab.db")
+# Isolate report JSON + export packages (and evidence originals) too.
+os.environ["KAVACHAM_LAB_STORAGE"] = os.path.join(_TMP_DIR, "storage")
 
 from lab import db                      # noqa: E402
 from lab import case_service as cs      # noqa: E402
@@ -40,8 +42,9 @@ def section(title):
 section("Test 1 — Database & Migrations")
 # ===========================================================================
 applied = db.migrate()
-check("initial migration applied", 1 in applied and 2 in applied and 3 in applied, applied)
-check("schema version is 3", db.current_version() == 3, db.current_version())
+check("initial migration applied",
+      1 in applied and 2 in applied and 3 in applied and 4 in applied, applied)
+check("schema version is 4", db.current_version() == 4, db.current_version())
 
 re_run = db.migrate()
 check("migrations idempotent (no re-apply)", re_run == [], re_run)
@@ -344,6 +347,19 @@ expected_methods = {
     # Phase 9 — central risk engine (Sections AZ, BA)
     "/lab/risk":                          {"GET"},
     "/lab/api/risk":                      {"GET"},
+    # Phase 10/11 — reporting (Sections 42, 43, 69, 70, BF, BG)
+    "/lab/reports":                       {"GET"},
+    "/lab/reports/<report_ref>":          {"GET"},
+    "/lab/reports/exports":               {"GET"},
+    "/lab/reports/manifest":              {"GET"},
+    "/lab/api/reports":                   {"GET", "POST"},
+    "/lab/api/reports/<report_ref>":      {"GET"},
+    "/lab/api/reports/<report_ref>/csv":  {"GET"},
+    "/lab/api/cases/<case_ref>/export":   {"POST"},
+    "/lab/api/exports":                   {"GET"},
+    "/lab/api/exports/<export_ref>":      {"GET"},
+    "/lab/api/exports/<export_ref>/verify":   {"POST"},
+    "/lab/api/exports/<export_ref>/download": {"GET"},
 }
 expected_rules = sorted(expected_methods)
 
@@ -1263,6 +1279,157 @@ _html = r.get_data(as_text=True)
 check("page: risk register renders",
       r.status_code == 200 and "RISK ASSESSMENT" in _html
       and "risk-register-body" in _html)
+
+# ===========================================================================
+section("Test 7F — Phase 10/11 Reporting (Sections 42/43/69/70/BF/BG)")
+
+from lab import report_service as rps     # noqa: E402
+import zipfile as _zf                      # noqa: E402
+
+_EXPECT_COLS = {"case_id", "export_id", "evidence_id", "analysis_id",
+                "sha256", "acquisition_time", "analysis_time", "engine",
+                "source", "result"}
+
+# --- generate a report (BF) ---
+r = _client3.post("/lab/api/reports", json={"case_ref": case1["case_ref"]})
+_b = r.get_json()
+check("reporting: generate returns 201 envelope",
+      r.status_code == 201 and _b["success"] is True, r.status_code)
+_rpt_ref = _b["data"]["report_ref"]
+check("reporting: report ref is KAV-RPT-<year>-<seq>",
+      _rpt_ref.startswith("KAV-RPT-2026-"), _rpt_ref)
+check("reporting: ref is reused in the persisted document",
+      _b["data"]["content"]["report_ref"] == _rpt_ref)
+_rpt2 = _client3.post("/lab/api/reports",
+                      json={"case_ref": case3["case_ref"]}).get_json()
+check("reporting: counter increments per report",
+      _rpt2["data"]["report_ref"].endswith("00002"), _rpt2["data"]["report_ref"])
+
+# --- BF 15-section content, composed from stored facts ---
+_c = _b["data"]["content"]
+_section_keys = ["case_summary", "executive_summary", "incident_classification",
+                 "evidence", "ioc_table", "timeline", "technical_findings",
+                 "threat_intelligence", "ml_findings", "correlation",
+                 "risk_assessment", "limitations", "defensive_recommendations",
+                 "evidence_manifest", "report_metadata"]
+check("reporting: all BF sections present",
+      all(k in _c for k in _section_keys),
+      [k for k in _section_keys if k not in _c])
+check("reporting: metadata echoes the BF section vocabulary",
+      _c["report_metadata"]["sections"] == rps.REPORT_SECTIONS)
+check("reporting: evidence lists stored records",
+      len(_c["evidence"]) >= 1, len(_c["evidence"]))
+check("reporting: IOC table lists stored indicators",
+      len(_c["ioc_table"]) >= 1, len(_c["ioc_table"]))
+check("reporting: executive summary cites real counts",
+      any("evidence" in e.lower() and "analysis" in e.lower()
+          for e in _c["executive_summary"]),
+      _c["executive_summary"][:1])
+check("reporting: risk section matches the live engine",
+      _c["risk_assessment"]["risk_score"] ==
+      rks.case_risk(case1["case_ref"])["risk_score"],
+      (_c["risk_assessment"]["risk_score"],
+       rks.case_risk(case1["case_ref"])["risk_score"]))
+check("reporting: manifest rows carry every BG key",
+      all(_EXPECT_COLS <= set(m) for m in _c["evidence_manifest"]),
+      [m for m in _c["evidence_manifest"]
+       if not _EXPECT_COLS <= set(m)][:1])
+check("reporting: provider status matches the environment honestly",
+      any(p["provider"] == "VirusTotal" and
+          p["status"] == ("CONFIGURED" if os.environ.get("VIRUSTOTAL_API_KEY")
+                          else "NOT CONFIGURED")
+          for p in _c["threat_intelligence"]["providers"]))
+
+# --- read back / list / CSV ---
+r = _client3.get("/lab/api/reports/" + _rpt_ref)
+_b = r.get_json()
+check("reporting: detail envelope + content available",
+      r.status_code == 200 and _b["data"]["content_available"] is True
+      and _b["data"]["content"]["case"]["case_ref"] == case1["case_ref"])
+check("reporting: unknown report rejected",
+      _client3.get("/lab/api/reports/KAV-RPT-2099-99999").get_json()
+      ["error"]["code"] == "REPORT_NOT_FOUND")
+
+_b = _client3.get("/lab/api/reports").get_json()
+check("reporting: list envelope + total",
+      _b["success"] is True and _b["data"]["total"] >= 2
+      and any(i["report_ref"] == _rpt_ref
+              for i in _b["data"]["items"]),
+      _b["data"]["total"])
+
+r = _client3.get("/lab/api/reports/" + _rpt_ref + "/csv")
+check("reporting: IOC CSV export",
+      r.status_code == 200 and r.mimetype.startswith("text/csv")
+      and "IOC_TYPE" in r.get_data(as_text=True),
+      r.status_code)
+
+# --- export package (Sections 70/BG) ---
+r = _client3.post("/lab/api/cases/" + case1["case_ref"] + "/export")
+_b = r.get_json()
+check("reporting: export returns 201 envelope",
+      r.status_code == 201 and _b["success"] is True, r.status_code)
+_xpt_ref = _b["data"]["export_ref"]
+check("reporting: export ref is KAV-EXP-<year>-<seq>",
+      _xpt_ref.startswith("KAV-EXP-2026-"), _xpt_ref)
+check("reporting: package sha256 recorded",
+      len(_b["data"]["sha256"]) == 64, _b["data"]["sha256"])
+check("reporting: package contains the 7 standard items",
+      _b["data"]["item_count"] == 7, _b["data"]["item_count"])
+check("reporting: manifest rows stamped with this export id",
+      all(m["export_id"] == _xpt_ref
+          for m in _b["data"]["manifest"]["rows"]))
+check("reporting: export package links a real report",
+      any(i["report_ref"] == _b["data"]["report_ref"]
+          for i in _client3.get("/lab/api/reports").get_json()["data"]["items"]))
+
+_b = _client3.get("/lab/api/exports").get_json()
+check("reporting: exports list envelope",
+      _b["success"] is True
+      and any(x["export_ref"] == _xpt_ref
+              for x in _b["data"]["items"]))
+check("reporting: exports list leaks no storage paths",
+      all("storage_path" not in x for x in _b["data"]["items"]))
+
+_b = _client3.get("/lab/api/exports/" + _xpt_ref).get_json()
+check("reporting: export detail reads manifest from the zip",
+      _b["data"]["file_present"] is True
+      and isinstance(_b["data"]["manifest"]["evidence_manifest"], list))
+
+# --- integrity verification (BG) ---
+_b = _client3.post("/lab/api/exports/" + _xpt_ref + "/verify").get_json()
+check("reporting: package integrity VERIFIED",
+      _b["data"]["status"] == "VERIFIED", _b["data"]["status"])
+
+_xpath = rps.get_export(_xpt_ref)["storage_path"]
+with _zf.ZipFile(_xpath, "a") as _z:
+    _z.writestr("tamper.txt", "integrity probe")
+_b = _client3.post("/lab/api/exports/" + _xpt_ref + "/verify").get_json()
+check("reporting: tampered package flagged MISMATCH",
+      _b["data"]["status"] == "MISMATCH", _b["data"]["status"])
+
+r = _client3.get("/lab/api/exports/" + _xpt_ref + "/download")
+check("reporting: package download streams the zip",
+      r.status_code == 200 and r.mimetype == "application/zip"
+      and len(r.data) > 0, (r.status_code, r.mimetype))
+
+# --- audit events recorded (Section 44/BH) ---
+check("reporting: REPORT_GENERATED audited",
+      any(a["target_ref"] == case1["case_ref"]
+          for a in cs.list_audit(action="REPORT_GENERATED")["items"]))
+check("reporting: REPORT_EXPORTED audited",
+      any(a["target_ref"] == case1["case_ref"]
+          for a in cs.list_audit(action="REPORT_EXPORTED")["items"]))
+
+# --- pages render ---
+for _url, _marker in [("/lab/reports", "INVESTIGATION REPORTS"),
+                      ("/lab/reports/" + _rpt_ref, "lab-doc-cover"),
+                      ("/lab/reports/exports", "EXPORT CENTER"),
+                      ("/lab/reports/manifest", "EVIDENCE MANIFEST")]:
+    r = _client3.get(_url)
+    _html = r.get_data(as_text=True)
+    check("page: %s renders" % _url,
+          r.status_code == 200 and _marker in _html,
+          r.status_code)
 
 # ===========================================================================
 print("\n" + "=" * 64)

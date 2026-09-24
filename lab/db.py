@@ -362,6 +362,21 @@ MIGRATIONS = [
         ALTER TABLE cases ADD COLUMN risk_assessed_at TEXT;
         CREATE INDEX IF NOT EXISTS idx_cases_risk ON cases(risk_level);
     """),
+    (4, "export packages (reporting / export center), Sections 70/BG", """
+        CREATE TABLE IF NOT EXISTS export_packages (
+            export_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            export_ref   TEXT NOT NULL UNIQUE,
+            case_id      INTEGER NOT NULL REFERENCES cases(case_id) ON DELETE CASCADE,
+            report_ref   TEXT,
+            storage_path TEXT NOT NULL,
+            sha256       TEXT,
+            item_count   INTEGER NOT NULL DEFAULT 0,
+            created_by   TEXT,
+            created_at   TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_exports_case ON export_packages(case_id);
+        CREATE INDEX IF NOT EXISTS idx_exports_created ON export_packages(created_at DESC);
+    """),
 ]
 
 # Constraint / enum documentation (enforced at service layer, verified by tests).

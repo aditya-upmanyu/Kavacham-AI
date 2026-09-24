@@ -13,7 +13,7 @@ Product A's existing flat-JSON APIs are intentionally left untouched
 import os
 import time
 
-from flask import jsonify, render_template, request
+from flask import jsonify, render_template, request, send_file
 
 from lab import lab_bp
 from lab import health as health_service
@@ -22,6 +22,7 @@ from lab import evidence_service
 from lab import analysis_service
 from lab import intel_service
 from lab import risk_service
+from lab import report_service
 
 
 # ---------------------------------------------------------------------------
@@ -71,6 +72,14 @@ NAV_STRUCTURE = [
             {"id": "attack-chains", "label": "Attack Chains", "url": "/lab/intel/attack-chains", "ready": True},
             {"id": "entity-graph", "label": "Entity Graph", "url": "/lab/intel/graph", "ready": True},
             {"id": "risk-assessment", "label": "Risk Assessment", "url": "/lab/risk", "ready": True},
+        ],
+    },
+    {
+        "group": "REPORTING",
+        "links": [
+            {"id": "investigation-reports", "label": "Investigation Reports", "url": "/lab/reports", "ready": True},
+            {"id": "export-center", "label": "Export Center", "url": "/lab/reports/exports", "ready": True},
+            {"id": "evidence-manifest", "label": "Evidence Manifest", "url": "/lab/reports/manifest", "ready": True},
         ],
     },
     {
@@ -830,6 +839,175 @@ def api_risk():
         return api_error("RISK_COMPUTE_FAILED",
                          "Risk could not be computed.", 500)
     return api_ok(data)
+
+
+# ---------------------------------------------------------------------------
+# Phase 10/11 — reporting (Sections 42, 43, 69, 70, BF, BG)
+# ---------------------------------------------------------------------------
+
+@lab_bp.route("/reports", strict_slashes=False)
+def reports_page():
+    return render_template("lab/reports.html", **_shell_context(
+        nav_id="investigation-reports",
+        page_title="Investigation Reports",
+        report_sections=report_service.REPORT_SECTIONS,
+    ))
+
+
+@lab_bp.route("/reports/<report_ref>", strict_slashes=False)
+def report_detail_page(report_ref):
+    return render_template("lab/report_detail.html", **_shell_context(
+        nav_id="investigation-reports",
+        page_title=report_ref,
+        report_ref=report_ref,
+    ))
+
+
+@lab_bp.route("/reports/exports", strict_slashes=False)
+def export_center_page():
+    return render_template("lab/export_center.html", **_shell_context(
+        nav_id="export-center",
+        page_title="Export Center",
+    ))
+
+
+@lab_bp.route("/reports/manifest", strict_slashes=False)
+def manifest_page():
+    return render_template("lab/manifest.html", **_shell_context(
+        nav_id="evidence-manifest",
+        page_title="Evidence Manifest",
+    ))
+
+
+@lab_bp.route("/api/reports", methods=["GET"])
+def api_reports_list():
+    case_ref = (request.args.get("case") or "").strip() or None
+    limit = request.args.get("limit", 100, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    try:
+        data = report_service.list_reports(case_ref=case_ref, limit=limit,
+                                           offset=offset)
+    except report_service.ReportError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("REPORT_QUERY_FAILED",
+                         "Reports could not be listed.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/reports", methods=["POST"])
+def api_reports_generate():
+    payload = request.get_json(silent=True) or {}
+    case_ref = (payload.get("case_ref") or "").strip()
+    if not case_ref:
+        return api_error("VALIDATION_FAILED", "case_ref is required.")
+    try:
+        data = report_service.generate_report(case_ref, actor="analyst",
+                                              ip_address=_client_ip())
+    except report_service.ReportError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("REPORT_GENERATION_FAILED",
+                         "The report could not be generated.", 500)
+    return api_ok(data, status=201)
+
+
+@lab_bp.route("/api/reports/<report_ref>", methods=["GET"])
+def api_reports_detail(report_ref):
+    try:
+        data = report_service.get_report(report_ref)
+    except report_service.ReportError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("REPORT_READ_FAILED",
+                         "The report could not be read.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/reports/<report_ref>/csv", methods=["GET"])
+def api_reports_csv(report_ref):
+    """IOC table CSV export for the report's case (BF: CSV where appropriate)."""
+    try:
+        report = report_service.get_report(report_ref)
+    except report_service.ReportError as exc:
+        return api_error(exc.code, exc.message)
+    if not report.get("content"):
+        return api_error("REPORT_CONTENT_UNAVAILABLE",
+                         "The report content is unavailable.", 404)
+    case_ref = report["content"]["case"]["case_ref"]
+    csv_text = report_service.case_ioc_csv(case_ref)
+    return (
+        csv_text,
+        200,
+        {"Content-Type": "text/csv; charset=utf-8",
+         "Content-Disposition":
+             "attachment; filename=%s-iocs.csv" % report_ref},
+    )
+
+
+@lab_bp.route("/api/cases/<case_ref>/export", methods=["POST"])
+def api_case_export(case_ref):
+    try:
+        data = report_service.export_case(case_ref, actor="analyst",
+                                          ip_address=_client_ip())
+    except report_service.ReportError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("EXPORT_FAILED", "The export package could not be "
+                         "created.", 500)
+    return api_ok(data, status=201)
+
+
+@lab_bp.route("/api/exports", methods=["GET"])
+def api_exports_list():
+    try:
+        data = report_service.list_exports()
+    except Exception:
+        return api_error("EXPORT_QUERY_FAILED",
+                         "Export packages could not be listed.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/exports/<export_ref>", methods=["GET"])
+def api_exports_detail(export_ref):
+    try:
+        data = report_service.get_export(export_ref)
+    except report_service.ReportError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("EXPORT_READ_FAILED",
+                         "The export package could not be read.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/exports/<export_ref>/verify", methods=["POST"])
+def api_exports_verify(export_ref):
+    try:
+        data = report_service.verify_export(export_ref)
+    except report_service.ReportError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("EXPORT_VERIFY_FAILED",
+                         "The export package could not be verified.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/exports/<export_ref>/download", methods=["GET"])
+def api_exports_download(export_ref):
+    try:
+        data = report_service.get_export(export_ref)
+    except report_service.ReportError as exc:
+        return api_error(exc.code, exc.message)
+    path = data.get("storage_path")
+    if not data.get("file_present") or not path:
+        return api_error("EXPORT_FILE_MISSING",
+                         "The package file is missing.", 404)
+    exports_root = os.path.abspath(report_service.EXPORTS_DIR)
+    if not os.path.abspath(path).startswith(exports_root):
+        return api_error("EXPORT_PATH_INVALID", "Invalid package path.", 400)
+    return send_file(path, as_attachment=True,
+                     download_name="%s.zip" % export_ref,
+                     mimetype="application/zip")
 
 
 @lab_bp.errorhandler(404)

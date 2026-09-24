@@ -1,0 +1,47 @@
+{% extends "lab/base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lab_reports.css') }}" />
+{% endblock %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a><span class="lab-crumb-sep">/</span>
+  <a href="/lab/reports">Investigation Reports</a><span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current lab-mono">{{ report_ref }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head lab-print-hide">
+  <div>
+    <h1 class="lab-title lab-mono">{{ report_ref }}</h1>
+    <p class="lab-subtitle" id="report-doc-subtitle">Loading report…</p>
+  </div>
+  <div class="lab-page-head-actions">
+    <button class="lab-btn lab-btn-sm" id="report-print" type="button">PDF</button>
+    <button class="lab-btn lab-btn-sm lab-btn-ghost" id="report-json" type="button">JSON</button>
+    <button class="lab-btn lab-btn-sm lab-btn-ghost" id="report-csv" type="button">IOC CSV</button>
+  </div>
+</div>
+
+<div id="report-doc-loading" class="lab-panel lab-print-hide">
+  <div class="lab-panel-body">
+    <div class="lab-skeleton lab-skeleton-line" style="width:52%;"></div>
+    <div class="lab-skeleton lab-skeleton-line" style="width:74%;"></div>
+    <div class="lab-skeleton lab-skeleton-line" style="width:60%;"></div>
+  </div>
+</div>
+
+<div id="report-doc-error" hidden></div>
+
+<article class="lab-doc" id="report-doc" hidden>
+  <div class="lab-doc-cover" id="doc-cover"></div>
+  <div class="lab-doc-body" id="doc-body"></div>
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script>window.__LAB_REPORT_REF__ = {{ report_ref | tojson }};</script>
+<script src="{{ url_for('static', filename='js/lab_reports.js') }}"></script>
+{% endblock %}

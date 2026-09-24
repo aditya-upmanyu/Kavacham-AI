@@ -1,0 +1,58 @@
+{% extends "lab/base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lab_reports.css') }}" />
+{% endblock %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a><span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Evidence Manifest</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">EVIDENCE MANIFEST</h1>
+    <p class="lab-subtitle">
+      One row per stored analysis in the BG shape — case, export, evidence, analysis,
+      SHA-256, timestamps, engine, source and result. Selection below lists only real
+      export packages.
+    </p>
+  </div>
+  <div class="lab-page-head-actions">
+    <button class="lab-btn lab-btn-sm" id="manifest-verify" type="button" disabled>VERIFY INTEGRITY</button>
+  </div>
+</div>
+
+<div class="lab-strip" style="margin-bottom:14px;">
+  <label class="lab-label" for="manifest-export">EXPORT PACKAGE</label>
+  <select class="lab-input" id="manifest-export" style="max-width:340px;" aria-label="Export package">
+    <option value="">Select an export package…</option>
+  </select>
+  <span class="lab-xs lab-dim" id="manifest-meta"></span>
+</div>
+
+<section class="lab-panel" aria-labelledby="manifest-table-title">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title" id="manifest-table-title">MANIFEST ROWS</h2>
+    <span class="lab-xs lab-dim" id="manifest-count">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="manifest-body">
+    <div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:84%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:66%;"></div>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="manifest-foot" hidden></div>
+</section>
+
+<div class="lab-panel" id="manifest-verify-result" hidden>
+  <div class="lab-panel-body" id="manifest-verify-body"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_exports.js') }}"></script>
+{% endblock %}

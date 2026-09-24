@@ -1,0 +1,67 @@
+{% extends "lab/base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lab_reports.css') }}" />
+{% endblock %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a><span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Investigation Reports</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">INVESTIGATION REPORTS</h1>
+    <p class="lab-subtitle">
+      Reports are built exclusively from stored case records — evidence, analyses, findings,
+      IOCs, timeline, correlation and the central risk assessment. Nothing is invented.
+    </p>
+  </div>
+  <div class="lab-page-head-actions">
+    <button class="lab-btn lab-btn-sm" id="reports-new" type="button">＋ GENERATE REPORT</button>
+  </div>
+</div>
+
+<!-- Generate panel (hidden until requested) -->
+<div class="lab-panel" id="reports-generate" hidden>
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title">NEW REPORT</h2>
+    <span class="lab-xs lab-dim">Sections: {{ report_sections | join(', ') }}</span>
+  </div>
+  <div class="lab-panel-body">
+    <div class="lab-strip" style="margin-bottom:12px;">
+      <label class="lab-label" for="reports-case">CASE</label>
+      <select class="lab-input" id="reports-case" style="max-width:340px;">
+        <option value="">Select a case…</option>
+      </select>
+    </div>
+    <div class="lab-row tight">
+      <button class="lab-btn" id="reports-submit" type="button" disabled>GENERATE</button>
+      <button class="lab-btn lab-btn-ghost" id="reports-cancel" type="button">CANCEL</button>
+      <span class="lab-xs lab-dim" id="reports-generate-status"></span>
+    </div>
+  </div>
+</div>
+
+<section class="lab-panel" aria-labelledby="reports-list-title">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title" id="reports-list-title">GENERATED REPORTS</h2>
+    <span class="lab-xs lab-dim" id="reports-ts">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="reports-list-body">
+    <div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:70%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:52%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:64%;"></div>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="reports-list-foot">Loading reports…</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_reports.js') }}"></script>
+{% endblock %}

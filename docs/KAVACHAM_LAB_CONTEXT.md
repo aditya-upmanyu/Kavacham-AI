@@ -2,7 +2,7 @@
 
 > Persistent architectural memory of the Kavacham Lab build.
 > Read this file before any future architectural change (version2.txt D.1).
-> Last updated: Phase 9 (Risk) milestone — see section 29.
+> Last updated: Phase 10/11 (Reporting) milestone — see section 29.
 
 ## 1. Project Overview
 
@@ -45,7 +45,8 @@ Two products share the repository but remain independent surfaces:
 * Routes: `lab/routes.py` — pages, Section 49 JSON APIs, NAV_STRUCTURE.
 * Services (one concern per module):
   `health.py`, `case_service.py`, `evidence_service.py`,
-  `analysis_service.py`, `intel_service.py`, `risk_service.py`.
+  `analysis_service.py`, `intel_service.py`, `risk_service.py`,
+  `report_service.py`.
 * Persistence: `lab/db.py` — schema, versioned migrations, helpers
   (`query`, `query_one`, `execute`, `transaction`, `bootstrap`).
 
@@ -57,7 +58,8 @@ Two products share the repository but remain independent surfaces:
   `window.LAB` (`toast`, `renderError`, `emptyState`, `esc`, `fmtTs`,
   `refreshHeaderHealth`).
 * CSS in `static/css/lab*.css` (design tokens in `lab.css`, shell in
-  `lab_shell.css`, cases in `lab_cases.css`, risk in `lab_risk.css`).
+  `lab_shell.css`, cases in `lab_cases.css`, risk in `lab_risk.css`,
+  reporting in `lab_reports.css`).
 * No external frameworks; fonts: Inter + JetBrains Mono.
 
 ## 6. Backend Stack
@@ -70,12 +72,13 @@ Two products share the repository but remain independent surfaces:
 
 * SQLite file: `kavacham_lab.db` (env `KAVACHAM_LAB_DB` overrides path for
   tests). Gitignored.
-* Migrations: `lab/db.py MIGRATIONS` list; currently **version 3**.
+* Migrations: `lab/db.py MIGRATIONS` list; currently **version 4**.
   v1 = identity/RBAC tables + cases, evidence, chain_of_custody, analyses,
   analysis_findings, iocs, case_iocs, entities, case_entities,
   timeline_events, notes, reports, audit_logs, alerts.
   v2 = `iocs.status` column (OBSERVED/VERIFIED/FALSE_POSITIVE).
   v3 = `cases.risk_score`, `cases.risk_assessed_at` (risk snapshot).
+  v4 = `export_packages` (export center, Sections 70/BG).
 * `db.integrity_check()` runs `PRAGMA integrity_check`; `db.table_counts()`
   exposes real counts.
 
@@ -110,11 +113,13 @@ Lab routes follow Section 49: `{"success": true, "data": ..., "meta": ...}`
 on success, `{"success": false, "error": {"code", "message"}}` on error.
 Pages: `/lab`, `/lab/cases`, `/lab/cases/new`, `/lab/cases/<ref>`,
 `/lab/audit`, `/lab/evidence...`, `/lab/analysis...`, `/lab/intel/*`,
-`/lab/risk`.
+`/lab/risk`, `/lab/reports`, `/lab/reports/<ref>`, `/lab/reports/exports`,
+`/lab/reports/manifest`.
 APIs: `/lab/api/cases`, `/lab/api/cases/meta`, `/lab/api/audit`,
 `/lab/api/evidence...`, `/lab/api/analysis...`, `/lab/api/health`,
 `/lab/api/alerts`, `/lab/api/command-center`, `/lab/api/meta`,
-`/lab/api/intel/*`, `/lab/api/risk`.
+`/lab/api/intel/*`, `/lab/api/risk`, `/lab/api/reports...`,
+`/lab/api/exports...`, `/lab/api/cases/<ref>/export`.
 
 ## 12. Existing Important Components
 
@@ -124,10 +129,14 @@ APIs: `/lab/api/cases`, `/lab/api/cases/meta`, `/lab/api/audit`,
   (`lab-state` empty/error), toasts, skeleton loading.
 * Intel: `lab_intel.js`, `lab_graph.js`, `lab_chains.js`, `lab_correlation.js`.
 * Risk: `lab_risk.js` + `lab_risk.css` (band scale, finding cards).
+* Reporting: `lab_reports.js` + `lab_exports.js` + `lab_reports.css`
+  (report document with print-to-PDF, export center, manifest page).
 
 ## 13. Environment Variables
 
 * `KAVACHAM_LAB_DB` — test override for the Lab DB path.
+* `KAVACHAM_LAB_STORAGE` — test override for `lab_storage` (reports JSON,
+  export packages, evidence originals).
 * `VIRUSTOTAL_API_KEY` — optional; enables real VT lookups for SHA-256/URL.
   **Is set globally on the dev machine** — tests pin it OFF for
   determinism; unpatched runs perform real network calls.
@@ -157,6 +166,9 @@ indexes. Notes:
 * intel_service — IOC classify/extract/sync, ledger, status workflow,
   cross-case correlation, entity graph, attack chains.
 * risk_service — central risk engine (see section 19).
+* report_service — reports (`KAV-RPT` refs, BF 15 sections), export
+  packages (`KAV-EXP`, Section 70), evidence manifest + integrity
+  verification (Sections 43/BG).
 
 ## 16. Provider Architecture
 
@@ -214,21 +226,22 @@ indexes. Notes:
 
 ## 21. Testing Strategy
 
-* `test_lab.py` — isolated temp DB (`KAVACHAM_LAB_DB`), services + HTTP
-  via `app.test_client()`. Sections 1..8, 7C, 7D, 7E cover migrations,
-  cases, evidence, analysis pipeline, intelligence, risk, Product A
-  regression baseline. VT env pinned OFF inside destructive-analysis and
-  intel sections and restored after.
+* `test_lab.py` — isolated temp DB + storage (env overrides set before any
+  lab import), services + HTTP via `app.test_client()`. Sections 1..8, 7C,
+  7D, 7E, 7F cover migrations, cases, evidence, analysis pipeline,
+  intelligence, risk, reporting, Product A regression baseline. VT env
+  pinned OFF inside destructive-analysis and intel sections and restored
+  after.
 * Product A: `QA_test.py` baseline 50/51 (VT-key assertion is the known
   expectation).
 
 ## 22. Current Implementation Status
 
-Phases done (old plan numbering): 1 Repository Audit → 8 Intelligence.
-New 14-phase plan: Phases 1-9 done (Intelligence), **Phase 10 RISK just
-completed**; Phase 11 Reporting pending, 12 Security, 13 Health &
-Observability, 14 QA. Global command search (CTRL+K, version2.txt O) and
-case-view ENTITIES/ATTACK CHAIN tabs (Q) still pending.
+Phases done (old plan numbering): 1 Repository Audit → 9 Reporting.
+New 14-phase plan: Phases 1-11 done (Reporting completed); Phase 12
+Security pending, 13 Health & Observability, 14 QA. Global command
+search (CTRL+K, version2.txt O) and case-view ENTITIES/ATTACK CHAIN
+tabs (Q) still pending.
 
 ## 23. Completed Features
 
@@ -238,12 +251,13 @@ notes, timeline, audit); evidence (intake, vault, hash, custody,
 integrity); analysis (10 types, stage pipeline, honest ML/VT);
 intelligence (IOC ledger, correlation, entity graph, attack chains);
 **risk engine (register + case assessments + evidence-first findings)**;
+**reporting (BF 15-section reports, `KAV-RPT` refs, print-to-PDF,
+`KAV-EXP` export packages, BG manifest + SHA-256 integrity, IOC CSV)**;
 docs context file.
 
 ## 24. Pending Features
 
-Reporting (reports/PDF/JSON/manifest/export, BF/BG, `KAV-RPT-` refs);
-evidence manifest; audit-log event vocabulary + secret-free logging;
+audit-log event vocabulary + secret-free logging;
 server-side RBAC (BI); SSRF file/URL hardening; rate limiting;
 system-health provider/settings page (BO/BP); structured logging +
 correlation IDs (BZ); command search CTRL+K (O); case-view ENTITIES +
@@ -253,10 +267,11 @@ ATTACK CHAIN tabs (Q); model registry/dataset registry surfaces (BD/BE).
 
 * No authentication/RBAC enforcement yet (tables exist).
 * VT only provider wired; other providers report NOT CONFIGURED.
-* Live DB is schema v3 but has no vault data beyond a small seed
+* Live DB is schema v4 but has no vault data beyond a small seed
   (1 case + evidence set) until a rescan/analysis runs.
 * No global command search yet.
-* Case-view REPORT tab container exists but reporting content pending.
+* Case-view REPORT tab lists generated reports; generation lives in the
+  Report Center.
 
 ## 26. Architectural Decisions
 
@@ -273,6 +288,9 @@ ATTACK CHAIN tabs (Q); model registry/dataset registry surfaces (BD/BE).
 * Risk computed on the fly from stored records; only snapshots written
   back (stamped) so other surfaces never show stale/fabricated values.
 * Tests pin VT OFF (machine has a global key) for deterministic off-line QA.
+* Export packages are stdlib-zipped with a stored SHA-256 (DB + sidecar)
+  that verify re-computes; "PDF" export is a print-optimized document the
+  browser renders to PDF — no new dependencies (69, CM).
 
 ## 27. Important Files
 
@@ -295,20 +313,25 @@ ATTACK CHAIN tabs (Q); model registry/dataset registry surfaces (BD/BE).
 
 ## 29. Last Verified State
 
-* Git `main` = `kavacham` (Kavacham-AI) = `origin` (Anweshak-AI) at
-  `f808443` — all 12 commits GPG-signed (key `5359FC122398973E`,
-  public key exported to `pubkey.asc`).
-* Lab suite: 240/240 passing before Phase 9 (Phase 9 test additions must
-  keep the whole suite green).
+* Git `main` = `kavacham` (Kavacham-AI) = `origin` (Anweshak-AI).
+  All commits GPG-signed (key `5359FC122398973E`, public key in
+  `pubkey.asc`); the Risk milestone is commit `4620b92` and the
+  Reporting milestone follows this doc update (see `git log -1`).
+* Lab suite: **309/309 passing** — 275 after Phase 9 (Risk), +34 in
+  Test 7F covering reports, export packages, manifest + integrity,
+  audit events, route inventory and page renders.
 * Product A regression: 50/51 (known VT-key assertion).
-* Live server verified over HTTP on prior milestones; this phase to be
-  verified after tests pass (see git log for the risk commit hash).
+* Reporting milestone verified live over HTTP: report auto-generated on
+  export, `KAV-EXP` package verified (`sha256` match + zip OK), manifest
+  rows present for analysed cases, CSV + zip download stream correctly.
+* All live checks rerun via `python test_lab.py` before every push;
+  nothing unverified is pushed.
 
 ## 30. Future Work
 
-Phase 11 Reporting (reports/PDF/JSON/manifest/export), Phase 12 Security
-(RBAC server-side, audit hardening, SSRF/upload reviews, rate limits),
-Phase 13 Health & Observability (provider health page, structured logs,
-correlation IDs), Phase 14 QA (full suite + browser/accessibility pass),
-then global command search + case-view ENTITIES/ATTACK CHAIN tabs and
-CONTEXT.md refresh per phase (CG).
+Phase 12 Security (RBAC server-side per BI, audit-log vocabulary +
+secret-free logging per BH, SSRF/upload reviews, rate limits),
+Phase 13 Health & Observability (provider health page BO/BP, structured
+logs + correlation IDs BZ), Phase 14 QA (full suite + browser/accessibility
+pass), then global command search (O), case-view ENTITIES/ATTACK CHAIN
+tabs (Q) and CONTEXT.md refresh per phase (CG).

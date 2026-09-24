@@ -1,0 +1,130 @@
+/* ====================================================================
+   KAVACHAM LAB — Reporting (Sections 42/43/69/70/BF/BG)
+   Report center, professional-print document, export center, manifest.
+   ==================================================================== */
+
+/* ---------------- report document (Section 69) ---------------- */
+.lab-doc {
+  background: #0E1218;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.lab-doc-cover {
+  padding: 26px 30px 22px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  background: linear-gradient(180deg, rgba(59, 130, 214, 0.07), transparent);
+}
+
+.lab-doc-cover-title {
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: #7DB3E8;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.lab-doc-cover-ref {
+  font-size: 24px;
+  color: #E6EBF3;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.lab-doc-cover-field {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+  font-size: 13px;
+  padding: 3px 0;
+}
+
+.lab-doc-cover-field span { color: #8A94A7; }
+.lab-doc-cover-field b { color: #E6EBF3; font-weight: 600; }
+
+.lab-doc-body { padding: 10px 30px 34px; }
+
+.lab-doc-section {
+  padding: 18px 0 6px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.lab-doc-section:last-child { border-bottom: none; }
+
+.lab-doc-section h2 {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  color: #7DB3E8;
+  font-weight: 700;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+.lab-doc-section ul, .lab-doc-section ol {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: #C7CFDC;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.lab-doc-section p { color: #C7CFDC; font-size: 13.5px; line-height: 1.6; }
+
+.lab-doc-finding {
+  border-left: 3px solid rgba(214, 138, 30, 0.55);
+  background: rgba(148, 163, 184, 0.06);
+  padding: 10px 14px;
+  margin: 0 0 10px;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  color: #C7CFDC;
+}
+
+.lab-doc-finding b { color: #E6EBF3; }
+
+.lab-doc-finding-meta {
+  display: block;
+  color: #8A94A7;
+  font-size: 11.5px;
+  margin: 3px 0 6px;
+}
+
+.lab-doc-score {
+  font-size: 30px;
+  font-weight: 800;
+  color: #F08A8A;
+}
+
+/* ---------------- print (browser "Save as PDF", Section 42) ---------------- */
+@media print {
+  .lab-header, .lab-sidebar, .lab-crumb, .lab-page-head, .lab-print-hide {
+    display: none !important;
+  }
+  .lab-shell { display: block !important; }
+  .lab-main {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FFFFFF !important;
+  }
+  body { background: #FFFFFF !important; }
+  .lab-doc { border: none; border-radius: 0; background: #FFFFFF; }
+  .lab-doc-cover { border-bottom: 2px solid #111827; }
+  .lab-doc-cover-title { color: #1D4ED8; }
+  .lab-doc-cover-ref { color: #111827; }
+  .lab-doc-cover-field span, .lab-doc-section h2 { color: #374151; }
+  .lab-doc-cover-field b { color: #111827; }
+  .lab-doc-section { border-bottom: 1px solid #D1D5DB; }
+  .lab-doc-section h2 { color: #1D4ED8; }
+  .lab-doc-section p, .lab-doc-section li,
+  .lab-doc-finding, .lab-doc-finding b { color: #111827; }
+  .lab-doc-finding { border-left-color: #F59E0B; background: #FBF7EF; }
+  .lab-doc-score { color: #DC2626; }
+  .lab-table { border: 1px solid #D1D5DB; }
+  .lab-table th { background: #E5E7EB !important; color: #111827 !important; }
+  .lab-table td { color: #111827 !important; }
+}
+
+/* ---------------- empty-state sizing on reporting pages ---------------- */
+#reports-list-body .lab-empty, #exports-list-body .lab-empty,
+#manifest-body .lab-empty { padding: 34px 20px; }

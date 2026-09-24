@@ -509,3 +509,7 @@ def health_check():
 def bootstrap():
     """Create/migrate the database if needed. Safe to call repeatedly."""
     migrate()
+    # Seed RBAC roles/permissions/matrix into the schema-v1 tables (BI).
+    # Deferred import avoids the db -> security module cycle.
+    from lab import security
+    security.seed_rbac()

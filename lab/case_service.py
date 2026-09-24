@@ -60,7 +60,15 @@ def _next_case_ref():
 
 def audit(event_type, action, target_type=None, target_ref=None,
           detail=None, actor=ACTOR_DEFAULT, ip_address=None):
-    """Write an audit log entry (Section 44)."""
+    """Write an audit log entry (Section 44).
+
+    Secrets are redacted here (the single audit funnel) per the never-log
+    rules of version2.txt BH — passwords, API keys, OAuth tokens, session
+    secrets and database credentials never reach the DB.
+    """
+    from lab import security
+    detail = security.redact_secrets(detail)
+    target_ref = security.redact_secrets(target_ref)
     db.execute(
         "INSERT INTO audit_logs(event_type, actor, action, target_type, "
         "target_ref, detail, ip_address, created_at) VALUES (?,?,?,?,?,?,?,?)",

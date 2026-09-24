@@ -46,8 +46,8 @@
               data-key="{{ system_status_key }}">{{ system_status or 'CHECKING' }}</span>
       </div>
       <div class="lab-hstat lab-hide-sm">
-        <span class="lab-label">ACCESS LEVEL</span>
-        <span class="lab-hstat-val">RESTRICTED</span>
+        <span class="lab-label">ROLE / ACCESS</span>
+        <span class="lab-hstat-val">{{ current_role }} · RESTRICTED</span>
       </div>
       <div class="lab-hstat lab-hide-md">
         <span class="lab-label">ENVIRONMENT</span>

@@ -989,7 +989,7 @@ def run_analysis(evidence_ref, analysis_type, actor=ACTOR_DEFAULT,
                  f["detail"], ev["evidence_ref"], f["source"] or "local"))
 
         case_service.audit(
-            "ANALYSIS", "ANALYSIS_RUN", target_type="evidence",
+            "ANALYSIS_EXECUTED", "ANALYSIS_RUN", target_type="evidence",
             target_ref=ev["evidence_ref"],
             detail="%s analysis %s -> %s (score %s)"
                    % (analysis_type, analysis_ref, verdict, risk_score),

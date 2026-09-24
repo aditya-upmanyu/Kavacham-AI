@@ -382,7 +382,7 @@ def sync_iocs(actor="analyst", ip_address=None):
             "INSERT INTO audit_logs(event_type, actor, action, target_type, "
             "target_ref, detail, ip_address, created_at) "
             "VALUES (?,?,?,?,?,?,?,?)",
-            ("INTEL", actor, "IOC_SYNC", "iocs", "vault",
+            ("IOC_ADDED", actor, "IOC_SYNC", "iocs", "vault",
              "Rescanned vault; %d observations upserted (info-collecting)"
              % ioc_count, ip_address, started))
 
@@ -663,7 +663,7 @@ def set_ioc_status(ioc_id, status, actor="analyst", ip_address=None):
             "INSERT INTO audit_logs(event_type, actor, action, target_type, "
             "target_ref, detail, ip_address, created_at) "
             "VALUES (?,?,?,?,?,?,?,?)",
-            ("INTEL", actor, "IOC_STATUS", "ioc", str(ioc_id),
+            ("IOC_UPDATED", actor, "IOC_STATUS", "ioc", str(ioc_id),
              "Status of %s set to %s." % (row["value"], status),
              ip_address, _now()))
     return {"ioc_id": int(ioc_id), "status": status, "value": row["value"]}
@@ -695,7 +695,7 @@ def add_ioc_to_case(ioc_id, case_ref, actor="analyst", ip_address=None):
             "INSERT INTO audit_logs(event_type, actor, action, target_type, "
             "target_ref, detail, ip_address, created_at) "
             "VALUES (?,?,?,?,?,?,?,?)",
-            ("INTEL", actor, "IOC_ADD_TO_CASE",
+            ("IOC_ADDED", actor, "IOC_ADD_TO_CASE",
              "ioc", "%s->%s" % (case["case_ref"], ioc["ioc_id"]),
              "Indicator %s linked to %s." % (ioc["value"], case["case_ref"]),
              ip_address, _now()))

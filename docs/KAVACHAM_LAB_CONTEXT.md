@@ -2,7 +2,7 @@
 
 > Persistent architectural memory of the Kavacham Lab build.
 > Read this file before any future architectural change (version2.txt D.1).
-> Last updated: Phase 10/11 (Reporting) milestone — see section 29.
+> Last updated: Phase 12 (Security) milestone — see section 29.
 
 ## 1. Project Overview
 
@@ -84,10 +84,16 @@ Two products share the repository but remain independent surfaces:
 
 ## 8. Authentication
 
-* Not yet introduced. Audit/actor fields use a default actor
-  (case_service `ACTOR_DEFAULT`). RBAC tables (`roles`, `permissions`,
-  `role_permissions`, `users`) exist in schema v1; server-side RBAC
-  enforcement is a pending phase (version2.txt BI).
+* No LOGIN surface yet, so actors default to `analyst` and the RBAC gate
+  resolves role via `security.current_role()` → default ANALYST (single
+  adapter point; only this changes when auth lands).
+* **RBAC is implemented and enforced server-side** (version2.txt BI):
+  roles ADMIN / INVESTIGATOR / ANALYST / REVIEWER / READ_ONLY, an
+  explicit permission matrix (`lab/security.py`), and a
+  `_require_permission` decorator gating every mutating API. The roles,
+  permissions and role_permissions rows are seeded into the schema-v1
+  tables by `db.bootstrap()`.
+* Frontend hiding is NOT authorization — all checks run on the backend.
 
 ## 9. Existing ML Models
 
@@ -169,6 +175,8 @@ indexes. Notes:
 * report_service — reports (`KAV-RPT` refs, BF 15 sections), export
   packages (`KAV-EXP`, Section 70), evidence manifest + integrity
   verification (Sections 43/BG).
+* security — BH audit vocabulary + secret redaction at the audit funnel,
+  BI RBAC matrix, `seed_rbac()`, role resolution adapter (section 8).
 
 ## 16. Provider Architecture
 
@@ -221,27 +229,34 @@ indexes. Notes:
 * SSRF: URL analysis validates target hosts; no arbitrary internal access.
 * API errors never expose stack traces/filesystem paths/secrets.
 * VT key stays server-side (`.env` / env var).
-* Pending phases: server-side RBAC (BI), audit hardening (BH), rate limits,
-  secure headers/CSRF review, frontend security review (BT).
+* Audit (BH): event vocabulary (11 required types) recorded at every
+  surface; `case_service.audit()` is the single funnel and redacts
+  passwords / API keys / OAuth tokens / session secrets / DB credentials
+  before persistence (never-log rules). LOGIN/LOGOUT/SETTINGS_CHANGED
+  become recordable when their surfaces exist.
+* RBAC (BI): 12 mutating APIs gated by `_require_permission` — denied
+  roles get a Section 49 `FORBIDDEN` error.
+* Pending: rate limits, secure headers/CSRF review, frontend security
+  review (BT), secret-manager integration.
 
 ## 21. Testing Strategy
 
 * `test_lab.py` — isolated temp DB + storage (env overrides set before any
   lab import), services + HTTP via `app.test_client()`. Sections 1..8, 7C,
-  7D, 7E, 7F cover migrations, cases, evidence, analysis pipeline,
-  intelligence, risk, reporting, Product A regression baseline. VT env
-  pinned OFF inside destructive-analysis and intel sections and restored
-  after.
+  7D, 7E, 7F, 7G cover migrations, cases, evidence, analysis pipeline,
+  intelligence, risk, reporting, security (audit vocabulary + redaction +
+  RBAC enforcement), Product A regression baseline. VT env pinned OFF
+  inside destructive-analysis and intel sections and restored after.
 * Product A: `QA_test.py` baseline 50/51 (VT-key assertion is the known
   expectation).
 
 ## 22. Current Implementation Status
 
 Phases done (old plan numbering): 1 Repository Audit → 9 Reporting.
-New 14-phase plan: Phases 1-11 done (Reporting completed); Phase 12
-Security pending, 13 Health & Observability, 14 QA. Global command
-search (CTRL+K, version2.txt O) and case-view ENTITIES/ATTACK CHAIN
-tabs (Q) still pending.
+New 14-phase plan: Phases 1-12 done (**Security completed**); Phase 13
+Health & Observability pending, 14 QA. Global command search (CTRL+K,
+version2.txt O) and case-view ENTITIES/ATTACK CHAIN tabs (Q) still
+pending.
 
 ## 23. Completed Features
 
@@ -253,19 +268,22 @@ intelligence (IOC ledger, correlation, entity graph, attack chains);
 **risk engine (register + case assessments + evidence-first findings)**;
 **reporting (BF 15-section reports, `KAV-RPT` refs, print-to-PDF,
 `KAV-EXP` export packages, BG manifest + SHA-256 integrity, IOC CSV)**;
+**security (BH audit vocabulary + never-log redaction at the funnel,
+BI RBAC matrix seeded + enforced server-side on 12 mutating APIs)**;
 docs context file.
 
 ## 24. Pending Features
 
-audit-log event vocabulary + secret-free logging;
-server-side RBAC (BI); SSRF file/URL hardening; rate limiting;
-system-health provider/settings page (BO/BP); structured logging +
-correlation IDs (BZ); command search CTRL+K (O); case-view ENTITIES +
-ATTACK CHAIN tabs (Q); model registry/dataset registry surfaces (BD/BE).
+rate limiting; secure headers/CSRF review; secret-manager integration;
+frontend security review (BT); system-health provider/settings page
+(BO/BP); structured logging + correlation IDs (BZ); command search
+CTRL+K (O); case-view ENTITIES + ATTACK CHAIN tabs (Q); model
+registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 
 ## 25. Known Limitations
 
-* No authentication/RBAC enforcement yet (tables exist).
+* No LOGIN surface yet — RBAC enforcement runs server-side against the
+  default ANALYST role (see section 8; adapter point documented).
 * VT only provider wired; other providers report NOT CONFIGURED.
 * Live DB is schema v4 but has no vault data beyond a small seed
   (1 case + evidence set) until a rescan/analysis runs.
@@ -282,6 +300,12 @@ ATTACK CHAIN tabs (Q); model registry/dataset registry surfaces (BD/BE).
 * Product A analyzers remain the single source of truth for
   URL/domain/file/QR structure scoring.
 * Section 49 envelope for all Lab APIs; Product A flat-JSON APIs untouched.
+* Audit funnel: every write passes `case_service.audit()` (or the same
+  INSERT contract) which redacts secrets centrally — never-log rules are
+  enforced at persistence time, not at call sites (BH).
+* RBAC: permission matrix lives in `lab/security.py` and is mirrored into
+  the schema-v1 tables; enforcement is a decorator on the route, never
+  UI state (BI).
 * "Never infer relationships without evidence"; IQ surfaces render only
   stored facts; absence reported honestly (NOT CONFIGURED / NO DATA /
   ANALYSIS INCOMPLETE).
@@ -315,10 +339,17 @@ ATTACK CHAIN tabs (Q); model registry/dataset registry surfaces (BD/BE).
 
 * Git `main` = `kavacham` (Kavacham-AI) = `origin` (Anweshak-AI).
   All commits GPG-signed (key `5359FC122398973E`, public key in
-  `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`.
-* Lab suite: **309/309 passing** — 275 after Phase 9 (Risk), +34 in
-  Test 7F covering reports, export packages, manifest + integrity,
-  audit events, route inventory and page renders.
+  `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`,
+  Security milestone follows this doc update (see `git log -1`).
+* Lab suite: **338/338 passing** — +29 in Test 7G (security: BH event
+  vocabulary, secret redaction at the audit funnel, RBAC matrix semantics
+  + seeding, server-side 403 enforcement, shell role display).
+* Product A regression: 50/51 (known VT-key assertion).
+* Security milestone verified live over HTTP: RBAC rows seeded
+  (5 roles, 68 role_permissions), analyst create-case allowed, header
+  role indicator + full audit filter vocabulary render.
+* Reporting milestone verified live: report auto-generation, `KAV-EXP`
+  verify, manifest rows, CSV + zip download.
 * Product A regression: 50/51 (known VT-key assertion).
 * Reporting milestone verified live over HTTP: report auto-generated on
   export, `KAV-EXP` package verified (`sha256` match + zip OK), manifest
@@ -328,9 +359,8 @@ ATTACK CHAIN tabs (Q); model registry/dataset registry surfaces (BD/BE).
 
 ## 30. Future Work
 
-Phase 12 Security (RBAC server-side per BI, audit-log vocabulary +
-secret-free logging per BH, SSRF/upload reviews, rate limits),
-Phase 13 Health & Observability (provider health page BO/BP, structured
-logs + correlation IDs BZ), Phase 14 QA (full suite + browser/accessibility
-pass), then global command search (O), case-view ENTITIES/ATTACK CHAIN
-tabs (Q) and CONTEXT.md refresh per phase (CG).
+Phase 13 Health & Observability (provider health page BO/BP, settings
+surface, structured logs + correlation IDs BZ), Phase 14 QA (full suite
++ browser/accessibility pass), then LOGIN/RBAC users, rate limits +
+secure headers (BI tail), command search (O), case-view ENTITIES/ATTACK
+CHAIN tabs (Q) and CONTEXT.md refresh per phase (CG).

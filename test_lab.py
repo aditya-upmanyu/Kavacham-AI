@@ -1432,6 +1432,138 @@ for _url, _marker in [("/lab/reports", "INVESTIGATION REPORTS"),
           r.status_code)
 
 # ===========================================================================
+section("Test 7G — Phase 12 Security (BH audit log, BI RBAC)")
+
+from lab import security                           # noqa: E402
+
+_BH_VOCAB = ["LOGIN", "LOGOUT", "CASE_CREATED", "CASE_UPDATED",
+             "EVIDENCE_ADDED", "EVIDENCE_VIEWED", "ANALYSIS_EXECUTED",
+             "IOC_ADDED", "REPORT_GENERATED", "REPORT_EXPORTED",
+             "SETTINGS_CHANGED"]
+check("security: BH event vocabulary present and complete",
+      set(security.EVENT_TYPES) == set(_BH_VOCAB),
+      sorted(set(_BH_VOCAB) - set(security.EVENT_TYPES)))
+
+# --- BH: secret never-log rules applied at the funnel ---
+check("security: password redacted",
+      security.redact_secrets("password=hunter2s3cret") ==
+      "password=[REDACTED]",
+      security.redact_secrets("password=hunter2s3cret"))
+check("security: api key redacted",
+      "abc123apikey" not in
+      security.redact_secrets("api_key=abc123apikey"))
+check("security: oauth bearer token redacted",
+      "tok.v42.xyz" not in security.redact_secrets(
+          "Authorization: Bearer tok.v42.xyz"))
+check("security: database dsn redacted",
+      security.redact_secrets("postgres_pwd=s3cret!db").endswith(
+          "[REDACTED]"))
+check("security: harmless text untouched",
+      security.redact_secrets("Evidence hash verified OK") ==
+      "Evidence hash verified OK")
+check("security: None detail safe",
+      security.redact_secrets(None) is None)
+
+cs.audit("CASE_UPDATED", "CASE_UPDATED", target_ref="KAV-CASE-2099-99998",
+         detail="Reclassified after password=supersecret lookup",
+         actor="qa")
+_secret_rows = [a for a in cs.list_audit(limit=200)["items"]
+                if a["target_ref"] == "KAV-CASE-2099-99998"]
+check("security: audit funnel stores redacted detail",
+      _secret_rows and "[REDACTED]" in _secret_rows[0]["detail"]
+      and "supersecret" not in _secret_rows[0]["detail"],
+      _secret_rows[0]["detail"] if _secret_rows else None)
+
+r = _client3.get("/lab/api/evidence/" + ev_file["evidence_ref"])
+check("security: open evidence records EVIDENCE_VIEWED",
+      r.status_code == 200 and
+      any(a["action"] == "EVIDENCE_VIEWED"
+          and a["target_ref"] == ev_file["evidence_ref"]
+          for a in cs.list_audit(limit=200)["items"]))
+check("security: analysis pipeline audits ANALYSIS_EXECUTED",
+      any(a["event_type"] == "ANALYSIS_EXECUTED" and
+          a["action"] == "ANALYSIS_RUN"
+          for a in cs.list_audit(limit=300)["items"]))
+check("security: evidence intake audits EVIDENCE_ADDED event type",
+      any(a["event_type"] == "EVIDENCE_ADDED"
+          and a["action"] == "EVIDENCE_ADDED"
+          for a in cs.list_audit(limit=300)["items"]))
+check("security: IOC sync audits vocabulary event type",
+      any(a["event_type"] == "IOC_ADDED"
+          for a in cs.list_audit(limit=300)["items"]))
+
+# --- BI: role vocabulary + matrix semantics ---
+check("security: five RBAC roles present",
+      security.ROLES == ["ADMIN", "INVESTIGATOR", "ANALYST",
+                         "REVIEWER", "READ_ONLY"], security.ROLES)
+check("security: READ_ONLY cannot create cases",
+      not security.authorize("READ_ONLY", "case:create"))
+check("security: READ_ONLY cannot run analysis",
+      not security.authorize("READ_ONLY", "analysis:run"))
+check("security: READ_ONLY can view cases and reports",
+      security.authorize("READ_ONLY", "case:view")
+      and security.authorize("READ_ONLY", "report:view"))
+check("security: ADMIN holds every permission",
+      all(security.authorize("ADMIN", code)
+          for code, _ in security.PERMISSIONS))
+check("security: INVESTIGATOR extends ANALYST",
+      security.effective_permissions("ANALYST") <=
+      security.effective_permissions("INVESTIGATOR"))
+check("security: REVIEWER can verify exports",
+      security.authorize("REVIEWER", "report:verify")
+      and not security.authorize("REVIEWER", "case:create"))
+check("security: ANALYST allowed the default write surface",
+      security.authorize("ANALYST", "case:create")
+      and security.authorize("ANALYST", "report:export")
+      and security.authorize("ANALYST", "intel:sync"))
+check("security: every permission is granted to at least one role",
+      all(any(security.authorize(role, code) for role in security.ROLES)
+          for code, _ in security.PERMISSIONS))
+check("security: unknown role authorizes nothing",
+      not security.authorize("NOT_A_ROLE", "case:view"))
+
+# --- BI: seeded RBAC data model (Section 45 tables) ---
+_rows = {t: db.query_one("SELECT COUNT(*) AS n FROM %s" % t)["n"]
+         for t in ("roles", "permissions", "role_permissions")}
+check("security: roles seeded", _rows["roles"] == 5, _rows)
+check("security: permissions seeded",
+      _rows["permissions"] == len(security.PERMISSIONS), _rows)
+_expected_rp = sum(len(v) for v in security.PERMISSION_MATRIX.values())
+check("security: role_permissions matrix seeded",
+      _rows["role_permissions"] == _expected_rp,
+      (_rows["role_permissions"], _expected_rp))
+
+# --- BI: enforcement is server-side (frontend hiding is NOT auth) ---
+check("security: default role is ANALYST",
+      security.current_role() == "ANALYST")
+_orig_role = security.current_role
+security.current_role = lambda: "READ_ONLY"
+try:
+    r = _client3.post("/lab/api/cases",
+                      json={"title": "rbac probe",
+                            "case_type": "PHISHING",
+                            "priority": "LOW",
+                            "description": "denied"})
+    _b = r.get_json()
+finally:
+    security.current_role = _orig_role
+check("security: mutating API rejects READ_ONLY with 403",
+      r.status_code == 403 and _b["success"] is False
+      and _b["error"]["code"] == "FORBIDDEN", (r.status_code, _b.get("error")))
+check("security: default analyst can still create cases",
+      _client3.post("/lab/api/cases",
+                    json={"title": "rbac probe ok",
+                          "case_type": "PHISHING",
+                          "priority": "LOW",
+                          "description": "should pass"}).status_code == 201)
+
+# --- shell surfaces the effective role honestly ---
+r = _client3.get("/lab/cases")
+_html = r.get_data(as_text=True)
+check("security: header shows current role",
+      r.status_code == 200 and "ANALYST · RESTRICTED" in _html)
+
+# ===========================================================================
 print("\n" + "=" * 64)
 passed = sum(1 for ok, _, _ in RESULTS if ok)
 failed = sum(1 for ok, _, _ in RESULTS if not ok)

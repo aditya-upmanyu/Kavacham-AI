@@ -12,6 +12,7 @@ Product A's existing flat-JSON APIs are intentionally left untouched
 
 import os
 import time
+from functools import wraps
 
 from flask import jsonify, render_template, request, send_file
 
@@ -23,6 +24,7 @@ from lab import analysis_service
 from lab import intel_service
 from lab import risk_service
 from lab import report_service
+from lab import security
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +114,7 @@ def _shell_context(**kwargs):
         "system_status_key": "unknown",
         "last_health_check": None,
         "health_error": None,
+        "current_role": security.current_role(),
     }
 
     # Real backend timestamp + status for the header (Section 11).
@@ -144,6 +147,30 @@ def api_ok(data, meta=None, status=200):
     if meta is not None:
         payload["meta"] = meta
     return jsonify(payload), status
+
+
+def _require_permission(permission):
+    """Server-side RBAC gate (version2.txt BI).
+
+    Frontend hiding is NOT authorization: every mutating API is gated here
+    by the current role's effective permissions. With no login surface the
+    current role resolves to the default ANALYST through
+    security.current_role(); the check itself always runs.
+    """
+
+    def deco(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            if not security.authorize(security.current_role(), permission):
+                return api_error(
+                    "FORBIDDEN",
+                    "Current role lacks the required permission (%s)."
+                    % permission, 403)
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+    return deco
 
 
 # ---------------------------------------------------------------------------
@@ -294,6 +321,7 @@ def api_cases_list():
 
 
 @lab_bp.route("/api/cases", methods=["POST"])
+@_require_permission("case:create")
 def api_cases_create():
     from flask import request
     payload = request.get_json(silent=True)
@@ -320,6 +348,7 @@ def api_cases_get(case_ref):
 
 
 @lab_bp.route("/api/cases/<case_ref>", methods=["PATCH"])
+@_require_permission("case:update")
 def api_cases_update(case_ref):
     from flask import request
     payload = request.get_json(silent=True)
@@ -336,6 +365,7 @@ def api_cases_update(case_ref):
 
 
 @lab_bp.route("/api/cases/<case_ref>/notes", methods=["POST"])
+@_require_permission("case:update")
 def api_cases_note(case_ref):
     from flask import request
     payload = request.get_json(silent=True) or {}
@@ -394,6 +424,7 @@ def api_evidence_list():
 
 
 @lab_bp.route("/api/evidence", methods=["POST"])
+@_require_permission("evidence:create")
 def api_evidence_create():
     payload = request.get_json(silent=True)
     if payload is None:
@@ -441,6 +472,7 @@ def api_evidence_custody(evidence_ref):
 
 
 @lab_bp.route("/api/evidence/<evidence_ref>/verify", methods=["POST"])
+@_require_permission("evidence:verify")
 def api_evidence_verify(evidence_ref):
     try:
         result = evidence_service.verify_integrity(evidence_ref)
@@ -490,6 +522,7 @@ def api_analysis_list():
 
 
 @lab_bp.route("/api/analysis", methods=["POST"])
+@_require_permission("analysis:run")
 def api_analysis_create():
     payload = request.get_json(silent=True)
     if payload is None:
@@ -737,6 +770,7 @@ def api_intel_ioc_get(ioc_id):
 
 
 @lab_bp.route("/api/intel/iocs/<int:ioc_id>", methods=["PATCH"])
+@_require_permission("intel:update")
 def api_intel_ioc_patch(ioc_id):
     payload = request.get_json(silent=True) or {}
     status = (payload.get("status") or "").strip()
@@ -752,6 +786,7 @@ def api_intel_ioc_patch(ioc_id):
 
 
 @lab_bp.route("/api/intel/iocs/<int:ioc_id>/cases", methods=["POST"])
+@_require_permission("intel:update")
 def api_intel_ioc_add_case(ioc_id):
     payload = request.get_json(silent=True) or {}
     case_ref = (payload.get("case_ref") or "").strip()
@@ -767,6 +802,7 @@ def api_intel_ioc_add_case(ioc_id):
 
 
 @lab_bp.route("/api/intel/sync", methods=["POST"])
+@_require_permission("intel:sync")
 def api_intel_sync():
     try:
         data = intel_service.sync_iocs(actor="analyst",
@@ -896,6 +932,7 @@ def api_reports_list():
 
 
 @lab_bp.route("/api/reports", methods=["POST"])
+@_require_permission("report:create")
 def api_reports_generate():
     payload = request.get_json(silent=True) or {}
     case_ref = (payload.get("case_ref") or "").strip()
@@ -946,6 +983,7 @@ def api_reports_csv(report_ref):
 
 
 @lab_bp.route("/api/cases/<case_ref>/export", methods=["POST"])
+@_require_permission("report:export")
 def api_case_export(case_ref):
     try:
         data = report_service.export_case(case_ref, actor="analyst",
@@ -981,6 +1019,7 @@ def api_exports_detail(export_ref):
 
 
 @lab_bp.route("/api/exports/<export_ref>/verify", methods=["POST"])
+@_require_permission("report:verify")
 def api_exports_verify(export_ref):
     try:
         data = report_service.verify_export(export_ref)

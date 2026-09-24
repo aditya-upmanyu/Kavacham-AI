@@ -425,7 +425,7 @@ def accept_evidence(payload, actor=ACTOR_DEFAULT, ip_address=None):
         conn.execute(
             "INSERT INTO audit_logs(event_type, actor, action, target_type, "
             "target_ref, detail, ip_address, created_at) VALUES (?,?,?,?,?,?,?,?)",
-            ("EVIDENCE", actor, "EVIDENCE_ADDED", "evidence", evidence_ref,
+            ("EVIDENCE_ADDED", actor, "EVIDENCE_ADDED", "evidence", evidence_ref,
              "%s accepted (%s, %d bytes)" % (evidence_ref, etype, size_bytes),
              ip_address, acquired_at))
 
@@ -628,4 +628,9 @@ def record_view(evidence_ref, actor=ACTOR_DEFAULT):
     ev = get_evidence(evidence_ref, actor=actor)
     append_custody(ev["evidence_id"], ev["evidence_ref"], "ANALYST VIEWED",
                    actor=actor, detail="Evidence record opened in the vault.")
+    from lab import case_service
+    case_service.audit("EVIDENCE_VIEWED", action="EVIDENCE_VIEWED",
+                       target_type="evidence", target_ref=ev["evidence_ref"],
+                       detail="Evidence record viewed in the vault.",
+                       actor=actor)
     return ev

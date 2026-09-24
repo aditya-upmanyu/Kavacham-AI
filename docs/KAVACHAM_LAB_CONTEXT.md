@@ -340,7 +340,7 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 * Git `main` = `kavacham` (Kavacham-AI) = `origin` (Anweshak-AI).
   All commits GPG-signed (key `5359FC122398973E`, public key in
   `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`,
-  Security milestone follows this doc update (see `git log -1`).
+  Security milestone `1fd997e`.
 * Lab suite: **338/338 passing** — +29 in Test 7G (security: BH event
   vocabulary, secret redaction at the audit funnel, RBAC matrix semantics
   + seeding, server-side 403 enforcement, shell role display).

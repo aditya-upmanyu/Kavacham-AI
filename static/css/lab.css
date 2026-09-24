@@ -1,0 +1,380 @@
+/* ====================================================================
+   KAVACHAM LAB — DESIGN SYSTEM (Phase 2)
+   Cyber Investigation & Threat Intelligence
+   Institutional / forensic aesthetic. Dark, precise, information-dense.
+   Sections: 6 (colors), 7 (typography), 60 (components),
+             61 (empty states), 62 (loading states), 63 (no fake data)
+   NOTE: Scoped under .lab-* / #lab-root so Product A is untouched.
+   ==================================================================== */
+
+:root {
+  /* --- Base surfaces (Section 6) --- */
+  --lab-bg-0: #070A0F;
+  --lab-bg-1: #0B1017;
+  --lab-bg-2: #10161F;
+  --lab-bg-3: #151C25;
+  --lab-bg-4: #1B2431;      /* steel/slate support tone */
+  --lab-bg-5: #222D3D;      /* hover surface */
+
+  /* --- Lines --- */
+  --lab-line-1: rgba(255,255,255,0.06);
+  --lab-line-2: rgba(255,255,255,0.10);
+  --lab-line-3: rgba(255,255,255,0.16);
+
+  /* --- Text --- */
+  --lab-text-1: #E6EBF2;
+  --lab-text-2: #A7B2C4;
+  --lab-text-3: #77869C;
+  --lab-text-4: #5A6880;
+
+  /* --- Semantic colors (Section 6) — state only, never decoration --- */
+  --lab-green: #2FA855;      /* ACTIVE / OPERATIONAL / VERIFIED / SUCCESS */
+  --lab-green-dim: rgba(47,168,85,0.14);
+  --lab-amber: #D68A1E;      /* WARNING / REVIEW / SUSPICIOUS */
+  --lab-amber-dim: rgba(214,138,30,0.14);
+  --lab-red: #D63C3C;        /* HIGH RISK / CRITICAL / INTEGRITY FAILURE */
+  --lab-red-dim: rgba(214,60,60,0.14);
+  --lab-blue: #3B82D6;       /* INFORMATION / INTELLIGENCE / ANALYSIS */
+  --lab-blue-dim: rgba(59,130,214,0.14);
+  --lab-gray: #7A8698;       /* UNKNOWN / UNAVAILABLE / NOT CONFIGURED */
+  --lab-gray-dim: rgba(122,134,152,0.14);
+
+  /* --- Typography (Section 7) --- */
+  --lab-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --lab-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  /* --- Spacing / geometry --- */
+  --lab-r-1: 3px;
+  --lab-r-2: 5px;
+  --lab-r-3: 8px;
+  --lab-sidebar-w: 248px;
+  --lab-sidebar-w-collapsed: 56px;
+  --lab-header-h: 52px;
+  --lab-transition: 0.15s ease;
+}
+
+/* ====================================================================
+   BASE
+   ==================================================================== */
+#lab-root {
+  font-family: var(--lab-font);
+  background: var(--lab-bg-0);
+  color: var(--lab-text-1);
+  font-size: 13.5px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+#lab-root *,
+#lab-root *::before,
+#lab-root *::after { box-sizing: border-box; }
+
+#lab-root ::selection { background: rgba(59,130,214,0.35); color: #fff; }
+
+/* Scrollbars — restrained */
+#lab-root ::-webkit-scrollbar { width: 9px; height: 9px; }
+#lab-root ::-webkit-scrollbar-track { background: var(--lab-bg-1); }
+#lab-root ::-webkit-scrollbar-thumb { background: #2C3748; border-radius: 5px; border: 2px solid var(--lab-bg-1); }
+#lab-root ::-webkit-scrollbar-thumb:hover { background: #3A475C; }
+
+/* ====================================================================
+   TYPOGRAPHY (Section 7)
+   Mono reserved for technical identifiers only.
+   ==================================================================== */
+.lab-mono, .lab-hash, .lab-ip, .lab-url, .lab-domain, .lab-ioc,
+.lab-ts, .lab-case-id, .lab-evd-id, .lab-ana-id { font-family: var(--lab-mono); }
+
+.lab-title { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; color: var(--lab-text-1); margin: 0; }
+.lab-subtitle { font-size: 12.5px; color: var(--lab-text-3); margin-top: 3px; }
+.lab-section-title {
+  font-size: 11px; font-weight: 650; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--lab-text-3); margin: 0;
+}
+.lab-label {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--lab-text-4);
+}
+.lab-strong { font-weight: 650; color: var(--lab-text-1); }
+.lab-dim { color: var(--lab-text-3); }
+.lab-sm { font-size: 12px; }
+.lab-xs { font-size: 11px; }
+
+/* ====================================================================
+   PANELS / CARDS (Section 60, 14 — dense, not giant cards)
+   ==================================================================== */
+.lab-panel {
+  background: var(--lab-bg-2);
+  border: 1px solid var(--lab-line-1);
+  border-radius: var(--lab-r-3);
+  display: flex; flex-direction: column; min-width: 0;
+}
+.lab-panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--lab-line-1);
+  background: var(--lab-bg-1);
+  border-radius: var(--lab-r-3) var(--lab-r-3) 0 0;
+  min-height: 42px;
+}
+.lab-panel-body { padding: 14px; flex: 1; min-width: 0; }
+.lab-panel-body.flush { padding: 0; }
+.lab-panel-foot {
+  padding: 9px 14px; border-top: 1px solid var(--lab-line-1);
+  background: var(--lab-bg-1); font-size: 11.5px; color: var(--lab-text-3);
+  border-radius: 0 0 var(--lab-r-3) var(--lab-r-3);
+}
+
+/* ====================================================================
+   BUTTONS
+   ==================================================================== */
+.lab-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  font-family: var(--lab-font); font-size: 12.5px; font-weight: 550;
+  padding: 7px 14px; border-radius: var(--lab-r-2);
+  border: 1px solid var(--lab-line-2);
+  background: var(--lab-bg-3); color: var(--lab-text-1);
+  cursor: pointer; transition: background var(--lab-transition), border-color var(--lab-transition);
+  white-space: nowrap; text-decoration: none; line-height: 1.4;
+}
+.lab-btn:hover:not(:disabled) { background: var(--lab-bg-5); border-color: var(--lab-line-3); }
+.lab-btn:active:not(:disabled) { transform: translateY(1px); }
+.lab-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.lab-btn-primary { background: #1E5FA8; border-color: #2A6FBE; color: #fff; }
+.lab-btn-primary:hover:not(:disabled) { background: #2470C2; border-color: #3582D4; }
+
+.lab-btn-danger { background: var(--lab-red-dim); border-color: rgba(214,60,60,0.45); color: #F08A8A; }
+.lab-btn-danger:hover:not(:disabled) { background: rgba(214,60,60,0.24); border-color: var(--lab-red); }
+
+.lab-btn-ghost { background: transparent; border-color: transparent; color: var(--lab-text-2); }
+.lab-btn-ghost:hover:not(:disabled) { background: var(--lab-bg-3); color: var(--lab-text-1); }
+
+.lab-btn-sm { padding: 4px 10px; font-size: 11.5px; }
+.lab-btn-lg { padding: 9px 20px; font-size: 13px; }
+.lab-btn-block { width: 100%; }
+
+/* ====================================================================
+   STATUS INDICATOR (Section 60) — color communicates state only
+   ==================================================================== */
+.lab-status { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 550; letter-spacing: 0.03em; }
+.lab-status::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: currentColor; box-shadow: 0 0 0 2px rgba(255,255,255,0.05);
+}
+.lab-status.is-operational, .lab-status.is-active, .lab-status.is-verified, .lab-status.is-success { color: var(--lab-green); }
+.lab-status.is-warning, .lab-status.is-review, .lab-status.is-suspicious { color: var(--lab-amber); }
+.lab-status.is-critical, .lab-status.is-high, .lab-status.is-failure { color: var(--lab-red); }
+.lab-status.is-info, .lab-status.is-analysis { color: var(--lab-blue); }
+.lab-status.is-unknown, .lab-status.is-unavailable, .lab-status.is-unconfigured { color: var(--lab-gray); }
+
+/* Pulse only for genuinely live states */
+.lab-status.is-live::before { animation: labPulse 2.2s ease-in-out infinite; }
+@keyframes labPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+/* ====================================================================
+   BADGES (CaseBadge / RiskBadge / ClassificationStrip)
+   ==================================================================== */
+.lab-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: var(--lab-r-1);
+  border: 1px solid var(--lab-line-2); background: var(--lab-bg-3); color: var(--lab-text-2);
+  white-space: nowrap;
+}
+.lab-badge-green { background: var(--lab-green-dim); border-color: rgba(47,168,85,0.4); color: #6BD48F; }
+.lab-badge-amber { background: var(--lab-amber-dim); border-color: rgba(214,138,30,0.4); color: #E8AE55; }
+.lab-badge-red   { background: var(--lab-red-dim);   border-color: rgba(214,60,60,0.45); color: #F08A8A; }
+.lab-badge-blue  { background: var(--lab-blue-dim);  border-color: rgba(59,130,214,0.4); color: #7DB3E8; }
+.lab-badge-gray  { background: var(--lab-gray-dim);  border-color: rgba(122,134,152,0.35); color: #96A1B2; }
+
+/* Classification strip — compact, information-dense */
+.lab-strip { display: flex; flex-wrap: wrap; gap: 1px; background: var(--lab-line-1); border: 1px solid var(--lab-line-1); border-radius: var(--lab-r-2); overflow: hidden; }
+.lab-strip-item { flex: 1 1 120px; background: var(--lab-bg-2); padding: 9px 12px; min-width: 0; }
+.lab-strip-item .lab-label { display: block; margin-bottom: 4px; }
+.lab-strip-item .lab-strip-value { font-size: 14px; font-weight: 650; color: var(--lab-text-1); }
+
+/* ====================================================================
+   TABLES (InvestigationTable / EvidenceTable / IOCRow)
+   ==================================================================== */
+.lab-table-wrap { overflow-x: auto; }
+.lab-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.lab-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  text-align: left; padding: 9px 12px;
+  font-size: 10.5px; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--lab-text-4); background: var(--lab-bg-1);
+  border-bottom: 1px solid var(--lab-line-2); white-space: nowrap;
+}
+.lab-table tbody td {
+  padding: 9px 12px; border-bottom: 1px solid var(--lab-line-1);
+  color: var(--lab-text-2); vertical-align: top;
+}
+.lab-table tbody tr:last-child td { border-bottom: none; }
+.lab-table tbody tr { transition: background var(--lab-transition); }
+.lab-table tbody tr:hover { background: var(--lab-bg-3); }
+.lab-table tbody tr.is-clickable { cursor: pointer; }
+.lab-table td .lab-strong { color: var(--lab-text-1); }
+
+/* ====================================================================
+   FORMS
+   ==================================================================== */
+.lab-field { margin-bottom: 14px; }
+.lab-field > label { display: block; margin-bottom: 6px; }
+.lab-input, .lab-select, .lab-textarea {
+  width: 100%; font-family: var(--lab-font); font-size: 13px;
+  padding: 8px 11px; color: var(--lab-text-1);
+  background: var(--lab-bg-1); border: 1px solid var(--lab-line-2);
+  border-radius: var(--lab-r-2); transition: border-color var(--lab-transition), box-shadow var(--lab-transition);
+}
+.lab-input.mono, .lab-textarea.mono { font-family: var(--lab-mono); font-size: 12.5px; }
+.lab-input::placeholder, .lab-textarea::placeholder { color: var(--lab-text-4); }
+.lab-input:focus, .lab-select:focus, .lab-textarea:focus {
+  outline: none; border-color: var(--lab-blue);
+  box-shadow: 0 0 0 3px rgba(59,130,214,0.18);
+}
+.lab-textarea { resize: vertical; min-height: 84px; line-height: 1.6; }
+.lab-select { appearance: none; background-image: linear-gradient(45deg,transparent 50%,var(--lab-text-3) 50%),linear-gradient(135deg,var(--lab-text-3) 50%,transparent 50%); background-position: calc(100% - 15px) 50%,calc(100% - 10px) 50%; background-size: 5px 5px,5px 5px; background-repeat: no-repeat; padding-right: 30px; }
+.lab-field-hint { font-size: 11.5px; color: var(--lab-text-4); margin-top: 5px; }
+.lab-field-error { font-size: 11.5px; color: #F08A8A; margin-top: 5px; }
+.lab-check { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; color: var(--lab-text-2); cursor: pointer; }
+.lab-check input { margin-top: 3px; accent-color: var(--lab-blue); width: 15px; height: 15px; flex: none; }
+
+/* ====================================================================
+   DIALOG / MODAL (ConfirmationDialog / ExportDialog)
+   ==================================================================== */
+.lab-modal-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(3,5,8,0.72); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.lab-modal {
+  background: var(--lab-bg-2); border: 1px solid var(--lab-line-2);
+  border-radius: var(--lab-r-3); width: 100%; max-width: 480px;
+  max-height: 88vh; overflow-y: auto;
+  box-shadow: 0 24px 60px -18px rgba(0,0,0,0.85);
+  animation: labModalIn 0.16s ease-out;
+}
+.lab-modal.wide { max-width: 720px; }
+@keyframes labModalIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.lab-modal-head { padding: 15px 18px; border-bottom: 1px solid var(--lab-line-1); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lab-modal-body { padding: 18px; }
+.lab-modal-foot { padding: 13px 18px; border-top: 1px solid var(--lab-line-1); display: flex; justify-content: flex-end; gap: 9px; background: var(--lab-bg-1); border-radius: 0 0 var(--lab-r-3) var(--lab-r-3); }
+.lab-modal-x {
+  background: transparent; border: none; color: var(--lab-text-3);
+  font-size: 20px; line-height: 1; cursor: pointer; padding: 3px 7px; border-radius: var(--lab-r-2);
+}
+.lab-modal-x:hover { background: var(--lab-bg-4); color: var(--lab-text-1); }
+
+/* ====================================================================
+   EMPTY / LOADING / ERROR STATES (Sections 61, 62, 54)
+   Honest states only — never fake data.
+   ==================================================================== */
+.lab-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 40px 24px; gap: 9px; min-height: 180px;
+}
+.lab-state-icon {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--lab-bg-3); border: 1px solid var(--lab-line-2);
+  color: var(--lab-text-3); font-size: 18px; margin-bottom: 3px;
+}
+.lab-state-title { font-size: 12px; font-weight: 650; letter-spacing: 0.09em; text-transform: uppercase; color: var(--lab-text-2); }
+.lab-state-desc { font-size: 12.5px; color: var(--lab-text-4); max-width: 420px; line-height: 1.6; }
+.lab-state .lab-btn { margin-top: 8px; }
+
+.lab-state.is-error .lab-state-icon { background: var(--lab-red-dim); border-color: rgba(214,60,60,0.4); color: #F08A8A; }
+.lab-state.is-error .lab-state-title { color: #F08A8A; }
+.lab-state.is-unavailable .lab-state-icon { background: var(--lab-gray-dim); border-color: rgba(122,134,152,0.35); }
+
+/* Skeletons — structural, not fake content */
+.lab-skeleton { background: linear-gradient(90deg, var(--lab-bg-3) 25%, var(--lab-bg-4) 50%, var(--lab-bg-3) 75%); background-size: 200% 100%; animation: labShimmer 1.3s linear infinite; border-radius: var(--lab-r-2); }
+@keyframes labShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.lab-skeleton-line { height: 11px; margin-bottom: 9px; }
+.lab-skeleton-line:last-child { width: 62%; margin-bottom: 0; }
+
+/* Analysis progress (Section 41) — real stages only */
+.lab-progress { display: flex; flex-direction: column; gap: 8px; }
+.lab-progress-step { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--lab-text-4); padding: 6px 0; }
+.lab-progress-step .lab-step-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--lab-line-3); flex: none; display: flex; align-items: center; justify-content: center; font-size: 8px; }
+.lab-progress-step.is-active { color: var(--lab-text-1); }
+.lab-progress-step.is-active .lab-step-dot { border-color: var(--lab-blue); border-top-color: transparent; animation: labSpin 0.7s linear infinite; }
+.lab-progress-step.is-done { color: var(--lab-green); }
+.lab-progress-step.is-done .lab-step-dot { border-color: var(--lab-green); background: var(--lab-green-dim); }
+.lab-progress-step.is-failed { color: var(--lab-red); }
+.lab-progress-step.is-failed .lab-step-dot { border-color: var(--lab-red); background: var(--lab-red-dim); }
+@keyframes labSpin { to { transform: rotate(360deg); } }
+
+/* ====================================================================
+   TABS
+   ==================================================================== */
+.lab-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--lab-line-2); overflow-x: auto; }
+.lab-tab {
+  background: transparent; border: none; border-bottom: 2px solid transparent;
+  color: var(--lab-text-3); font-family: var(--lab-font); font-size: 12.5px; font-weight: 550;
+  padding: 9px 14px; cursor: pointer; white-space: nowrap;
+  transition: color var(--lab-transition), border-color var(--lab-transition);
+}
+.lab-tab:hover { color: var(--lab-text-1); }
+.lab-tab.is-active { color: var(--lab-text-1); border-bottom-color: var(--lab-blue); }
+
+/* ====================================================================
+   ALERTS (Section 52) — must map to real backend conditions
+   ==================================================================== */
+.lab-alert {
+  display: flex; gap: 11px; align-items: flex-start;
+  padding: 11px 14px; border-radius: var(--lab-r-2); font-size: 12.5px;
+  border: 1px solid; line-height: 1.55;
+}
+.lab-alert-icon { flex: none; font-weight: 700; font-size: 13px; width: 16px; text-align: center; }
+.lab-alert-title { font-weight: 650; letter-spacing: 0.03em; margin-bottom: 2px; }
+.lab-alert.is-critical { background: var(--lab-red-dim); border-color: rgba(214,60,60,0.45); color: #F3A0A0; }
+.lab-alert.is-warning  { background: var(--lab-amber-dim); border-color: rgba(214,138,30,0.4); color: #EDC383; }
+.lab-alert.is-info     { background: var(--lab-blue-dim); border-color: rgba(59,130,214,0.4); color: #A6C9EE; }
+.lab-alert.is-success  { background: var(--lab-green-dim); border-color: rgba(47,168,85,0.4); color: #93DCAE; }
+.lab-alert.is-neutral  { background: var(--lab-gray-dim); border-color: rgba(122,134,152,0.35); color: var(--lab-text-2); }
+
+/* ====================================================================
+   KEY/VALUE METADATA LISTS (evidence metadata, provenance)
+   ==================================================================== */
+.lab-kv { display: grid; grid-template-columns: minmax(120px, auto) 1fr; gap: 7px 16px; font-size: 12.5px; }
+.lab-kv dt { color: var(--lab-text-4); font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 2px; }
+.lab-kv dd { margin: 0; color: var(--lab-text-2); word-break: break-word; min-width: 0; }
+
+/* Provenance marker (Section 64) */
+.lab-provenance {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--lab-text-4); border: 1px dashed var(--lab-line-2);
+  padding: 2px 7px; border-radius: var(--lab-r-1);
+}
+.lab-provenance::before { content: 'SRC'; font-weight: 700; color: var(--lab-blue); font-family: var(--lab-mono); font-size: 9px; }
+
+/* ====================================================================
+   DIVIDERS, MISC
+   ==================================================================== */
+.lab-divider { height: 1px; background: var(--lab-line-1); border: none; margin: 16px 0; }
+.lab-dot-sep { color: var(--lab-text-4); padding: 0 6px; }
+.lab-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lab-grid { display: grid; gap: 14px; }
+.lab-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.lab-row.tight { gap: 8px; }
+.lab-spacer { flex: 1; }
+
+/* Toasts */
+.lab-toasts { position: fixed; top: 64px; right: 16px; z-index: 3000; display: flex; flex-direction: column; gap: 9px; max-width: 380px; }
+.lab-toast {
+  background: var(--lab-bg-3); border: 1px solid var(--lab-line-2);
+  border-left-width: 3px; border-radius: var(--lab-r-2);
+  padding: 11px 14px; font-size: 12.5px; color: var(--lab-text-2);
+  box-shadow: 0 12px 32px -10px rgba(0,0,0,0.7);
+  animation: labToastIn 0.18s ease-out;
+}
+.lab-toast.is-success { border-left-color: var(--lab-green); }
+.lab-toast.is-error { border-left-color: var(--lab-red); }
+.lab-toast.is-warning { border-left-color: var(--lab-amber); }
+.lab-toast.is-info { border-left-color: var(--lab-blue); }
+.lab-toast strong { display: block; color: var(--lab-text-1); font-size: 12px; margin-bottom: 2px; }
+@keyframes labToastIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+.lab-toast.is-leaving { animation: labToastOut 0.18s ease-in forwards; }
+@keyframes labToastOut { to { opacity: 0; transform: translateX(24px); } }

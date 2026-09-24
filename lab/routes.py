@@ -18,6 +18,7 @@ from flask import jsonify, render_template, request
 from lab import lab_bp
 from lab import health as health_service
 from lab import case_service
+from lab import evidence_service
 
 
 # ---------------------------------------------------------------------------
@@ -38,6 +39,13 @@ NAV_STRUCTURE = [
         "links": [
             {"id": "active-cases", "label": "Active Cases", "url": "/lab/cases", "ready": True},
             {"id": "new-investigation", "label": "New Investigation", "url": "/lab/cases/new", "ready": True},
+        ],
+    },
+    {
+        "group": "EVIDENCE",
+        "links": [
+            {"id": "evidence-vault", "label": "Evidence Vault", "url": "/lab/evidence", "ready": True},
+            {"id": "evidence-intake", "label": "Evidence Intake", "url": "/lab/evidence/new", "ready": True},
         ],
     },
     {
@@ -155,6 +163,36 @@ def audit_page():
 
 
 # ---------------------------------------------------------------------------
+# Evidence pages (Sections 19, 20)
+# ---------------------------------------------------------------------------
+
+@lab_bp.route("/evidence", strict_slashes=False)
+def evidence_vault_page():
+    return render_template("lab/evidence.html", **_shell_context(
+        nav_id="evidence-vault",
+        page_title="Evidence Vault",
+    ))
+
+
+@lab_bp.route("/evidence/new", strict_slashes=False)
+def evidence_intake_page():
+    return render_template("lab/evidence_new.html", **_shell_context(
+        nav_id="evidence-intake",
+        page_title="Evidence Intake",
+        ref=evidence_service.reference_data(),
+    ))
+
+
+@lab_bp.route("/evidence/<evidence_ref>", strict_slashes=False)
+def evidence_detail_page(evidence_ref):
+    return render_template("lab/evidence_detail.html", **_shell_context(
+        nav_id="evidence-vault",
+        page_title=evidence_ref,
+        evidence_ref=evidence_ref,
+    ))
+
+
+# ---------------------------------------------------------------------------
 # API — cases (Section 48/49)
 # ---------------------------------------------------------------------------
 
@@ -260,6 +298,90 @@ def api_audit():
     except Exception:
         return api_error("AUDIT_QUERY_FAILED", "Audit log could not be retrieved.", 500)
     return api_ok(data)
+
+
+# ---------------------------------------------------------------------------
+# API — evidence (Sections 19, 20, 22, 23, 48/49)
+# ---------------------------------------------------------------------------
+
+def _evidence_error(exc):
+    """Map an EvidenceError onto the Section 49 error envelope."""
+    status = getattr(exc, "status", 400)
+    return api_error(exc.code, exc.message, status)
+
+
+@lab_bp.route("/api/evidence", methods=["GET"])
+def api_evidence_list():
+    from flask import request
+    try:
+        data = evidence_service.list_evidence(
+            case_ref=(request.args.get("case") or "").strip() or None,
+            evidence_type=(request.args.get("type") or "").strip() or None,
+            search=(request.args.get("q") or "").strip() or None,
+            limit=request.args.get("limit", 50),
+            offset=request.args.get("offset", 0))
+    except Exception:
+        return api_error("EVIDENCE_QUERY_FAILED", "Evidence records could not be retrieved.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/evidence", methods=["POST"])
+def api_evidence_create():
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return api_error("INVALID_PAYLOAD", "A JSON body is required.", 400)
+    try:
+        evidence = evidence_service.accept_evidence(
+            payload, ip_address=_client_ip())
+    except evidence_service.EvidenceError as exc:
+        return _evidence_error(exc)
+    except Exception:
+        return api_error("EVIDENCE_CREATE_FAILED",
+                         "The evidence could not be accepted.", 500)
+    return api_ok({"evidence": evidence}, status=201)
+
+
+@lab_bp.route("/api/evidence/meta", methods=["GET"])
+def api_evidence_meta():
+    """Accepted types and file-security limits for the intake form."""
+    return api_ok(evidence_service.reference_data())
+
+
+@lab_bp.route("/api/evidence/<evidence_ref>", methods=["GET"])
+def api_evidence_get(evidence_ref):
+    try:
+        evidence_service.record_view(evidence_ref, actor="analyst")
+        evidence = evidence_service.get_evidence(evidence_ref)
+    except evidence_service.EvidenceError as exc:
+        return _evidence_error(exc)
+    except Exception:
+        return api_error("EVIDENCE_READ_FAILED",
+                         "The evidence record could not be retrieved.", 500)
+    return api_ok({"evidence": evidence})
+
+
+@lab_bp.route("/api/evidence/<evidence_ref>/custody", methods=["GET"])
+def api_evidence_custody(evidence_ref):
+    try:
+        data = evidence_service.get_custody(evidence_ref)
+    except evidence_service.EvidenceError as exc:
+        return _evidence_error(exc)
+    except Exception:
+        return api_error("CUSTODY_QUERY_FAILED",
+                         "Chain of custody could not be retrieved.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/evidence/<evidence_ref>/verify", methods=["POST"])
+def api_evidence_verify(evidence_ref):
+    try:
+        result = evidence_service.verify_integrity(evidence_ref)
+    except evidence_service.EvidenceError as exc:
+        return _evidence_error(exc)
+    except Exception:
+        return api_error("INTEGRITY_CHECK_FAILED",
+                         "Integrity could not be verified.", 500)
+    return api_ok({"verification": result})
 
 
 # ---------------------------------------------------------------------------

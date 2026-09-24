@@ -313,6 +313,15 @@ expected_methods = {
     "/lab/api/cases/<case_ref>/notes":    {"POST"},
     "/lab/api/cases/meta":                {"GET"},
     "/lab/api/audit":                     {"GET"},
+    # Phase 6 — evidence
+    "/lab/evidence":                      {"GET"},
+    "/lab/evidence/new":                  {"GET"},
+    "/lab/evidence/<evidence_ref>":       {"GET"},
+    "/lab/api/evidence":                  {"GET", "POST"},
+    "/lab/api/evidence/meta":             {"GET"},
+    "/lab/api/evidence/<evidence_ref>":   {"GET"},
+    "/lab/api/evidence/<evidence_ref>/custody": {"GET"},
+    "/lab/api/evidence/<evidence_ref>/verify":  {"POST"},
 }
 expected_rules = sorted(expected_methods)
 
@@ -340,6 +349,168 @@ for group in lab_routes.NAV_STRUCTURE:
         if target not in nav_rules:
             dead.append(link["label"])
 check("no dead navigation (every sidebar link has a route)", not dead, dead)
+
+# ===========================================================================
+section("Test 7B — Evidence: Intake, Custody, Integrity (Sections 19-23)")
+# ===========================================================================
+import base64 as _b64                                    # noqa: E402
+from lab import evidence_service as evs                  # noqa: E402
+
+ev_ref_data = evs.reference_data()
+check("evidence reference data exposes types", len(evs.EVIDENCE_TYPES) == 12,
+      len(evs.EVIDENCE_TYPES))
+check("file security limits exposed", isinstance(ev_ref_data["max_bytes"], int)
+      and ev_ref_data["max_bytes"] > 0, ev_ref_data["max_bytes"])
+check("blocked extensions listed", ".exe" in ev_ref_data["blocked_extensions"])
+
+# --- filename sanitisation (Section 21) ---
+check("path traversal stripped",
+      evs.sanitize_filename("../../../etc/passwd") == "passwd",
+      evs.sanitize_filename("../../../etc/passwd"))
+check("windows separators stripped",
+      evs.sanitize_filename("..\\..\\boot.ini") == "boot.ini",
+      evs.sanitize_filename("..\\..\\boot.ini"))
+check("unsafe characters collapsed",
+      "/" not in evs.sanitize_filename("invoice (final) copy.pdf"),
+      evs.sanitize_filename("invoice (final) copy.pdf"))
+
+for bad_name in ("payload.exe", "run.bat", "script.js", "setup.msi"):
+    try:
+        evs.validate_filename(bad_name)
+        check("blocks executable %s" % bad_name, False, "accepted")
+    except evs.EvidenceError as exc:
+        check("blocks executable %s" % bad_name, exc.code == "FILE_TYPE_BLOCKED",
+              exc.code)
+
+# --- size limit (Section 21) — assert against a patched limit, since the
+#     real limit is read at import time ---
+_orig_limit = evs.MAX_EVIDENCE_BYTES
+evs.MAX_EVIDENCE_BYTES = 100
+try:
+    evs.accept_evidence({
+        "evidence_type": "FILE", "title": "oversize",
+        "filename": "big.pdf",
+        "content_base64": _b64.b64encode(b"A" * 500).decode()})
+    check("enforces size limit", False, "accepted oversize file")
+except evs.EvidenceError as exc:
+    check("enforces size limit", exc.code == "FILE_TOO_LARGE", exc.code)
+finally:
+    evs.MAX_EVIDENCE_BYTES = _orig_limit
+
+# --- PE payload disguised with a text extension (Section 21) ---
+try:
+    evs.accept_evidence({
+        "evidence_type": "FILE", "title": "disguised",
+        "filename": "innocent.txt",
+        "content_base64": _b64.b64encode(b"MZ\x90\x00" + b"\x00" * 64).decode()})
+    check("blocks executable content regardless of extension", False, "accepted")
+except evs.EvidenceError as exc:
+    check("blocks executable content regardless of extension",
+          exc.code == "FILE_TYPE_BLOCKED", exc.code)
+
+# --- file intake: hashing + custody + integrity (Sections 19, 20, 22) ---
+pdf = b"%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n" + b"B" * 400
+ev_file = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "FILE",
+    "title": "Lure attachment", "filename": "../../../tmp/invoice (1).pdf",
+    "content_base64": _b64.b64encode(pdf).decode(), "source": "Email Forensics"})
+
+check("evidence_ref format", ev_file["evidence_ref"].startswith("KAV-EVD-%d-" % 2026),
+      ev_file["evidence_ref"])
+check("sha256 computed from real bytes",
+      ev_file["sha256"] == evs.hash_bytes(pdf)["sha256"], ev_file["sha256"][:16])
+check("sha1 and md5 also computed",
+      len(ev_file["sha1"]) == 40 and len(ev_file["md5"]) == 32)
+check("original filename sanitised",
+      "/" not in ev_file["original_filename"] and ".." not in ev_file["original_filename"],
+      ev_file["original_filename"])
+check("mime detected from magic bytes", ev_file["mime_type"] == "application/pdf",
+      ev_file["mime_type"])
+check("size matches real bytes", ev_file["size_bytes"] == len(pdf),
+      ev_file["size_bytes"])
+check("stored original written", ev_file["stored"] is True)
+check("stored original exists", ev_file["stored_file_exists"] is True)
+check("acquisition state VERIFIED at intake", ev_file["integrity_state"] == "VERIFIED",
+      ev_file["integrity_state"])
+check("attached to case", ev_file["case"] is not None
+      and ev_file["case"]["case_ref"] == case1["case_ref"])
+check("custody genesis events present",
+      [c["action"] for c in ev_file["custody"]][:2] ==
+      ["EVIDENCE CREATED", "HASH GENERATED"],
+      [c["action"] for c in ev_file["custody"]])
+check("custody chain hash-verifies", ev_file["custody_verification"]["ok"] is True,
+      ev_file["custody_verification"])
+check("case counts evidence", cs.get_case(case1["case_ref"])["counts"]["evidence"] == 1)
+
+# --- text evidence + integrity verification (Section 23) ---
+ev_text = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "RAW_HEADER",
+    "title": "Original headers",
+    "content_text": "Received: from spoof.example ... Return-Path: <x@y>"})
+v = evs.verify_integrity(ev_text["evidence_ref"])
+check("text evidence integrity verified", v["status"] == "INTEGRITY VERIFIED",
+      v["status"])
+check("  reported hashes actually match", v["original_sha256"] == v["current_sha256"])
+
+v2 = evs.verify_integrity(ev_file["evidence_ref"])
+check("file evidence integrity verified", v2["status"] == "INTEGRITY VERIFIED",
+      v2["status"])
+
+# --- tamper the stored original -> must report MISMATCH, never VERIFIED ---
+stored_row = db.query_one(
+    "SELECT stored_path FROM evidence WHERE evidence_ref = ?",
+    (ev_file["evidence_ref"],))
+with open(stored_row["stored_path"], "ab") as fh:
+    fh.write(b"\nTAMPERED")
+v3 = evs.verify_integrity(ev_file["evidence_ref"])
+check("tampering reported as MISMATCH", v3["status"] == "INTEGRITY MISMATCH",
+      v3["status"])
+check("  mismatch hashes differ", v3["original_sha256"] != v3["current_sha256"])
+check("  honest detail text", "differs" in v3["detail"], v3["detail"])
+
+# --- custody is append-only and re-verified after every mutation ---
+custody_after = evs.get_custody(ev_file["evidence_ref"])
+check("custody events appended, never replaced",
+      custody_after["count"] >= 4, custody_after["count"])
+check("chain still verifies after append",
+      custody_after["verification"]["ok"] is True, custody_after["verification"])
+
+# --- evidence validation ---
+for label, payload, code in [
+    ("missing title", {"evidence_type": "URL", "content_text": "https://x"}, "VALIDATION_FAILED"),
+    ("bad type", {"evidence_type": "NOPE", "title": "x"}, "VALIDATION_FAILED"),
+    ("no content", {"evidence_type": "URL", "title": "x"}, "VALIDATION_FAILED"),
+]:
+    try:
+        evs.accept_evidence(payload)
+        check("rejects %s" % label, False, "accepted")
+    except evs.EvidenceError as exc:
+        check("rejects %s" % label, exc.code == code, exc.code)
+
+try:
+    evs.accept_evidence({"evidence_type": "URL", "title": "x",
+                         "content_text": "https://z",
+                         "case_ref": "KAV-CASE-1999-99999"})
+    check("rejects evidence for missing case", False, "accepted")
+except evs.EvidenceError as exc:
+    check("rejects evidence for missing case", exc.code == "CASE_NOT_FOUND",
+          exc.code)
+
+# --- listing + search ---
+listed = evs.list_evidence(case_ref=case1["case_ref"])
+check("lists evidence for a case", listed["total"] == 2, listed["total"])
+check("search by sha256 finds record",
+      evs.list_evidence(search=ev_file["sha256"])["total"] == 1)
+check("no-match search returns 0",
+      evs.list_evidence(search="zzz_absent")["total"] == 0)
+
+# --- audit trail for evidence ---
+check("evidence intake audited",
+      any(a["action"] == "EVIDENCE_ADDED"
+          for a in cs.list_audit(limit=100)["items"]))
+check("integrity check audited",
+      any(a["action"] == "EVIDENCE_VERIFIED"
+          for a in cs.list_audit(limit=100)["items"]))
 
 # ===========================================================================
 section("Test 8 — Product A Regression Baseline")

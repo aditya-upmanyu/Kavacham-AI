@@ -1,0 +1,142 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a><span class="lab-crumb-sep">/</span>
+  <a href="/lab/evidence">Evidence Vault</a><span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Evidence Intake</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">EVIDENCE INTAKE</h1>
+    <p class="lab-subtitle">Acquire, hash and chain an evidence item into the vault.</p>
+  </div>
+</div>
+
+<!-- Section 20 workflow, real steps only -->
+<div class="lab-wizard-steps" id="intake-steps" role="list" aria-label="Intake steps">
+  <div class="lab-progress-step is-active" role="listitem" data-step="1">
+    <span class="lab-step-dot">1</span><span>SELECT TYPE</span>
+  </div>
+  <div class="lab-progress-step" role="listitem" data-step="2">
+    <span class="lab-step-dot">2</span><span>PROVIDE EVIDENCE</span>
+  </div>
+  <div class="lab-progress-step" role="listitem" data-step="3">
+    <span class="lab-step-dot">3</span><span>ATTACH &amp; CONFIRM</span>
+  </div>
+</div>
+
+<form class="lab-panel" id="intake-form" novalidate>
+  <div class="lab-panel-body">
+
+    <!-- STEP 1 — SELECT TYPE -->
+    <fieldset class="lab-wizard-pane is-active" data-pane="1">
+      <legend class="lab-section-title" style="margin-bottom:12px;">STEP 1 — SELECT EVIDENCE TYPE</legend>
+
+      <div class="lab-field">
+        <label class="lab-label" for="i-type">EVIDENCE TYPE *</label>
+        <select class="lab-select" id="i-type" required>
+          {% for t in ['EMAIL','RAW_HEADER','URL','DOMAIN','IP','HASH','FILE','SCREENSHOT','QR_IMAGE','MESSAGE','REPORT','ANALYST_NOTE'] %}
+          <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+        <div class="lab-field-hint">Determines how the item is stored and which fields are required.</div>
+        <div class="lab-field-error" id="err-i-type" hidden></div>
+      </div>
+
+      <div class="lab-field" style="margin-bottom:0;">
+        <label class="lab-label" for="i-title">EVIDENCE TITLE *</label>
+        <input class="lab-input" id="i-title" type="text" maxlength="200"
+               required placeholder="Phishing email received 2026-09-24 09:14" />
+        <div class="lab-field-hint">Required. Maximum 200 characters.</div>
+        <div class="lab-field-error" id="err-i-title" hidden></div>
+      </div>
+    </fieldset>
+
+    <!-- STEP 2 — PROVIDE EVIDENCE -->
+    <fieldset class="lab-wizard-pane" data-pane="2" hidden>
+      <legend class="lab-section-title" style="margin-bottom:12px;">STEP 2 — PROVIDE EVIDENCE</legend>
+
+      <!-- File mode -->
+      <div id="mode-file">
+        <div class="lab-field">
+          <label class="lab-label" for="i-file">SELECT FILE</label>
+          <input class="lab-input" id="i-file" type="file" />
+          <div class="lab-field-hint" id="file-hint">
+            Executables and scripts are refused. Maximum size {{ '{:,}'.format(ref.max_bytes) }} bytes.
+          </div>
+          <div class="lab-field-error" id="err-i-file" hidden></div>
+        </div>
+        <div id="file-preview" class="lab-ioc-preview" hidden></div>
+      </div>
+
+      <!-- Text mode -->
+      <div id="mode-text" hidden>
+        <div class="lab-field" style="margin-bottom:0;">
+          <label class="lab-label" for="i-text">EVIDENCE CONTENT *</label>
+          <textarea class="lab-textarea mono" id="i-text" rows="8"
+                    placeholder="Paste the raw header, URL, domain, IP or note text."></textarea>
+          <div class="lab-field-hint">Stored as UTF-8 text. Hashed exactly as entered.</div>
+          <div class="lab-field-error" id="err-i-text" hidden></div>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- STEP 3 — ATTACH & CONFIRM -->
+    <fieldset class="lab-wizard-pane" data-pane="3" hidden>
+      <legend class="lab-section-title" style="margin-bottom:12px;">STEP 3 — ATTACH &amp; CONFIRM</legend>
+
+      <div class="lab-field">
+        <label class="lab-label" for="i-case">ATTACH TO CASE</label>
+        <input class="lab-input mono" id="i-case" type="text" maxlength="40"
+               placeholder="KAV-CASE-2026-00001" autocomplete="off" />
+        <div class="lab-field-hint">Optional. Leave blank to keep the evidence unattached.</div>
+        <div class="lab-field-error" id="err-i-case" hidden></div>
+      </div>
+
+      <div class="lab-field">
+        <label class="lab-label" for="i-source">SOURCE</label>
+        <input class="lab-input" id="i-source" type="text" maxlength="80"
+               value="Analyst Input" autocomplete="off" />
+        <div class="lab-field-hint">Recorded as the data provenance for this item.</div>
+      </div>
+
+      <div class="lab-field" style="margin-bottom:0;">
+        <label class="lab-label" for="i-notes">NOTES</label>
+        <textarea class="lab-textarea" id="i-notes" rows="3"
+                  placeholder="How this evidence was obtained."></textarea>
+      </div>
+
+      <hr class="lab-divider" />
+      <div class="lab-label" style="margin-bottom:8px;">ON ACCEPTANCE</div>
+      <p class="lab-dim lab-sm" style="margin-bottom:10px;">
+        Validate input · generate SHA-256 / SHA-1 / MD5 · generate evidence ID ·
+        record acquisition timestamp · write custody events (EVIDENCE CREATED,
+        HASH GENERATED, and ADDED TO CASE when attached).
+      </p>
+      <dl class="lab-kv" id="intake-summary"></dl>
+    </fieldset>
+
+  </div>
+
+  <div class="lab-modal-foot" style="border-radius:0 0 var(--lab-r-3) var(--lab-r-3);">
+    <button class="lab-btn" type="button" id="i-back" hidden>← BACK</button>
+    <span class="lab-spacer"></span>
+    <span class="lab-xs lab-dim" id="i-step-label">STEP 1 OF 3</span>
+    <button class="lab-btn lab-btn-primary" type="button" id="i-next">NEXT →</button>
+    <button class="lab-btn lab-btn-primary" type="submit" id="i-submit" hidden>ACCEPT EVIDENCE</button>
+  </div>
+</form>
+
+<div id="intake-error" style="margin-top:14px;"></div>
+<div id="intake-result" style="margin-top:14px;"></div>
+
+<script type="application/json" id="intake-ref">{{ ref | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_evidence_new.js') }}"></script>
+{% endblock %}

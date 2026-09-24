@@ -1,0 +1,86 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a><span class="lab-crumb-sep">/</span>
+  <a href="/lab/evidence">Evidence Vault</a><span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current lab-mono">{{ evidence_ref }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div id="evd-loading" class="lab-panel">
+  <div class="lab-panel-body">
+    <div class="lab-skeleton lab-skeleton-line" style="width:40%;height:16px;"></div>
+    <div class="lab-skeleton lab-skeleton-line" style="width:66%;"></div>
+    <div class="lab-skeleton lab-skeleton-line" style="width:52%;"></div>
+    <p class="lab-xs lab-dim" style="margin-top:10px;">Retrieving evidence record…</p>
+  </div>
+</div>
+
+<div id="evd-error" hidden></div>
+
+<div id="evd-view" hidden>
+  <div class="lab-case-head">
+    <div class="lab-case-head-main">
+      <div class="lab-row tight" style="margin-bottom:5px;">
+        <span class="lab-badge lab-badge-blue lab-mono" id="ev-ref">—</span>
+        <span class="lab-badge" id="ev-type">—</span>
+        <span id="ev-integrity"></span>
+      </div>
+      <h1 class="lab-title" id="ev-title">—</h1>
+      <div class="lab-row tight lab-xs lab-dim" style="margin-top:7px;">
+        <span>ACQUIRED <span class="lab-mono" id="ev-acquired">—</span></span>
+        <span class="lab-dot-sep">·</span>
+        <span>SOURCE <span class="lab-strong" id="ev-source">—</span></span>
+        <span class="lab-dot-sep">·</span>
+        <span>CASE <span class="lab-mono" id="ev-case">Unattached</span></span>
+      </div>
+    </div>
+    <div class="lab-case-head-actions">
+      <label class="lab-label">&nbsp;</label>
+      <button class="lab-btn lab-btn-primary lab-btn-sm" id="ev-verify" type="button">
+        VERIFY INTEGRITY
+      </button>
+    </div>
+  </div>
+
+  <div class="lab-strip" id="ev-counts" style="margin-bottom:16px;"></div>
+
+  <div id="evd-verify-result" style="margin-bottom:16px;"></div>
+
+  <div class="lab-grid lab-case-grid">
+    <!-- Hashes & metadata (Section 19/23) -->
+    <div class="lab-panel">
+      <div class="lab-panel-head"><h2 class="lab-section-title">DIGESTS &amp; METADATA</h2></div>
+      <div class="lab-panel-body"><dl class="lab-kv" id="ev-meta"></dl></div>
+    </div>
+
+    <!-- Chain of custody (Section 22) -->
+    <div class="lab-panel">
+      <div class="lab-panel-head">
+        <h2 class="lab-section-title">CHAIN OF CUSTODY</h2>
+        <span class="lab-xs lab-dim" id="ev-custody-count">—</span>
+      </div>
+      <div class="lab-panel-body" id="ev-custody"></div>
+    </div>
+  </div>
+
+  <!-- Content preview / analyses -->
+  <div class="lab-grid lab-case-grid" style="margin-top:14px;">
+    <div class="lab-panel">
+      <div class="lab-panel-head"><h2 class="lab-section-title">STORED CONTENT</h2></div>
+      <div class="lab-panel-body flush" id="ev-content"></div>
+    </div>
+    <div class="lab-panel">
+      <div class="lab-panel-head"><h2 class="lab-section-title">LINKED ANALYSES</h2></div>
+      <div class="lab-panel-body flush" id="ev-analyses"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.__LAB_EVD_REF__ = {{ evidence_ref | tojson }};</script>
+<script src="{{ url_for('static', filename='js/lab_evidence_detail.js') }}"></script>
+{% endblock %}

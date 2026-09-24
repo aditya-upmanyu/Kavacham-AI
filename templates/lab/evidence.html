@@ -1,0 +1,70 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Evidence Vault</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">EVIDENCE VAULT</h1>
+    <p class="lab-subtitle">Acquired evidence records with recorded digests and custody state.</p>
+  </div>
+  <div class="lab-page-head-actions">
+    <a class="lab-btn lab-btn-primary lab-btn-sm" href="/lab/evidence/new">+ ACQUIRE EVIDENCE</a>
+  </div>
+</div>
+
+<section class="lab-panel" style="margin-bottom:14px;">
+  <div class="lab-panel-body">
+    <div class="lab-filter-row">
+      <div class="lab-field" style="margin-bottom:0;flex:1 1 240px;">
+        <label class="lab-label" for="e-search">SEARCH</label>
+        <input class="lab-input mono" id="e-search" type="search"
+               placeholder="KAV-EVD-…, title, filename or SHA-256" autocomplete="off" />
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 190px;">
+        <label class="lab-label" for="e-type">EVIDENCE TYPE</label>
+        <select class="lab-select" id="e-type">
+          <option value="">ALL TYPES</option>
+          {% for t in ['EMAIL','RAW_HEADER','URL','DOMAIN','IP','HASH','FILE','SCREENSHOT','QR_IMAGE','MESSAGE','REPORT','ANALYST_NOTE'] %}
+          <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 210px;">
+        <label class="lab-label" for="e-case">CASE REF</label>
+        <input class="lab-input mono" id="e-case" type="search"
+               placeholder="KAV-CASE-…" autocomplete="off" />
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 0 auto;">
+        <label class="lab-label">&nbsp;</label>
+        <button class="lab-btn lab-btn-sm" id="e-clear" type="button">CLEAR</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lab-panel">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title">EVIDENCE RECORDS</h2>
+    <span class="lab-xs lab-dim" id="e-total">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="e-list-body">
+    <div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:72%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:55%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:64%;"></div>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="e-list-foot">Retrieving evidence records…</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_evidence.js') }}"></script>
+{% endblock %}

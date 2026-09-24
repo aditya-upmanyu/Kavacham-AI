@@ -283,14 +283,63 @@ from flask import Flask                      # noqa: E402
 from lab import lab_bp                       # noqa: E402
 _probe = Flask(__name__)
 _probe.register_blueprint(lab_bp)
-rules = sorted(r.rule for r in _probe.url_map.iter_rules()
-               if r.rule.startswith("/lab") and r.endpoint != "static")
-expected_rules = ["/lab/", "/lab/api/alerts", "/lab/api/command-center",
-                  "/lab/api/health", "/lab/api/meta"]
+
+# url_map yields one Rule per (path, method) combination for routes declared
+# with multiple decorators, so normalise to path -> allowed methods.
+path_methods = {}
+for r in _probe.url_map.iter_rules():
+    if not r.rule.startswith("/lab") or r.endpoint == "static":
+        continue
+    methods = {m for m in r.methods if m not in ("HEAD", "OPTIONS")}
+    path_methods.setdefault(r.rule, set()).update(methods)
+
+rules = sorted(path_methods)
+
+# Exact expected surface: pages + APIs + their methods. Any drift here is
+# intentional and must be updated together with the sidebar so navigation
+# never goes dead (Section 81).
+expected_methods = {
+    "/lab/":                              {"GET"},
+    "/lab/api/health":                    {"GET"},
+    "/lab/api/alerts":                    {"GET"},
+    "/lab/api/command-center":            {"GET"},
+    "/lab/api/meta":                      {"GET"},
+    "/lab/cases":                         {"GET"},
+    "/lab/cases/new":                     {"GET"},
+    "/lab/cases/<case_ref>":              {"GET"},
+    "/lab/audit":                         {"GET"},
+    "/lab/api/cases":                     {"GET", "POST"},
+    "/lab/api/cases/<case_ref>":          {"GET", "PATCH"},
+    "/lab/api/cases/<case_ref>/notes":    {"POST"},
+    "/lab/api/cases/meta":                {"GET"},
+    "/lab/api/audit":                     {"GET"},
+}
+expected_rules = sorted(expected_methods)
+
 check("expected routes registered",
-      all(e in rules for e in expected_rules), rules)
+      rules == expected_rules,
+      "extra=%s missing=%s" % (
+          [r for r in rules if r not in expected_rules],
+          [r for r in expected_rules if r not in rules]))
 check("route count matches", len(rules) == len(expected_rules),
       "%d vs %d" % (len(rules), len(expected_rules)))
+
+bad_methods = []
+for path, methods in expected_methods.items():
+    actual = path_methods.get(path, set())
+    if not methods.issubset(actual):
+        bad_methods.append("%s missing %s" % (path, sorted(methods - actual)))
+check("every route exposes the intended HTTP methods", not bad_methods, bad_methods)
+
+# Every sidebar link must resolve to a registered rule (Section 81)
+nav_rules = {r.rstrip("/") for r in rules}
+dead = []
+for group in lab_routes.NAV_STRUCTURE:
+    for link in group["links"]:
+        target = link["url"].rstrip("/")
+        if target not in nav_rules:
+            dead.append(link["label"])
+check("no dead navigation (every sidebar link has a route)", not dead, dead)
 
 # ===========================================================================
 section("Test 8 — Product A Regression Baseline")

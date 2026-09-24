@@ -1,0 +1,84 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Active Cases</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">ACTIVE CASES</h1>
+    <p class="lab-subtitle">Investigation records matching the current filter.</p>
+  </div>
+  <div class="lab-page-head-actions">
+    <a class="lab-btn lab-btn-primary lab-btn-sm" href="/lab/cases/new">+ NEW INVESTIGATION</a>
+  </div>
+</div>
+
+<!-- Filters (Section 16) -->
+<section class="lab-panel" style="margin-bottom:14px;">
+  <div class="lab-panel-body">
+    <div class="lab-filter-row">
+      <div class="lab-field" style="margin-bottom:0;flex:1 1 220px;">
+        <label class="lab-label" for="f-search">SEARCH</label>
+        <input class="lab-input mono" id="f-search" type="search"
+               placeholder="KAV-CASE-…, title or description" autocomplete="off" />
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 170px;">
+        <label class="lab-label" for="f-status">STATUS</label>
+        <select class="lab-select" id="f-status">
+          <option value="">ALL STATUSES</option>
+          {% for s in ['OPEN','UNDER INVESTIGATION','REVIEW','RESOLVED','ARCHIVED'] %}
+          <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 170px;">
+        <label class="lab-label" for="f-priority">PRIORITY</label>
+        <select class="lab-select" id="f-priority">
+          <option value="">ALL PRIORITIES</option>
+          {% for p in ['CRITICAL','HIGH','MEDIUM','LOW'] %}
+          <option value="{{ p }}">{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 190px;">
+        <label class="lab-label" for="f-type">CASE TYPE</label>
+        <select class="lab-select" id="f-type">
+          <option value="">ALL TYPES</option>
+          {% for t in ['PHISHING','MALWARE','FINANCIAL FRAUD','ACCOUNT TAKEOVER','BEC','SCAM','MALICIOUS WEBSITE','SUSPICIOUS EMAIL','CREDENTIAL THEFT','QR PHISHING','OTHER'] %}
+          <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 0 auto;">
+        <label class="lab-label">&nbsp;</label>
+        <button class="lab-btn lab-btn-sm" id="f-clear" type="button">CLEAR</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lab-panel">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title">INVESTIGATION RECORDS</h2>
+    <span class="lab-xs lab-dim" id="case-total">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="case-list-body">
+    <div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:75%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:58%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:66%;"></div>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="case-list-foot">Retrieving case records…</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_cases.js') }}"></script>
+{% endblock %}

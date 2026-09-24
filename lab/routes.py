@@ -17,6 +17,7 @@ from flask import jsonify, render_template, request
 
 from lab import lab_bp
 from lab import health as health_service
+from lab import case_service
 
 
 # ---------------------------------------------------------------------------
@@ -30,6 +31,19 @@ NAV_STRUCTURE = [
         "group": "COMMAND CENTER",
         "links": [
             {"id": "command-center", "label": "Command Center", "url": "/lab", "ready": True},
+        ],
+    },
+    {
+        "group": "INVESTIGATIONS",
+        "links": [
+            {"id": "active-cases", "label": "Active Cases", "url": "/lab/cases", "ready": True},
+            {"id": "new-investigation", "label": "New Investigation", "url": "/lab/cases/new", "ready": True},
+        ],
+    },
+    {
+        "group": "SYSTEM",
+        "links": [
+            {"id": "audit-log", "label": "Audit Log", "url": "/lab/audit", "ready": True},
         ],
     },
 ]
@@ -100,6 +114,152 @@ def command_center():
         nav_id="command-center",
         page_title="Command Center",
     ))
+
+
+# ---------------------------------------------------------------------------
+# Case pages (Sections 16, 17, 18)
+# ---------------------------------------------------------------------------
+
+@lab_bp.route("/cases", strict_slashes=False)
+def case_list_page():
+    return render_template("lab/cases.html", **_shell_context(
+        nav_id="active-cases",
+        page_title="Active Cases",
+    ))
+
+
+@lab_bp.route("/cases/new", strict_slashes=False)
+def case_new_page():
+    return render_template("lab/case_new.html", **_shell_context(
+        nav_id="new-investigation",
+        page_title="New Investigation",
+        ref=case_service.reference_data(),
+    ))
+
+
+@lab_bp.route("/cases/<case_ref>", strict_slashes=False)
+def case_detail_page(case_ref):
+    return render_template("lab/case_detail.html", **_shell_context(
+        nav_id="active-cases",
+        page_title=case_ref,
+        case_ref=case_ref,
+    ))
+
+
+@lab_bp.route("/audit", strict_slashes=False)
+def audit_page():
+    return render_template("lab/audit.html", **_shell_context(
+        nav_id="audit-log",
+        page_title="Audit Log",
+    ))
+
+
+# ---------------------------------------------------------------------------
+# API — cases (Section 48/49)
+# ---------------------------------------------------------------------------
+
+def _client_ip():
+    from flask import request
+    return request.headers.get("X-Forwarded-For", request.remote_addr)
+
+
+def _case_error(exc):
+    """Map a CaseError onto the Section 49 error envelope."""
+    status = 404 if exc.code == "CASE_NOT_FOUND" else 400
+    if exc.code == "INVALID_TRANSITION":
+        status = 409
+    return api_error(exc.code, exc.message, status)
+
+
+@lab_bp.route("/api/cases", methods=["GET"])
+def api_cases_list():
+    from flask import request
+    try:
+        data = case_service.list_cases(
+            status=(request.args.get("status") or "").strip() or None,
+            priority=(request.args.get("priority") or "").strip() or None,
+            case_type=(request.args.get("case_type") or "").strip() or None,
+            search=(request.args.get("q") or "").strip() or None,
+            limit=request.args.get("limit", 50),
+            offset=request.args.get("offset", 0))
+    except Exception:
+        return api_error("CASE_QUERY_FAILED", "Cases could not be retrieved.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/cases", methods=["POST"])
+def api_cases_create():
+    from flask import request
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return api_error("INVALID_PAYLOAD", "A JSON body is required.", 400)
+    try:
+        case = case_service.create_case(payload, ip_address=_client_ip())
+    except case_service.CaseError as exc:
+        return _case_error(exc)
+    except Exception:
+        return api_error("CASE_CREATE_FAILED", "The case could not be created.", 500)
+    return api_ok({"case": case}, status=201)
+
+
+@lab_bp.route("/api/cases/<case_ref>", methods=["GET"])
+def api_cases_get(case_ref):
+    try:
+        case = case_service.get_case(case_ref)
+    except case_service.CaseError as exc:
+        return _case_error(exc)
+    except Exception:
+        return api_error("CASE_READ_FAILED", "The case could not be retrieved.", 500)
+    return api_ok({"case": case})
+
+
+@lab_bp.route("/api/cases/<case_ref>", methods=["PATCH"])
+def api_cases_update(case_ref):
+    from flask import request
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return api_error("INVALID_PAYLOAD", "A JSON body is required.", 400)
+    try:
+        case = case_service.update_case(case_ref, payload,
+                                        ip_address=_client_ip())
+    except case_service.CaseError as exc:
+        return _case_error(exc)
+    except Exception:
+        return api_error("CASE_UPDATE_FAILED", "The case could not be updated.", 500)
+    return api_ok({"case": case})
+
+
+@lab_bp.route("/api/cases/<case_ref>/notes", methods=["POST"])
+def api_cases_note(case_ref):
+    from flask import request
+    payload = request.get_json(silent=True) or {}
+    try:
+        note = case_service.add_note(case_ref, payload.get("body"),
+                                     ip_address=_client_ip())
+    except case_service.CaseError as exc:
+        return _case_error(exc)
+    except Exception:
+        return api_error("NOTE_CREATE_FAILED", "The note could not be saved.", 500)
+    return api_ok({"note": note}, status=201)
+
+
+@lab_bp.route("/api/cases/meta", methods=["GET"])
+def api_cases_meta():
+    """Enum + transition reference data for the UI."""
+    return api_ok(case_service.reference_data())
+
+
+@lab_bp.route("/api/audit", methods=["GET"])
+def api_audit():
+    from flask import request
+    try:
+        data = case_service.list_audit(
+            limit=request.args.get("limit", 100),
+            action=(request.args.get("action") or "").strip() or None,
+            target_ref=(request.args.get("target") or "").strip() or None)
+    except Exception:
+        return api_error("AUDIT_QUERY_FAILED", "Audit log could not be retrieved.", 500)
+    return api_ok(data)
 
 
 # ---------------------------------------------------------------------------

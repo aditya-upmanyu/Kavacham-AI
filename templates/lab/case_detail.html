@@ -1,0 +1,138 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb" id="case-crumb">
+  <a href="/lab">Command Center</a><span class="lab-crumb-sep">/</span>
+  <a href="/lab/cases">Active Cases</a><span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current lab-mono">{{ case_ref }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div id="case-loading" class="lab-panel">
+  <div class="lab-panel-body">
+    <div class="lab-skeleton lab-skeleton-line" style="width:38%;height:16px;"></div>
+    <div class="lab-skeleton lab-skeleton-line" style="width:62%;"></div>
+    <div class="lab-skeleton lab-skeleton-line" style="width:54%;"></div>
+    <div class="lab-skeleton lab-skeleton-line" style="width:70%;"></div>
+    <p class="lab-xs lab-dim" style="margin-top:10px;">Retrieving case record…</p>
+  </div>
+</div>
+
+<div id="case-error" hidden></div>
+
+<div id="case-view" hidden>
+  <!-- Case header (Section 18) -->
+  <div class="lab-case-head">
+    <div class="lab-case-head-main">
+      <div class="lab-row tight" style="margin-bottom:5px;">
+        <span class="lab-badge lab-badge-blue lab-mono" id="cv-ref">—</span>
+        <span class="lab-badge" id="cv-type">—</span>
+        <span id="cv-status"></span>
+        <span id="cv-priority"></span>
+        <span id="cv-risk"></span>
+      </div>
+      <h1 class="lab-title" id="cv-title">—</h1>
+      <p class="lab-subtitle" id="cv-desc" hidden></p>
+      <div class="lab-row tight lab-xs lab-dim" style="margin-top:7px;">
+        <span>OPENED <span class="lab-mono" id="cv-created">—</span></span>
+        <span class="lab-dot-sep">·</span>
+        <span>UPDATED <span class="lab-mono" id="cv-updated">—</span></span>
+        <span class="lab-dot-sep">·</span>
+        <span>INVESTIGATOR <span class="lab-strong" id="cv-assignee">Unassigned</span></span>
+      </div>
+    </div>
+    <div class="lab-case-head-actions">
+      <label class="lab-label" for="cv-status-select">STATUS</label>
+      <select class="lab-select" id="cv-status-select" style="min-width:190px;"></select>
+    </div>
+  </div>
+
+  <!-- Breadcrumb metadata strip -->
+  <div class="lab-strip" id="cv-counts" style="margin-bottom:16px;"></div>
+
+  <!-- Tabs (Section 18) -->
+  <div class="lab-tabs" role="tablist" id="case-tabs">
+    <button class="lab-tab is-active" role="tab" data-tab="summary" aria-selected="true">SUMMARY</button>
+    <button class="lab-tab" role="tab" data-tab="evidence" aria-selected="false">EVIDENCE</button>
+    <button class="lab-tab" role="tab" data-tab="timeline" aria-selected="false">TIMELINE</button>
+    <button class="lab-tab" role="tab" data-tab="ioc" aria-selected="false">IOC</button>
+    <button class="lab-tab" role="tab" data-tab="analyses" aria-selected="false">ANALYSIS</button>
+    <button class="lab-tab" role="tab" data-tab="notes" aria-selected="false">NOTES</button>
+    <button class="lab-tab" role="tab" data-tab="report" aria-selected="false">REPORT</button>
+  </div>
+
+  <div class="lab-tab-panels">
+    <!-- SUMMARY -->
+    <section class="lab-tab-panel is-active" data-panel="summary" role="tabpanel">
+      <div class="lab-grid lab-case-grid">
+        <div class="lab-panel">
+          <div class="lab-panel-head"><h2 class="lab-section-title">CASE METADATA</h2></div>
+          <div class="lab-panel-body"><dl class="lab-kv" id="cv-meta"></dl></div>
+        </div>
+        <div class="lab-panel">
+          <div class="lab-panel-head"><h2 class="lab-section-title">QUICK ACTIONS</h2></div>
+          <div class="lab-panel-body">
+            <div class="lab-row tight">
+              <a class="lab-btn lab-btn-sm" id="qa-audit" href="/lab/audit">VIEW AUDIT TRAIL</a>
+              <button class="lab-btn lab-btn-sm" type="button" id="qa-copy">COPY CASE ID</button>
+            </div>
+            <p class="lab-xs lab-dim" style="margin-top:11px;">
+              Every change to this record writes an audit event and a timeline entry.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EVIDENCE -->
+    <section class="lab-tab-panel" data-panel="evidence" role="tabpanel" hidden>
+      <div class="lab-panel"><div class="lab-panel-body flush" id="cv-evidence"></div></div>
+    </section>
+
+    <!-- TIMELINE -->
+    <section class="lab-tab-panel" data-panel="timeline" role="tabpanel" hidden>
+      <div class="lab-panel"><div class="lab-panel-body" id="cv-timeline"></div></div>
+    </section>
+
+    <!-- IOC -->
+    <section class="lab-tab-panel" data-panel="ioc" role="tabpanel" hidden>
+      <div class="lab-panel"><div class="lab-panel-body flush" id="cv-iocs"></div></div>
+    </section>
+
+    <!-- ANALYSIS -->
+    <section class="lab-tab-panel" data-panel="analyses" role="tabpanel" hidden>
+      <div class="lab-panel"><div class="lab-panel-body flush" id="cv-analyses"></div></div>
+    </section>
+
+    <!-- NOTES -->
+    <section class="lab-tab-panel" data-panel="notes" role="tabpanel" hidden>
+      <div class="lab-panel">
+        <div class="lab-panel-head"><h2 class="lab-section-title">INVESTIGATION NOTES</h2></div>
+        <div class="lab-panel-body">
+          <form id="note-form" style="margin-bottom:16px;">
+            <div class="lab-field">
+              <label class="lab-label" for="note-body">ADD NOTE</label>
+              <textarea class="lab-textarea" id="note-body" rows="3"
+                        placeholder="Observation, decision, or next step…"></textarea>
+              <div class="lab-field-error" id="note-error" hidden></div>
+            </div>
+            <button class="lab-btn lab-btn-primary lab-btn-sm" type="submit">SAVE NOTE</button>
+          </form>
+          <div id="cv-notes"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORT -->
+    <section class="lab-tab-panel" data-panel="report" role="tabpanel" hidden>
+      <div class="lab-panel"><div class="lab-panel-body flush" id="cv-reports"></div></div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.__LAB_CASE_REF__ = {{ case_ref | tojson }};</script>
+<script src="{{ url_for('static', filename='js/lab_case_detail.js') }}"></script>
+{% endblock %}

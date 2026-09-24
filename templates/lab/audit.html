@@ -1,0 +1,47 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Audit Log</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">AUDIT LOG</h1>
+    <p class="lab-subtitle">Immutable record of every recorded action in the Lab.</p>
+  </div>
+  <div class="lab-page-head-actions">
+    <select class="lab-select" id="audit-action" style="min-width:190px;">
+      <option value="">ALL ACTIONS</option>
+      <option value="CASE_CREATED">CASE_CREATED</option>
+      <option value="CASE_UPDATED">CASE_UPDATED</option>
+      <option value="NOTE_ADDED">NOTE_ADDED</option>
+      <option value="EVIDENCE_ADDED">EVIDENCE_ADDED</option>
+      <option value="EVIDENCE_VERIFIED">EVIDENCE_VERIFIED</option>
+    </select>
+    <button class="lab-btn lab-btn-sm" id="audit-refresh" type="button">REFRESH</button>
+  </div>
+</div>
+
+<section class="lab-panel">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title">RECORDED EVENTS</h2>
+    <span class="lab-xs lab-dim" id="audit-total">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="audit-body">
+    <div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:70%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:52%;"></div>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="audit-foot">Retrieving audit records…</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_audit.js') }}"></script>
+{% endblock %}

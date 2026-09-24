@@ -1,0 +1,153 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a><span class="lab-crumb-sep">/</span>
+  <a href="/lab/cases">Active Cases</a><span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">New Investigation</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">NEW INVESTIGATION</h1>
+    <p class="lab-subtitle">Open a case record with evidence, indicators and assignment.</p>
+  </div>
+</div>
+
+<!-- Progress (Section 41 — real steps only) -->
+<div class="lab-wizard-steps" id="wizard-steps" role="list" aria-label="Creation steps">
+  <div class="lab-progress-step is-active" role="listitem" data-step="1">
+    <span class="lab-step-dot">1</span><span>CASE INFORMATION</span>
+  </div>
+  <div class="lab-progress-step" role="listitem" data-step="2">
+    <span class="lab-step-dot">2</span><span>INITIAL EVIDENCE</span>
+  </div>
+  <div class="lab-progress-step" role="listitem" data-step="3">
+    <span class="lab-step-dot">3</span><span>INDICATORS</span>
+  </div>
+  <div class="lab-progress-step" role="listitem" data-step="4">
+    <span class="lab-step-dot">4</span><span>ASSIGNMENT</span>
+  </div>
+  <div class="lab-progress-step" role="listitem" data-step="5">
+    <span class="lab-step-dot">5</span><span>CONFIRMATION</span>
+  </div>
+</div>
+
+<form class="lab-panel" id="case-form" novalidate>
+  <div class="lab-panel-body">
+
+    <!-- STEP 1 — CASE INFORMATION -->
+    <fieldset class="lab-wizard-pane is-active" data-pane="1">
+      <legend class="lab-section-title" style="margin-bottom:12px;">STEP 1 — CASE INFORMATION</legend>
+
+      <div class="lab-field">
+        <label class="lab-label" for="w-title">CASE TITLE *</label>
+        <input class="lab-input" id="w-title" name="title" type="text" maxlength="200"
+               required placeholder="Credential phishing targeting finance inbox" />
+        <div class="lab-field-hint">Required. Maximum 200 characters.</div>
+        <div class="lab-field-error" id="err-title" hidden></div>
+      </div>
+
+      <div class="lab-field">
+        <label class="lab-label" for="w-type">CASE TYPE *</label>
+        <select class="lab-select" id="w-type" name="case_type" required>
+          {% for t in ['PHISHING','MALWARE','FINANCIAL FRAUD','ACCOUNT TAKEOVER','BEC','SCAM','MALICIOUS WEBSITE','SUSPICIOUS EMAIL','CREDENTIAL THEFT','QR PHISHING','OTHER'] %}
+          <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+        <div class="lab-field-error" id="err-type" hidden></div>
+      </div>
+
+      <div class="lab-field">
+        <label class="lab-label" for="w-priority">PRIORITY *</label>
+        <select class="lab-select" id="w-priority" name="priority" required>
+          {% for p in ['MEDIUM','LOW','HIGH','CRITICAL'] %}
+          <option value="{{ p }}" {% if p == 'MEDIUM' %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="lab-field" style="margin-bottom:0;">
+        <label class="lab-label" for="w-desc">DESCRIPTION</label>
+        <textarea class="lab-textarea" id="w-desc" name="description"
+                  placeholder="What happened, who is affected, and why this investigation was opened."></textarea>
+        <div class="lab-field-hint">Optional. Stored in the case record and audit trail.</div>
+      </div>
+    </fieldset>
+
+    <!-- STEP 2 — INITIAL EVIDENCE -->
+    <fieldset class="lab-wizard-pane" data-pane="2" hidden>
+      <legend class="lab-section-title" style="margin-bottom:12px;">STEP 2 — INITIAL EVIDENCE</legend>
+      <p class="lab-dim lab-sm" style="margin-bottom:12px;">
+        Record the subject line or a short description of the first evidence item.
+        Full evidence acquisition happens in the Evidence Vault after the case is opened.
+      </p>
+      <div class="lab-field">
+        <label class="lab-label" for="w-evidence-title">EVIDENCE TITLE</label>
+        <input class="lab-input" id="w-evidence-title" type="text" maxlength="200"
+               placeholder="Phishing email received 2026-09-24 09:14" />
+        <div class="lab-field-hint">Optional. Left blank means no evidence recorded at creation.</div>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;">
+        <label class="lab-label" for="w-evidence-note">EVIDENCE NOTE</label>
+        <textarea class="lab-textarea" id="w-evidence-note"
+                  placeholder="Received from account-security@… with a link to a look-alike domain."></textarea>
+      </div>
+    </fieldset>
+
+    <!-- STEP 3 — INDICATORS -->
+    <fieldset class="lab-wizard-pane" data-pane="3" hidden>
+      <legend class="lab-section-title" style="margin-bottom:12px;">STEP 3 — INDICATORS (IOC)</legend>
+      <p class="lab-dim lab-sm" style="margin-bottom:12px;">
+        One indicator per line. Types (IP, URL, DOMAIN, EMAIL, MD5, SHA1, SHA256)
+        are derived from the literal value — severity is not inferred.
+      </p>
+      <div class="lab-field" style="margin-bottom:0;">
+        <label class="lab-label" for="w-iocs">IOC LIST</label>
+        <textarea class="lab-textarea mono" id="w-iocs" rows="6"
+                  placeholder="185.234.72.19&#10;account-verify-login.tk&#10;https://account-verify-login.tk/confirm"></textarea>
+        <div class="lab-field-hint">Optional. Blank lines are ignored.</div>
+      </div>
+      <div id="ioc-preview" class="lab-ioc-preview" hidden></div>
+    </fieldset>
+
+    <!-- STEP 4 — ASSIGNMENT -->
+    <fieldset class="lab-wizard-pane" data-pane="4" hidden>
+      <legend class="lab-section-title" style="margin-bottom:12px;">STEP 4 — ASSIGNMENT</legend>
+      <div class="lab-field" style="margin-bottom:0;">
+        <label class="lab-label" for="w-assignee">ASSIGNED INVESTIGATOR</label>
+        <input class="lab-input" id="w-assignee" type="text" maxlength="120"
+               placeholder="a.upmanyu" autocomplete="off" />
+        <div class="lab-field-hint">Optional. Recorded on the case and its timeline.</div>
+      </div>
+    </fieldset>
+
+    <!-- STEP 5 — CONFIRMATION -->
+    <fieldset class="lab-wizard-pane" data-pane="5" hidden>
+      <legend class="lab-section-title" style="margin-bottom:12px;">STEP 5 — CONFIRMATION</legend>
+      <p class="lab-dim lab-sm" style="margin-bottom:12px;">
+        Review before opening the record. On creation the system generates the case
+        ID, records the timestamp, writes an audit event and initializes the timeline.
+      </p>
+      <dl class="lab-kv" id="confirm-summary"></dl>
+    </fieldset>
+
+  </div>
+
+  <div class="lab-modal-foot" style="border-radius:0 0 var(--lab-r-3) var(--lab-r-3);">
+    <button class="lab-btn" type="button" id="w-back" hidden>← BACK</button>
+    <span class="lab-spacer"></span>
+    <span class="lab-xs lab-dim" id="w-step-label">STEP 1 OF 5</span>
+    <button class="lab-btn lab-btn-primary" type="button" id="w-next">NEXT →</button>
+    <button class="lab-btn lab-btn-primary" type="submit" id="w-submit" hidden>CREATE CASE</button>
+  </div>
+</form>
+
+<div id="create-error" style="margin-top:14px;"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_case_new.js') }}"></script>
+{% endblock %}

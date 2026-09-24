@@ -1,0 +1,79 @@
+/* ====================================================================
+   KAVACHAM LAB — CASE MANAGEMENT STYLES (Phase 5)
+   Sections 16-18, 24, 67: filter bar, wizard, case command view,
+   timeline, notes. Colour communicates state only.
+   ==================================================================== */
+
+/* ---------------- Filter bar ---------------- */
+.lab-filter-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+
+/* ---------------- Creation wizard (Section 17) ---------------- */
+.lab-wizard-steps {
+  display: flex; flex-wrap: wrap; gap: 4px 18px;
+  padding: 12px 16px; margin-bottom: 14px;
+  background: var(--lab-bg-2); border: 1px solid var(--lab-line-1);
+  border-radius: var(--lab-r-3);
+}
+.lab-wizard-steps .lab-progress-step { flex: 1 1 auto; min-width: 150px; padding: 3px 0; }
+
+.lab-wizard-pane { border: none; margin: 0; padding: 4px 0 8px; min-width: 0; }
+.lab-wizard-pane[hidden] { display: none; }
+.lab-wizard-pane legend { padding: 0; }
+
+.lab-ioc-preview {
+  margin-top: 14px; padding: 12px;
+  background: var(--lab-bg-1); border: 1px solid var(--lab-line-1);
+  border-radius: var(--lab-r-2);
+}
+.lab-ioc-chip {
+  display: flex; align-items: center; gap: 9px; padding: 5px 0;
+  border-bottom: 1px dashed var(--lab-line-1); min-width: 0;
+}
+.lab-ioc-chip:last-child { border-bottom: none; }
+.lab-ioc-chip .lab-mono { overflow-wrap: anywhere; min-width: 0; }
+
+/* ---------------- Case command view (Section 18) ---------------- */
+.lab-case-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap; margin-bottom: 16px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--lab-line-2);
+}
+.lab-case-head-main { min-width: 0; flex: 1 1 340px; }
+.lab-case-head-actions { display: flex; flex-direction: column; gap: 6px; flex: none; }
+
+.lab-case-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+@media (max-width: 900px) { .lab-case-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------------- Tabs ---------------- */
+.lab-tab-panels { margin-top: 16px; }
+.lab-tab-panel[hidden] { display: none; }
+
+/* ---------------- Timeline (Section 24) ---------------- */
+.lab-timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+.lab-timeline::before {
+  content: ''; position: absolute; left: 6px; top: 6px; bottom: 6px;
+  width: 1px; background: var(--lab-line-2);
+}
+.lab-timeline-item {
+  position: relative; padding: 0 0 18px 26px;
+}
+.lab-timeline-item:last-child { padding-bottom: 0; }
+.lab-timeline-marker {
+  position: absolute; left: 0; top: 4px;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--lab-bg-3); border: 2px solid var(--lab-blue);
+}
+.lab-timeline-item:first-child .lab-timeline-marker {
+  border-color: var(--lab-green); box-shadow: 0 0 0 3px rgba(47,168,85,0.12);
+}
+.lab-timeline-body { min-width: 0; }
+
+/* ---------------- Notes (Section 67) ---------------- */
+.lab-note {
+  padding: 11px 13px; margin-bottom: 10px;
+  background: var(--lab-bg-1); border: 1px solid var(--lab-line-1);
+  border-left: 3px solid var(--lab-line-3);
+  border-radius: var(--lab-r-2);
+}
+.lab-note:last-child { margin-bottom: 0; }
+.lab-note-body { font-size: 13px; color: var(--lab-text-2); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }

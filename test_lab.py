@@ -322,6 +322,13 @@ expected_methods = {
     "/lab/api/evidence/<evidence_ref>":   {"GET"},
     "/lab/api/evidence/<evidence_ref>/custody": {"GET"},
     "/lab/api/evidence/<evidence_ref>/verify":  {"POST"},
+    # Phase 7 — analysis pipeline
+    "/lab/analysis":                      {"GET"},
+    "/lab/analysis/new":                  {"GET"},
+    "/lab/analysis/<analysis_ref>":       {"GET"},
+    "/lab/api/analysis":                  {"GET", "POST"},
+    "/lab/api/analysis/meta":             {"GET"},
+    "/lab/api/analysis/<analysis_ref>":   {"GET"},
 }
 expected_rules = sorted(expected_methods)
 
@@ -532,6 +539,328 @@ try:
 except Exception:
     check("Product A imports cleanly with Lab registered", False,
           traceback.format_exc().splitlines()[-1])
+
+# ===========================================================================
+section("Test 7C — Phase 7 Analysis Pipeline (Sections 29-41, 48)")
+# ===========================================================================
+# App + model are now loaded (Test 8), so EMAIL/SPAM runs use real inference.
+import hashlib as _hl                                              # noqa: E402
+from lab import analysis_service as ans                            # noqa: E402
+import intel.virustotal_service as _vt_svc                         # noqa: E402
+
+# Pin threat intelligence OFF for the whole section: QA must be deterministic
+# and offline. The "not configured" path is the honest, locally-complete one.
+_saved_vt_key = _vt_svc.VIRUSTOTAL_API_KEY
+_saved_vt_state = ans._vt_state
+_vt_svc.VIRUSTOTAL_API_KEY = ""
+ans._vt_state = lambda: False
+
+# --- analysis registry (Section 47) ---
+aref = ans.reference_data()
+check("analysis registry exposes 10 types", len(aref["types"]) == 10, aref["types"])
+check("every type carries a compatibility matrix",
+      all(t in aref["registry"] and aref["registry"][t]["evidence_types"]
+          for t in aref["types"]))
+check("HASH binds only HASH evidence",
+      aref["registry"]["HASH"]["evidence_types"] == ["HASH"])
+
+# --- PHISHING (real analyzer over RAW_HEADER evidence) ---
+ap = ans.run_analysis(ev_text["evidence_ref"], "PHISHING")
+check("phishing: ref format", ap["analysis_ref"].startswith("KAV-ANL-2026-"),
+      ap["analysis_ref"])
+check("phishing: status COMPLETE", ap["status"] == "COMPLETE", ap["status"])
+check("phishing: verdict vocabulary",
+      ap["verdict"] in {"CLEAN", "SUSPICIOUS", "MALICIOUS"}, ap["verdict"])
+check("phishing: risk score real bounded number",
+      isinstance(ap["risk_score"], (int, float))
+      and 0 <= ap["risk_score"] <= 100, ap["risk_score"])
+check("phishing: engine version recorded", bool(ap["engine_version"]),
+      ap["engine_version"])
+check("phishing: linked to evidence",
+      ap["evidence"]["evidence_ref"] == ev_text["evidence_ref"])
+check("phishing: linked to case",
+      ap["case"]["case_ref"] == case1["case_ref"])
+check("phishing: findings list persisted", isinstance(ap["findings"], list))
+check("phishing: Section 40 transparency fields present",
+      {"started_at", "completed_at", "stages", "sources", "engine_version"}
+      <= set(ap["payload"]))
+check("phishing: real stage sequence recorded",
+      len(ap["payload"]["stages"]) >= 3, len(ap["payload"]["stages"]))
+check("phishing: sources recorded", len(ap["payload"]["sources"]) >= 1,
+      ap["payload"]["sources"])
+
+# --- EMAIL (unified pipeline with real ML inference) ---
+ae = ans.run_analysis(ev_text["evidence_ref"], "EMAIL")
+check("email: verdict present", bool(ae["verdict"]), ae["verdict"])
+check("email: confidence float or honest null",
+      ae["confidence"] is None or isinstance(ae["confidence"], (int, float)),
+      ae["confidence"])
+check("email: ML stage recorded honestly",
+      any(s["name"] == "Local ML analysis" for s in ae["payload"]["stages"]))
+check("email: status in allowed set",
+      ae["status"] in {"COMPLETE", "PARTIAL"}, ae["status"])
+
+# --- SPAM (real Product A model) ---
+asp = ans.run_analysis(ev_text["evidence_ref"], "SPAM")
+check("spam: classification from real classifier",
+      asp["payload"]["analysis"]["classification"]
+      in {"Spam", "Not Spam", "Unavailable"},
+      asp["payload"]["analysis"].get("classification"))
+check("spam: verdict derives from classification",
+      asp["verdict"] in {"MALICIOUS", "CLEAN", "UNAVAILABLE"}, asp["verdict"])
+
+# --- URL (deterministic product-A structure + intel stage) ---
+ev_url = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "URL",
+    "title": "Suspicious link",
+    "content_text": "http://185.234.72.19/confirm?token=abc"})
+au = ans.run_analysis(ev_url["evidence_ref"], "URL")
+check("url: ip-host flagged",
+      au["verdict"] in {"SUSPICIOUS", "MALICIOUS"}, au["verdict"])
+check("url: deterministic score >= 20", int(au["risk_score"]) >= 20,
+      au["risk_score"])
+check("url: analyzed urls persisted",
+      au["payload"]["analysis"]["url_count"] >= 1,
+      au["payload"]["analysis"].get("url_count"))
+check("url: intel stage honest (VT unconfigured)",
+      any(s["name"] == "Threat intelligence" and s["status"] == "unavailable"
+          for s in au["payload"]["stages"]))
+
+ev_clean = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "URL",
+    "title": "Legit link", "content_text": "https://example.com/pricing"})
+acl = ans.run_analysis(ev_clean["evidence_ref"], "URL")
+check("url: clean baseline verdict", acl["verdict"] == "CLEAN", acl["verdict"])
+check("url: clean baseline score 0", acl["risk_score"] == 0, acl["risk_score"])
+
+# --- DOMAIN (structure + registrable domain) ---
+ev_dom = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "DOMAIN",
+    "title": "Lookalike domain", "content_text": "account-verify-login.tk"})
+ad = ans.run_analysis(ev_dom["evidence_ref"], "DOMAIN")
+check("domain: verdict vocabulary",
+      ad["verdict"] in {"CLEAN", "SUSPICIOUS", "MALICIOUS"}, ad["verdict"])
+check("domain: registrable domain extracted",
+      bool(ad["payload"]["analysis"]["registrable_domain"]),
+      ad["payload"]["analysis"].get("registrable_domain"))
+check("domain: structure findings exposed",
+      isinstance(ad["payload"]["analysis"]["structure_findings"], list))
+
+ev_dom_ip = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "DOMAIN",
+    "title": "IP address domain", "content_text": "185.234.72.19"})
+adi = ans.run_analysis(ev_dom_ip["evidence_ref"], "DOMAIN")
+check("domain: raw-IP host flagged",
+      adi["verdict"] in {"SUSPICIOUS", "MALICIOUS"}, adi["verdict"])
+
+# --- FILE (local inspector: magic, embedded URLs, honest stages) ---
+clean_txt = (b"Please click http://185.234.72.19/verify to confirm your "
+             b"account. Regards, Support")
+ev_ftxt = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "FILE",
+    "title": "Message log", "filename": "log.txt",
+    "content_base64": _b64.b64encode(clean_txt).decode(),
+    "source": "Analyst Input"})
+aft = ans.run_analysis(ev_ftxt["evidence_ref"], "FILE")
+check("file: embedded url extracted",
+      aft["payload"]["analysis"]["url_count"] >= 1,
+      aft["payload"]["analysis"].get("url_count"))
+check("file: no blocked content in txt",
+      aft["payload"]["analysis"]["blocked_content"] is False)
+check("file: intel stage honest (VT unconfigured)",
+      any(s["name"] == "Threat intelligence" and s["status"] == "unavailable"
+          for s in aft["payload"]["stages"]))
+
+# --- FILE blocked-content branch: a PE restored directly into the vault ---
+# (Intake blocks PE magic, so a real test of detection restores the row.)
+_blocked = b"MZ\x90\x00\x03\x00\x00\x00" + b"\x00" * 96
+os.makedirs(evs.ORIGINALS_DIR, exist_ok=True)
+_blk_path = os.path.join(evs.ORIGINALS_DIR, "restored-bin-7c.bin")
+with open(_blk_path, "wb") as fh:
+    fh.write(_blocked)
+db.execute(
+    "INSERT INTO evidence(evidence_ref, case_id, evidence_type, title, "
+    "original_filename, sha256, sha1, md5, mime_type, size_bytes, extension, "
+    "source, acquired_at, stored_path, integrity_state) "
+    "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    ("KAV-EVD-2026-BLOCKED", case1["case_id"], "FILE", "Restored executable",
+     "payload.bin", _hl.sha256(_blocked).hexdigest(),
+     _hl.sha1(_blocked).hexdigest(), _hl.md5(_blocked).hexdigest(),
+     "application/octet-stream", len(_blocked), ".bin", "Lab QA",
+     cs._now(), _blk_path, "VERIFIED"))
+abf = ans.run_analysis("KAV-EVD-2026-BLOCKED", "FILE")
+check("file: blocked content detected",
+      abf["payload"]["analysis"]["blocked_content"] is True)
+check("file: blocked verdict MALICIOUS", abf["verdict"] == "MALICIOUS",
+      abf["verdict"])
+check("file: blocked risk >= 85", int(abf["risk_score"]) >= 85,
+      abf["risk_score"])
+
+# --- HASH (format + local vault correlation, honest intel) ---
+ev_hash = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "HASH",
+    "title": "Indicator hash", "content_text": ev_file["sha256"]})
+ah = ans.run_analysis(ev_hash["evidence_ref"], "HASH")
+check("hash: type recognised", ah["payload"]["analysis"]["hash_type"] == "SHA-256",
+      ah["payload"]["analysis"].get("hash_type"))
+check("hash: local vault correlation found",
+      any(f["finding_type"] == "local_vault_correlation" for f in ah["findings"]))
+check("hash: correlation names the matching evidence",
+      any(ev_file["evidence_ref"] in f["detail"] for f in ah["findings"]))
+check("hash: vt stage honest (unconfigured)",
+      any(s["name"] == "Threat intelligence" and s["status"] == "unavailable"
+          for s in ah["payload"]["stages"]))
+check("hash: verdict NO_THREAT_DATA without intel",
+      ah["verdict"] == "NO_THREAT_DATA", ah["verdict"])
+
+ev_bad_hash = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "HASH",
+    "title": "Bad hash", "content_text": "not-a-hash"})
+try:
+    ans.run_analysis(ev_bad_hash["evidence_ref"], "HASH")
+    check("hash: invalid content rejected", False, "accepted")
+except ans.AnalysisError as exc:
+    check("hash: invalid content rejected", exc.code == "INVALID_HASH", exc.code)
+
+# --- QR (honest decode-or-unavailable) ---
+_tiny_png = _b64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQ"
+    "DwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+ev_qr = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "QR_IMAGE",
+    "title": "QR from parking ticket", "filename": "qr.png",
+    "content_base64": _b64.b64encode(_tiny_png).decode()})
+aq = ans.run_analysis(ev_qr["evidence_ref"], "QR")
+check("qr: verdict from honest decode path",
+      aq["verdict"] in {"UNAVAILABLE", "CLEAN", "SUSPICIOUS", "MALICIOUS"},
+      aq["verdict"])
+check("qr: PARTIAL when decode unavailable",
+      aq["verdict"] != "UNAVAILABLE" or aq["status"] == "PARTIAL", aq["status"])
+
+# --- SCAM / BEC over message evidence ---
+ev_msg = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "MESSAGE",
+    "title": "KYC block message",
+    "content_text": ("Dear customer, your UPI KYC is blocked. Pay 500 rupees "
+                     "immediately to unblock your account or face legal "
+                     "action.")})
+asc = ans.run_analysis(ev_msg["evidence_ref"], "SCAM")
+check("scam: verdict vocabulary",
+      asc["verdict"] in {"CLEAN", "SUSPICIOUS", "MALICIOUS"}, asc["verdict"])
+check("scam: real detector payload", bool(asc["payload"]["analysis"].get("summary")))
+abec = ans.run_analysis(ev_msg["evidence_ref"], "BEC")
+check("bec: verdict vocabulary",
+      abec["verdict"] in {"CLEAN", "SUSPICIOUS", "MALICIOUS"}, abec["verdict"])
+
+# --- pipeline validation ---
+try:
+    ans.run_analysis(ev_text["evidence_ref"], "NOT_A_TYPE")
+    check("invalid analysis type rejected", False, "accepted")
+except ans.AnalysisError as exc:
+    check("invalid analysis type rejected",
+          exc.code == "INVALID_ANALYSIS_TYPE", exc.code)
+
+try:
+    ans.run_analysis(ev_hash["evidence_ref"], "QR")
+    check("incompatible evidence rejected", False, "accepted")
+except ans.AnalysisError as exc:
+    check("incompatible evidence rejected",
+          exc.code == "INCOMPATIBLE_EVIDENCE", exc.code)
+
+try:
+    ans.run_analysis("KAV-EVD-2099-99999", "URL")
+    check("missing evidence rejected", False, "accepted")
+except ans.AnalysisError as exc:
+    check("missing evidence rejected", exc.code == "EVIDENCE_NOT_FOUND", exc.code)
+
+# --- listing / filters ---
+alist = ans.list_analyses()
+check("analyses listed with real total", alist["total"] >= 10, alist["total"])
+check("filter by type", ans.list_analyses(analysis_type="URL")["total"] >= 2)
+check("filter by evidence",
+      ans.list_analyses(evidence_ref=ev_text["evidence_ref"])["total"] >= 1)
+check("filter by case",
+      ans.list_analyses(case_ref=case1["case_ref"])["total"] == alist["total"])
+check("search by ref",
+      ans.list_analyses(search=ap["analysis_ref"])["total"] >= 1)
+check("no-match search returns 0",
+      ans.list_analyses(search="zzz_no_analysis")["total"] == 0)
+
+# --- side effects: audit + timeline ---
+check("analysis audited",
+      any(a["action"] == "ANALYSIS_RUN"
+          for a in cs.list_audit(limit=200)["items"]))
+check("analysis on case timeline",
+      any(e["event_type"] == "analysis.completed"
+          for e in cs.get_case(case1["case_ref"])["timeline"]))
+
+# --- Section 49 envelope + pages via the real app test client ---
+_client = app_module.app.test_client()
+r = _client.get("/lab/api/analysis/meta")
+_body = r.get_json()
+check("api: meta section-49 envelope",
+      r.status_code == 200 and _body["success"] is True
+      and _body["data"]["types"] == ans.ANALYSIS_TYPES)
+
+r = _client.get("/lab/api/analysis?type=URL")
+_body = r.get_json()
+check("api: list envelope",
+      r.status_code == 200 and _body["success"] is True
+      and _body["data"]["total"] >= 2)
+
+r = _client.post("/lab/api/analysis",
+                 json={"evidence_ref": ev_dom_ip["evidence_ref"],
+                       "analysis_type": "DOMAIN"})
+_body = r.get_json()
+check("api: run analysis creates 201 envelope",
+      r.status_code == 201 and _body["success"] is True
+      and _body["data"]["analysis"]["analysis_ref"].startswith("KAV-ANL-"))
+
+r = _client.post("/lab/api/analysis",
+                 json={"evidence_ref": ev_dom_ip["evidence_ref"],
+                       "analysis_type": "BOGUS"})
+_body = r.get_json()
+check("api: invalid type error envelope",
+      r.status_code == 400 and _body["success"] is False
+      and _body["error"]["code"] == "INVALID_ANALYSIS_TYPE", _body)
+
+r = _client.post("/lab/api/analysis",
+                 json={"evidence_ref": ev_hash["evidence_ref"],
+                       "analysis_type": "QR"})
+_body = r.get_json()
+check("api: incompatible pair error envelope",
+      r.status_code == 400 and _body["success"] is False
+      and _body["error"]["code"] == "INCOMPATIBLE_EVIDENCE", _body)
+
+r = _client.get("/lab/api/analysis/" + ap["analysis_ref"])
+_body = r.get_json()
+check("api: detail envelope",
+      r.status_code == 200 and _body["success"] is True
+      and _body["data"]["analysis"]["analysis_ref"] == ap["analysis_ref"])
+
+r = _client.get("/lab/analysis")
+_html = r.get_data(as_text=True)
+check("page: workbench renders",
+      r.status_code == 200 and "ANALYSIS WORKBENCH" in _html)
+r = _client.get("/lab/analysis/new")
+_html = r.get_data(as_text=True)
+check("page: run-analysis renders",
+      r.status_code == 200 and "RUN ANALYSIS" in _html
+      and "ra-evidence" in _html)
+r = _client.get("/lab/analysis/" + ap["analysis_ref"])
+_html = r.get_data(as_text=True)
+check("page: analysis detail renders",
+      r.status_code == 200 and "ANALYSIS DETAIL" in _html
+      and "STAGES PERFORMED" in _html)
+
+check("lab analysis pages render with real content",
+      bool(ap["analysis_ref"]) and bool(ae["analysis_ref"])
+      and bool(asp["analysis_ref"]) and bool(au["analysis_ref"])
+      and bool(ah["analysis_ref"]))
+
+# Restore the real environment state for any later sections.
+_vt_svc.VIRUSTOTAL_API_KEY = _saved_vt_key
+ans._vt_state = _saved_vt_state
 
 # ===========================================================================
 print("\n" + "=" * 64)

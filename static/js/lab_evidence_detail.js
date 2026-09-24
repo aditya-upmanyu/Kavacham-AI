@@ -81,6 +81,8 @@
     document.getElementById('ev-source').textContent = ev.source;
     document.getElementById('ev-case').textContent =
       ev.case ? ev.case.case_ref : 'Unattached';
+    var typeLabel = document.getElementById('evd-ev-type');
+    if (typeLabel) typeLabel.textContent = ev.evidence_type;
 
     document.getElementById('ev-counts').innerHTML = [
       ['SHA-256 PRESENT', ev.sha256 ? 'YES' : 'NO'],
@@ -293,5 +295,113 @@
       '</dl></div></div>';
   }
 
+  /* ---------------- Run analysis (Phase 7) ---------------- */
+  var runSelect = document.getElementById('evd-analysis-type');
+  var runBtn = document.getElementById('evd-run-analysis');
+  var runNote = document.getElementById('evd-run-note');
+  var runHost = document.getElementById('evd-run-result');
+  var analysisMeta = null;
+
+  function loadAnalysisMeta() {
+    fetch('/lab/api/analysis/meta', {
+      headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (body) {
+        if (body && body.success === true) analysisMeta = body.data;
+        refreshRunPanel();
+      })
+      .catch(function () { /* panel stays disabled */ });
+  }
+
+  function refreshRunPanel() {
+    if (!analysisMeta || !current) {
+      runSelect.innerHTML = '<option value="">— UNAVAILABLE —</option>';
+      runBtn.disabled = true;
+      return;
+    }
+    var registry = analysisMeta.registry || {};
+    var compatible = [];
+    Object.keys(registry).forEach(function (t) {
+      var spec = registry[t] || {};
+      var allowed = spec.evidence_types || [];
+      if (allowed.indexOf(current.evidence_type) !== -1) compatible.push(t);
+    });
+    if (!compatible.length) {
+      runSelect.innerHTML = '<option value="">— NO COMPATIBLE ENGINE —</option>';
+      runBtn.disabled = true;
+      runNote.textContent = 'No analysis engine accepts ' +
+        current.evidence_type + ' evidence.';
+      return;
+    }
+    runSelect.innerHTML = compatible.map(function (t) {
+      var spec = registry[t] || {};
+      return '<option value="' + esc(t) + '">' + esc(spec.label || t) + '</option>';
+    }).join('');
+    runBtn.disabled = false;
+    runNote.textContent = compatible.length + ' compatible engine(s).';
+  }
+
+  runBtn.addEventListener('click', function () {
+    var type = runSelect.value;
+    if (!type) return;
+    runBtn.disabled = true;
+    runBtn.textContent = 'RUNNING…';
+    if (runHost) {
+      runHost.innerHTML = '<div class="lab-alert is-info" style="margin-bottom:0;">' +
+        '<span class="lab-alert-icon">i</span><div>' +
+        '<div class="lab-alert-title">ANALYSIS IN PROGRESS</div>' +
+        '<div>Running <span class="lab-mono">' + esc(type) +
+        '</span> against ' + esc(current.evidence_ref) + '…</div></div></div>';
+    }
+
+    fetch('/lab/api/analysis', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ evidence_ref: current.evidence_ref, analysis_type: type })
+    })
+      .then(function (res) {
+        return res.json().then(function (body) {
+          if (!res.ok || body.success !== true) {
+            var e = (body && body.error) || {};
+            throw { code: e.code || 'REQUEST_FAILED',
+                    message: e.message || 'The analysis could not be completed.' };
+          }
+          return body.data.analysis;
+        });
+      })
+      .then(function (an) {
+        if (runHost) {
+          runHost.innerHTML =
+            '<div class="lab-alert is-success" style="margin-bottom:0;">' +
+            '<span class="lab-alert-icon">✓</span><div>' +
+            '<div class="lab-alert-title">ANALYSIS COMPLETED — ' +
+            esc(String(an.verdict || '—')) + '</div>' +
+            '<div><a class="lab-strong lab-mono" href="/lab/analysis/' +
+            encodeURIComponent(an.analysis_ref) + '">' +
+            esc(an.analysis_ref) + '</a> · risk ' +
+            esc(String(an.risk_score === null || an.risk_score === undefined ? '—' : an.risk_score)) +
+            ' · ' + (an.findings || []).length + ' finding(s).</div></div></div>';
+        }
+        window.LAB.toast('Analysis complete', an.analysis_ref, 'success');
+        load();  // refresh: linked analyses now include the new run
+      })
+      .catch(function (err) {
+        if (runHost) {
+          runHost.innerHTML = '<div class="lab-alert is-critical" style="margin-bottom:0;">' +
+            '<span class="lab-alert-icon">!</span><div>' +
+            '<div class="lab-alert-title">ANALYSIS INTERRUPTED</div>' +
+            '<div>' + esc((err && err.message) || 'The analysis could not be completed.') +
+            '</div></div></div>';
+        }
+      })
+      .then(function () {
+        runBtn.disabled = false;
+        runBtn.textContent = 'RUN ANALYSIS';
+      });
+  });
+
   load();
+  loadAnalysisMeta();
 })();

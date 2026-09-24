@@ -19,6 +19,7 @@ from lab import lab_bp
 from lab import health as health_service
 from lab import case_service
 from lab import evidence_service
+from lab import analysis_service
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +47,13 @@ NAV_STRUCTURE = [
         "links": [
             {"id": "evidence-vault", "label": "Evidence Vault", "url": "/lab/evidence", "ready": True},
             {"id": "evidence-intake", "label": "Evidence Intake", "url": "/lab/evidence/new", "ready": True},
+        ],
+    },
+    {
+        "group": "ANALYSIS",
+        "links": [
+            {"id": "analysis-workbench", "label": "Analysis Workbench", "url": "/lab/analysis", "ready": True},
+            {"id": "run-analysis", "label": "Run Analysis", "url": "/lab/analysis/new", "ready": True},
         ],
     },
     {
@@ -189,6 +197,40 @@ def evidence_detail_page(evidence_ref):
         nav_id="evidence-vault",
         page_title=evidence_ref,
         evidence_ref=evidence_ref,
+    ))
+
+
+# ---------------------------------------------------------------------------
+# Analysis pages (Sections 29-41)
+# ---------------------------------------------------------------------------
+
+@lab_bp.route("/analysis", strict_slashes=False)
+def analysis_workbench_page():
+    return render_template("lab/analysis.html", **_shell_context(
+        nav_id="analysis-workbench",
+        page_title="Analysis Workbench",
+        types=analysis_service.ANALYSIS_TYPES,
+        registry=analysis_service.ANALYSIS_REGISTRY,
+    ))
+
+
+@lab_bp.route("/analysis/new", strict_slashes=False)
+def analysis_run_page():
+    return render_template("lab/analysis_new.html", **_shell_context(
+        nav_id="run-analysis",
+        page_title="Run Analysis",
+        types=analysis_service.ANALYSIS_TYPES,
+        registry=analysis_service.ANALYSIS_REGISTRY,
+        evidence_types=evidence_service.EVIDENCE_TYPES,
+    ))
+
+
+@lab_bp.route("/analysis/<analysis_ref>", strict_slashes=False)
+def analysis_detail_page(analysis_ref):
+    return render_template("lab/analysis_detail.html", **_shell_context(
+        nav_id="analysis-workbench",
+        page_title=analysis_ref,
+        analysis_ref=analysis_ref,
     ))
 
 
@@ -382,6 +424,74 @@ def api_evidence_verify(evidence_ref):
         return api_error("INTEGRITY_CHECK_FAILED",
                          "Integrity could not be verified.", 500)
     return api_ok({"verification": result})
+
+
+# ---------------------------------------------------------------------------
+# API — analysis (Sections 29-41, 48)
+# ---------------------------------------------------------------------------
+
+def _analysis_error(exc):
+    status = getattr(exc, "status", 400)
+    return api_error(exc.code, exc.message, status)
+
+
+@lab_bp.route("/api/analysis/meta", methods=["GET"])
+def api_analysis_meta():
+    try:
+        data = analysis_service.reference_data()
+    except Exception:
+        return api_error("ANALYSIS_META_FAILED",
+                         "Analysis registry could not be retrieved.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/analysis", methods=["GET"])
+def api_analysis_list():
+    from flask import request
+    try:
+        data = analysis_service.list_analyses(
+            case_ref=(request.args.get("case") or "").strip() or None,
+            evidence_ref=(request.args.get("evidence") or "").strip() or None,
+            analysis_type=(request.args.get("type") or "").strip() or None,
+            status=(request.args.get("status") or "").strip() or None,
+            search=(request.args.get("q") or "").strip() or None,
+            limit=request.args.get("limit", 50),
+            offset=request.args.get("offset", 0))
+    except Exception:
+        return api_error("ANALYSIS_QUERY_FAILED",
+                         "Analysis records could not be retrieved.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/analysis", methods=["POST"])
+def api_analysis_create():
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return api_error("INVALID_PAYLOAD", "A JSON body is required.", 400)
+    try:
+        analysis = analysis_service.run_analysis(
+            (payload.get("evidence_ref") or "").strip(),
+            (payload.get("analysis_type") or "").strip(),
+            actor="analyst",
+            ip_address=_client_ip())
+    except analysis_service.AnalysisError as exc:
+        return _analysis_error(exc)
+    except Exception:
+        return api_error("ANALYSIS_RUN_FAILED",
+                         "The analysis could not be completed.", 500)
+    return api_ok({"analysis": analysis}, status=201)
+
+
+@lab_bp.route("/api/analysis/<analysis_ref>", methods=["GET"])
+def api_analysis_get(analysis_ref):
+    try:
+        analysis = analysis_service.get_analysis(analysis_ref)
+    except analysis_service.AnalysisError as exc:
+        return _analysis_error(exc)
+    except Exception:
+        return api_error("ANALYSIS_READ_FAILED",
+                         "The analysis record could not be retrieved.", 500)
+    return api_ok({"analysis": analysis})
 
 
 # ---------------------------------------------------------------------------

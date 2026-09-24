@@ -1,0 +1,78 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Analysis Workbench</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">ANALYSIS WORKBENCH</h1>
+    <p class="lab-subtitle">Real analysis runs across the evidence vault — every verdict below originates from an actual engine run.</p>
+  </div>
+  <div class="lab-page-head-actions">
+    <a class="lab-btn lab-btn-primary lab-btn-sm" href="/lab/analysis/new">+ RUN ANALYSIS</a>
+  </div>
+</div>
+
+<section class="lab-panel" style="margin-bottom:14px;">
+  <div class="lab-panel-body">
+    <div class="lab-filter-row">
+      <div class="lab-field" style="margin-bottom:0;flex:1 1 220px;">
+        <label class="lab-label" for="an-search">SEARCH</label>
+        <input class="lab-input mono" id="an-search" type="search"
+               placeholder="KAV-ANL-…, KAV-EVD-… or verdict" autocomplete="off" />
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 160px;">
+        <label class="lab-label" for="an-type">ANALYSIS TYPE</label>
+        <select class="lab-select" id="an-type">
+          <option value="">ALL TYPES</option>
+          {% for t in types %}
+          <option value="{{ t }}">{{ registry[t].label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 150px;">
+        <label class="lab-label" for="an-status">STATUS</label>
+        <select class="lab-select" id="an-status">
+          <option value="">ANY</option>
+          <option value="COMPLETE">COMPLETE</option>
+          <option value="PARTIAL">PARTIAL</option>
+        </select>
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 1 210px;">
+        <label class="lab-label" for="an-case">CASE REF</label>
+        <input class="lab-input mono" id="an-case" type="search"
+               placeholder="KAV-CASE-…" autocomplete="off" />
+      </div>
+      <div class="lab-field" style="margin-bottom:0;flex:0 0 auto;">
+        <label class="lab-label">&nbsp;</label>
+        <button class="lab-btn lab-btn-sm" id="an-clear" type="button">CLEAR</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lab-panel">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title">ANALYSIS RUNS</h2>
+    <span class="lab-xs lab-dim" id="an-total">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="an-body">
+    <div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:72%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:55%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:64%;"></div>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="an-foot">Retrieving analysis records…</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_analysis.js') }}"></script>
+{% endblock %}

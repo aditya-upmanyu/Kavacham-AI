@@ -1,0 +1,85 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <a href="/lab/analysis">Analysis Workbench</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current lab-mono">{{ analysis_ref }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div id="an-loading" class="lab-panel">
+  <div class="lab-panel-body">
+    <div class="lab-skeleton lab-skeleton-line" style="width:40%;height:16px;"></div>
+    <div class="lab-skeleton lab-skeleton-line" style="width:66%;"></div>
+    <div class="lab-skeleton lab-skeleton-line" style="width:52%;"></div>
+    <p class="lab-xs lab-dim" style="margin-top:10px;">Retrieving analysis record…</p>
+  </div>
+</div>
+
+<div id="an-error" hidden></div>
+
+<div id="an-view" hidden>
+  <div class="lab-case-head">
+    <div class="lab-case-head-main">
+      <div class="lab-row tight" style="margin-bottom:5px;">
+        <span class="lab-badge lab-badge-blue lab-mono" id="an-ref">—</span>
+        <span class="lab-badge" id="an-type">—</span>
+        <span class="lab-badge" id="an-status">—</span>
+        <span id="an-verdict-badge"></span>
+      </div>
+      <h1 class="lab-title" id="an-title">—</h1>
+      <div class="lab-row tight lab-xs lab-dim" style="margin-top:7px;">
+        <span>EVIDENCE <span class="lab-mono" id="an-evidence">—</span></span>
+        <span class="lab-dot-sep">·</span>
+        <span>CASE <span class="lab-mono" id="an-case">Unattached</span></span>
+        <span class="lab-dot-sep">·</span>
+        <span>CREATED <span class="lab-mono" id="an-created">—</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="lab-strip" id="an-counts" style="margin-bottom:16px;"></div>
+
+  <div class="lab-grid lab-case-grid">
+    <!-- Section 40 transparency -->
+    <div class="lab-panel">
+      <div class="lab-panel-head"><h2 class="lab-section-title">ANALYSIS DETAIL</h2></div>
+      <div class="lab-panel-body"><dl class="lab-kv" id="an-meta"></dl></div>
+    </div>
+
+    <!-- Section 41 stages -->
+    <div class="lab-panel">
+      <div class="lab-panel-head"><h2 class="lab-section-title">STAGES PERFORMED</h2></div>
+      <div class="lab-panel-body"><ol class="lab-timeline" id="an-stages"></ol></div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;">
+    <div class="lab-panel">
+      <div class="lab-panel-head"><h2 class="lab-section-title">FINDINGS &amp; EVIDENCE</h2></div>
+      <div class="lab-panel-body flush" id="an-findings"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;">
+    <div class="lab-panel">
+      <div class="lab-panel-head">
+        <h2 class="lab-section-title">ENGINE OUTPUT</h2>
+        <span class="lab-xs lab-dim">sources — <span id="an-sources">—</span></span>
+      </div>
+      <div class="lab-panel-body">
+        <pre class="lab-evidence-pre" id="an-payload">—</pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.__LAB_AN_REF__ = {{ analysis_ref | tojson }};</script>
+<script src="{{ url_for('static', filename='js/lab_analysis_detail.js') }}"></script>
+{% endblock %}

@@ -77,6 +77,29 @@
       <div class="lab-panel-body flush" id="ev-analyses"></div>
     </div>
   </div>
+
+  <!-- Run analysis (Phase 7) -->
+  <div class="lab-panel" style="margin-top:14px;">
+    <div class="lab-panel-head">
+      <h2 class="lab-section-title">RUN ANALYSIS</h2>
+      <span class="lab-xs lab-dim">engines actually supported for
+        <span class="lab-mono" id="evd-ev-type">—</span> evidence
+      </span>
+    </div>
+    <div class="lab-panel-body">
+      <div class="lab-field" style="max-width:520px;">
+        <label class="lab-label" for="evd-analysis-type">ANALYSIS TYPE</label>
+        <select class="lab-select" id="evd-analysis-type"></select>
+      </div>
+      <div class="lab-row tight" style="margin-top:10px;">
+        <button class="lab-btn lab-btn-primary lab-btn-sm" type="button" id="evd-run-analysis">
+          RUN ANALYSIS
+        </button>
+        <span class="lab-xs lab-dim" id="evd-run-note"></span>
+      </div>
+      <div id="evd-run-result" style="margin-top:12px;"></div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

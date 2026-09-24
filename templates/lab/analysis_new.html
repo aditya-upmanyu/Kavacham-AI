@@ -1,0 +1,71 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <a href="/lab/analysis">Analysis Workbench</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Run Analysis</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">RUN ANALYSIS</h1>
+    <p class="lab-subtitle">Select evidence and an analysis engine. The run is executed for real and persisted.</p>
+  </div>
+</div>
+
+<form class="lab-panel" id="run-analysis-form" novalidate>
+  <div class="lab-panel-body">
+
+    <div class="lab-field">
+      <label class="lab-label" for="ra-evidence">EVIDENCE *</label>
+      <select class="lab-select" id="ra-evidence" required>
+        <option value="">— LOADING EVIDENCE… —</option>
+      </select>
+      <div class="lab-field-hint">Evidence records currently in the vault.</div>
+      <div class="lab-field-error" id="err-ra-evidence" hidden></div>
+    </div>
+
+    <div class="lab-field">
+      <label class="lab-label" for="ra-type">ANALYSIS TYPE *</label>
+      <select class="lab-select" id="ra-type" required>
+        <option value="">— SELECT ANALYSIS TYPE —</option>
+        {% for t in types %}
+        <option value="{{ t }}" {% if t == 'EMAIL' %}selected{% endif %}>{{ registry[t].label }}</option>
+        {% endfor %}
+      </select>
+      <div class="lab-field-hint" id="ra-type-hint">
+        {{ registry['EMAIL'].description }}
+      </div>
+      <div class="lab-field-error" id="err-ra-type" hidden></div>
+    </div>
+
+    <hr class="lab-divider" />
+    <div id="ra-compat" class="lab-alert is-info" hidden>
+      <span class="lab-alert-icon">i</span><div>
+        <div class="lab-alert-title">NOT COMPATIBLE</div>
+        <div id="ra-compat-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lab-modal-foot" style="border-radius:0 0 var(--lab-r-3) var(--lab-r-3);">
+    <span class="lab-spacer"></span>
+    <span class="lab-xs lab-dim" id="ra-status-text"></span>
+    <button class="lab-btn lab-btn-primary" type="submit" id="ra-submit">RUN ANALYSIS</button>
+  </div>
+</form>
+
+<div id="ra-error" style="margin-top:14px;"></div>
+<div id="ra-result" style="margin-top:14px;"></div>
+
+<script type="application/json" id="ra-ref">{{ {'types': types, 'registry': registry} | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_analysis_new.js') }}"></script>
+{% endblock %}

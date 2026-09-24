@@ -286,32 +286,40 @@ def check_storage():
 def check_database():
     """Database layer availability.
 
-    Phase 3 ships before the persistence layer exists, so this honestly
-    reports NOT CONFIGURED rather than pretending to be operational.
+    Delegates to lab.db.health_check() so this reports the same real
+    facts as the data layer itself (read latency, schema version and
+    PRAGMA integrity_check) instead of duplicating the logic.
     """
-    start = time.perf_counter()
-    db_path = os.path.join(BASE_DIR, "kavacham_lab.db")
-    if not os.path.exists(db_path):
-        return _not_configured("DATABASE", "No database file present.",
-                               "kavacham_lab.db",
-                               {"latency_ms": round((time.perf_counter() - start) * 1000.0, 2)})
+    from lab import db as lab_db
+    result = lab_db.health_check()
+    latency = result.get("latency_ms")
 
-    import sqlite3
-    try:
-        conn = sqlite3.connect("file:%s?mode=ro" % db_path, uri=True, timeout=2.0)
-        try:
-            cur = conn.execute("SELECT count(*) FROM sqlite_master")
-            cur.fetchone()
-        finally:
-            conn.close()
-    except Exception:
-        elapsed = (time.perf_counter() - start) * 1000.0
-        return _unavailable("DATABASE", "Database file exists but a read query failed.",
-                            "DB_QUERY_FAILED", "kavacham_lab.db", elapsed)
+    if result["status_key"] == "unconfigured":
+        payload = _not_configured(
+            "DATABASE", result.get("detail") or "No database file present.",
+            result.get("path") or "kavacham_lab.db")
+        payload["latency_ms"] = latency
+        return payload
 
-    elapsed = (time.perf_counter() - start) * 1000.0
-    return _ok("DATABASE", "Read query succeeded.", elapsed, "kavacham_lab.db",
-               {"engine": "sqlite", "latency_basis": "SELECT on sqlite_master"})
+    if result["status_key"] == "unavailable":
+        return _unavailable(
+            "DATABASE",
+            result.get("detail") or "Database read failed.",
+            result.get("error") or "DB_QUERY_FAILED",
+            result.get("path") or "kavacham_lab.db",
+            latency)
+
+    return _ok(
+        "DATABASE",
+        result.get("detail") or "Read query succeeded.",
+        latency or 0.0,
+        result.get("path") or "kavacham_lab.db",
+        {
+            "engine": "sqlite",
+            "schema_version": result.get("schema_version"),
+            "integrity": result.get("integrity"),
+            "latency_basis": "read query + PRAGMA integrity_check",
+        })
 
 
 def check_background_jobs():

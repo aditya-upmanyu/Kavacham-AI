@@ -28,6 +28,13 @@ ENV/
 server.log
 server.err.log
 
+# KAVACHAM LAB runtime data (local persistence + evidence storage)
+kavacham_lab.db
+kavacham_lab.db-wal
+kavacham_lab.db-shm
+lab_storage/
+.health_probe
+
 # IDE
 .vscode/
 .idea/

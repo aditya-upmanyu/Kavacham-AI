@@ -1113,3 +1113,82 @@ def attack_chain(case_ref=None):
         "note": "Every stage above is backed by the listed evidence and, "
                 "where available, the analysis run against it.",
     }
+
+
+# ---------------------------------------------------------------------------
+# Bulk IOC investigation (Section AN) — pasted text / logs / reports
+# ---------------------------------------------------------------------------
+
+BULK_TEXT_LIMIT = 262144  # 256 KB of pasted text per request
+BULK_IOC_LIMIT = 500      # indicators processed per request
+BULK_ITEM_CAP = 100       # items returned in a preview
+
+
+def bulk_preview(text):
+    """Extract + count IOCs in a pasted blob. Read-only, never persists."""
+    blob = text if isinstance(text, str) else ""
+    truncated = len(blob) > BULK_TEXT_LIMIT
+    if truncated:
+        blob = blob[:BULK_TEXT_LIMIT]
+    pairs = extract_ioc_values(blob)
+    over = len(pairs) > BULK_IOC_LIMIT
+    if over:
+        pairs = pairs[:BULK_IOC_LIMIT]
+    counts = {}
+    for ioc_type, _value in pairs:
+        counts[ioc_type] = counts.get(ioc_type, 0) + 1
+    return {
+        "counts": counts,
+        "total": len(pairs),
+        "truncated_text": truncated,
+        "truncated_iocs": over,
+        "items": [{"ioc_type": t, "value": v} for t, v in pairs[:BULK_ITEM_CAP]],
+    }
+
+
+def bulk_investigate(text, title=None, case_type="OTHER", actor="analyst",
+                     ip_address=None):
+    """Create a case from a pasted blob: case + MESSAGE evidence + ledger.
+
+    The pasted text is stored strictly as data (never executed). IOCs
+    reach the ledger through the normal vault sync — nothing invented.
+    """
+    from lab import case_service, evidence_service  # deferred: no cycle
+
+    blob = text if isinstance(text, str) else ""
+    if not blob.strip():
+        raise IntelError("VALIDATION_FAILED", "Pasted text is required.")
+    truncated = len(blob) > BULK_TEXT_LIMIT
+    if truncated:
+        blob = blob[:BULK_TEXT_LIMIT]
+    ctype = (case_type or "OTHER").strip().upper()
+    if ctype not in db.CASE_TYPES:
+        raise IntelError("VALIDATION_FAILED",
+                         "case_type must be one of: %s"
+                         % ", ".join(db.CASE_TYPES))
+    label = (title or "").strip() or "Bulk IOC investigation"
+    case = case_service.create_case(
+        {"title": label[:200], "case_type": ctype, "priority": "MEDIUM",
+         "description": "Opened from bulk IOC paste (%d characters%s)."
+                        % (len(blob), "; input truncated at 256 KB"
+                           if truncated else "")},
+        actor=actor, ip_address=ip_address)
+    try:
+        evidence = evidence_service.accept_evidence(
+            {"case_ref": case["case_ref"], "evidence_type": "MESSAGE",
+             "title": "Bulk IOC paste", "content_text": blob},
+            ip_address=ip_address)
+    except Exception as exc:
+        raise IntelError(getattr(exc, "code", "BULK_EVIDENCE_FAILED"),
+                         getattr(exc, "message", str(exc) or
+                                 "The pasted text could not be stored."))
+    sync = sync_iocs(actor=actor, ip_address=ip_address)
+    preview = bulk_preview(blob)
+    return {"case": case, "evidence_ref": evidence["evidence_ref"],
+            "counts": preview["counts"], "total": preview["total"],
+            "truncated_text": truncated,
+            "truncated_iocs": preview["truncated_iocs"],
+            "ledger": {"iocs_total": sync.get("iocs_total"),
+                       "observations": sync.get("observations"),
+                       "created": sync.get("created"),
+                       "cases_affected": sync.get("cases_affected")}}

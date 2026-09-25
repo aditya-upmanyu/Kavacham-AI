@@ -61,6 +61,7 @@ CLASSIFICATION_BY_TYPE = {
     "QR": "PHISHING",
     "SCAM": "SCAM",
     "BEC": "BEC",
+    "SMS": "SCAM",
 }
 
 ENGINE = "kavacham-risk-engine"

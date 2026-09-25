@@ -346,6 +346,9 @@ expected_methods = {
     "/lab/api/intel/iocs/<int:ioc_id>":   {"GET", "PATCH"},
     "/lab/api/intel/iocs/<int:ioc_id>/cases": {"POST"},
     "/lab/api/intel/sync":                {"POST"},
+    "/lab/api/intel/bulk/preview":        {"POST"},
+    "/lab/api/intel/bulk/investigate":    {"POST"},
+    "/lab/intel/bulk":                    {"GET"},
     "/lab/api/intel/correlation":         {"GET"},
     "/lab/api/intel/graph":               {"GET"},
     "/lab/api/intel/attack-chain":        {"GET"},
@@ -593,7 +596,7 @@ ans._vt_state = lambda: False
 
 # --- analysis registry (Section 47) ---
 aref = ans.reference_data()
-check("analysis registry exposes 10 types", len(aref["types"]) == 10, aref["types"])
+check("analysis registry exposes 11 types", len(aref["types"]) == 11, aref["types"])
 check("every type carries a compatibility matrix",
       all(t in aref["registry"] and aref["registry"][t]["evidence_types"]
           for t in aref["types"]))
@@ -1139,8 +1142,8 @@ for url, marker in [
 # --- nav integrity: every intel link resolves (Section 81) ---
 _intel_links = sum(len(g["links"]) for g in lab_routes.NAV_STRUCTURE
                    if g["group"] in ("THREAT INTELLIGENCE", "INTELLIGENCE"))
-check("intel+risk nav has 5 live links",
-      _intel_links == 5, _intel_links)
+check("intel+risk nav has 6 live links",
+      _intel_links == 6, _intel_links)
 check("risk nav link resolves",
       any(l["url"] == "/lab/risk"
           for g in lab_routes.NAV_STRUCTURE for l in g["links"]))
@@ -1936,6 +1939,109 @@ r = _client3.get("/static/js/lab_search.js")
 _js = r.get_data(as_text=True)
 check("search: palette script served",
       r.status_code == 200 and "CTRL+K" in _js, r.status_code)
+
+# ===========================================================================
+section("Test 7K — SMS / smishing analysis (AP)")
+# ===========================================================================
+check("sms: registry entry binds MESSAGE evidence only",
+      ans.ANALYSIS_REGISTRY["SMS"]["evidence_types"] == ["MESSAGE"])
+check("sms: risk classification is SCAM",
+      rks.classify_analysis("SMS") == "SCAM")
+
+ev_sms = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "MESSAGE",
+    "title": "OTP fraud SMS",
+    "content_text": "Dear customer your account will be blocked today. "
+                    "Share your OTP 482916 immediately to verify KYC. "
+                    "http://bit.ly/kyc-fix"})
+a_sms = ans.run_analysis(ev_sms["evidence_ref"], "SMS")
+check("sms: fraud message verdict",
+      a_sms["verdict"] in {"MALICIOUS", "SUSPICIOUS"}, a_sms["verdict"])
+check("sms: score bounded", 0 <= int(a_sms["risk_score"]) <= 100,
+      a_sms["risk_score"])
+check("sms: both engines recorded as sources",
+      "sms_pipeline.spam_analyzer" in a_sms["payload"]["sources"]
+      and "sms_pipeline.scam_analyzer" in a_sms["payload"]["sources"],
+      a_sms["payload"]["sources"])
+check("sms: payload carries both signals",
+      {"spam_classification", "scam_status", "scam_score",
+       "spam_probability"} <= set(a_sms["payload"]["analysis"]))
+
+ev_sms_clean = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "MESSAGE",
+    "title": "Benign chat",
+    "content_text": "Hey, are we still meeting for lunch tomorrow?"})
+a_sms_clean = ans.run_analysis(ev_sms_clean["evidence_ref"], "SMS")
+check("sms: benign message not malicious",
+      a_sms_clean["verdict"] in {"CLEAN", "UNAVAILABLE"},
+      a_sms_clean["verdict"])
+
+try:
+    ans.run_analysis(ev_url["evidence_ref"], "SMS")
+    check("sms: incompatible evidence rejected", False, "accepted")
+except ans.AnalysisError as exc:
+    check("sms: incompatible evidence rejected",
+          exc.code == "INCOMPATIBLE_EVIDENCE", exc.code)
+
+r = _client3.post("/lab/api/analysis",
+                  json={"evidence_ref": ev_sms["evidence_ref"],
+                        "analysis_type": "SMS"})
+check("sms: API run envelope",
+      r.status_code == 201 and r.get_json()["data"]["analysis"]["verdict"]
+      in {"MALICIOUS", "SUSPICIOUS", "CLEAN", "UNAVAILABLE"},
+      r.status_code)
+
+# ===========================================================================
+section("Test 7L — Bulk IOC investigation (AN)")
+# ===========================================================================
+_BLOB = ("Suspicious login from 185.234.72.19, callback to "
+         "account-verify-login.tk/path?a=1 and http://10.0.0.5/x, "
+         "hash 18a118afc8338986e6833da29abab49f1a86f8a03ce8c08c73eb16fc4e3012b7, "
+         "contact evil@example.com")
+r = _client3.post("/lab/api/intel/bulk/preview", json={"text": _BLOB})
+_b = r.get_json()
+check("bulk: preview envelope",
+      r.status_code == 200 and _b["success"] is True)
+check("bulk: counts by real type",
+      _b["data"]["counts"].get("IPv4", 0) >= 1
+      and _b["data"]["counts"].get("DOMAIN", 0) >= 1
+      and _b["data"]["counts"].get("URL", 0) >= 1
+      and _b["data"]["counts"].get("SHA-256", 0) >= 1
+      and _b["data"]["counts"].get("EMAIL", 0) >= 1,
+      _b["data"]["counts"])
+check("bulk: total equals counted indicators",
+      _b["data"]["total"] == sum(_b["data"]["counts"].values()),
+      _b["data"]["total"])
+check("bulk: items carry type + value",
+      all({"ioc_type", "value"} <= set(it)
+          for it in _b["data"]["items"]))
+r = _client3.post("/lab/api/intel/bulk/preview", json={"text": "hello world"})
+check("bulk: no indicators is honest zero",
+      r.get_json()["data"]["total"] == 0)
+r = _client3.post("/lab/api/intel/bulk/preview", json={"text": ""})
+check("bulk: empty text rejected or zero",
+      r.get_json()["data"]["total"] == 0)
+r = _client3.post("/lab/api/intel/bulk/investigate", json={"text": _BLOB})
+_b = r.get_json()
+check("bulk: investigate opens a case",
+      r.status_code == 201 and _b["data"]["case"]["case_ref"].startswith(
+          "KAV-CASE-"), (r.status_code, _b))
+_bulk_ref = _b["data"]["case"]["case_ref"]
+check("bulk: evidence stored for the paste",
+      _b["data"]["evidence_ref"].startswith("KAV-EVD-"))
+check("bulk: ledger sync reported",
+      _b["data"]["ledger"]["iocs_total"] >= _b["data"]["total"],
+      _b["data"]["ledger"])
+check("bulk: new case carries the pasted indicators",
+      cs.get_case(_bulk_ref)["counts"]["iocs"] >= 4,
+      cs.get_case(_bulk_ref)["counts"])
+r = _client3.post("/lab/api/intel/bulk/investigate", json={"text": "   "})
+check("bulk: blank text rejected",
+      r.status_code == 400 and r.get_json()["success"] is False)
+r = _client3.get("/lab/intel/bulk")
+check("page: /lab/intel/bulk renders",
+      r.status_code == 200 and "BULK IOC INVESTIGATION" in r.get_data(
+          as_text=True), r.status_code)
 
 # ===========================================================================
 print("\n" + "=" * 64)

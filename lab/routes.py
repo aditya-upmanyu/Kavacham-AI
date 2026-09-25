@@ -70,6 +70,7 @@ NAV_STRUCTURE = [
         "group": "THREAT INTELLIGENCE",
         "links": [
             {"id": "ioc-intelligence", "label": "IOC Intelligence", "url": "/lab/intel/iocs", "ready": True},
+            {"id": "bulk-ioc", "label": "Bulk IOC", "url": "/lab/intel/bulk", "ready": True},
         ],
     },
     {
@@ -812,6 +813,14 @@ def intel_iocs_page():
     ))
 
 
+@lab_bp.route("/intel/bulk", strict_slashes=False)
+def intel_bulk_page():
+    return render_template("lab/intel_bulk.html", **_shell_context(
+        nav_id="bulk-ioc",
+        page_title="Bulk IOC Investigation",
+    ))
+
+
 @lab_bp.route("/intel/correlation", strict_slashes=False)
 def intel_correlation_page():
     return render_template("lab/intel_correlation.html", **_shell_context(
@@ -910,6 +919,41 @@ def api_intel_sync():
         return api_error("IOC_SYNC_FAILED",
                          "The vault scan could not be completed.", 500)
     return api_ok(data)
+
+
+@lab_bp.route("/api/intel/bulk/preview", methods=["POST"])
+def api_intel_bulk_preview():
+    """Bulk IOC preview (AN): extract + count, read-only, never persists."""
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return api_error("INVALID_PAYLOAD", "A JSON body is required.", 400)
+    try:
+        data = intel_service.bulk_preview(payload.get("text") or "")
+    except Exception:
+        return api_error("BULK_PREVIEW_FAILED",
+                         "The pasted text could not be scanned.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/intel/bulk/investigate", methods=["POST"])
+@_require_permission("case:create")
+def api_intel_bulk_investigate():
+    """Bulk IOC investigate (AN): case + MESSAGE evidence + ledger sync."""
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return api_error("INVALID_PAYLOAD", "A JSON body is required.", 400)
+    try:
+        data = intel_service.bulk_investigate(
+            payload.get("text") or "",
+            title=payload.get("title"),
+            case_type=payload.get("case_type") or "OTHER",
+            actor="analyst", ip_address=_client_ip())
+    except intel_service.IntelError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("BULK_INVESTIGATE_FAILED",
+                         "The bulk investigation could not be opened.", 500)
+    return api_ok(data, status=201)
 
 
 @lab_bp.route("/api/intel/correlation", methods=["GET"])

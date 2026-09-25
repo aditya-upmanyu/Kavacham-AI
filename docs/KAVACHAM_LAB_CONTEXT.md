@@ -2,7 +2,7 @@
 
 > Persistent architectural memory of the Kavacham Lab build.
 > Read this file before any future architectural change (version2.txt D.1).
-> Last updated: Global search (O) + case-view tabs (Q) — see section 29.
+> Last updated: SMS/smishing analysis (AP) + bulk IOC (AN) — see section 29.
 
 ## 1. Project Overview
 
@@ -137,7 +137,8 @@ APIs: `/lab/api/cases`, `/lab/api/cases/meta`, `/lab/api/audit`,
 * Design system in `lab.css`: badges (incl. `lab-badge-*` semantic colors),
   panels, tables (`lab-table`), tabs, wizard steps, states
   (`lab-state` empty/error), toasts, skeleton loading.
-* Intel: `lab_intel.js`, `lab_graph.js`, `lab_chains.js`, `lab_correlation.js`.
+* Intel: `lab_intel.js`, `lab_graph.js`, `lab_chains.js`, `lab_correlation.js`,
+  `lab_bulk.js` (AN paste-to-case flow).
 * Risk: `lab_risk.js` + `lab_risk.css` (band scale, finding cards).
 * Reporting: `lab_reports.js` + `lab_exports.js` + `lab_reports.css`
   (report document with print-to-PDF, export center, manifest page).
@@ -188,11 +189,12 @@ indexes. Notes:
 * case_service — create/list/search/detail/update, notes, audit, timeline.
 * evidence_service — intake (web+API), hashing (SHA-256/1, MD5), PE/ELF
   magic blocking, custody chain, integrity verification, originals dir.
-* analysis_service — 10-type registry (EMAIL/PHISHING/SPAM/URL/FILE/HASH/
-  QR/DOMAIN/SCAM/BEC), stage pipeline, findings persistence, honest
+* analysis_service — 11-type registry (EMAIL/PHISHING/SPAM/URL/FILE/HASH/
+  QR/DOMAIN/SCAM/BEC/SMS), stage pipeline, findings persistence, honest
   ML/VT probe states.
 * intel_service — IOC classify/extract/sync, ledger, status workflow,
-  cross-case correlation, entity graph, attack chains.
+  cross-case correlation, entity graph, attack chains, bulk IOC
+  paste-to-case (AN).
 * risk_service — central risk engine (see section 19).
 * report_service — reports (`KAV-RPT` refs, BF 15 sections), export
   packages (`KAV-EXP`, Section 70), evidence manifest + integrity
@@ -290,8 +292,10 @@ headers).
 Lab shell + nav + return-to-AI; command center (real health/alerts/
 counts/model health); case management (wizard 5 steps, status workflow,
 notes, timeline, audit); evidence (intake, vault, hash, custody,
-integrity); analysis (10 types, stage pipeline, honest ML/VT);
-intelligence (IOC ledger, correlation, entity graph, attack chains);
+integrity); analysis (11 types incl. SMS/smishing, stage pipeline,
+honest ML/VT);
+intelligence (IOC ledger, bulk paste-to-case, correlation, entity graph,
+attack chains);
 **risk engine (register + case assessments + evidence-first findings)**;
 **reporting (BF 15-section reports, `KAV-RPT` refs, print-to-PDF,
 `KAV-EXP` export packages, BG manifest + SHA-256 integrity, IOC CSV)**;
@@ -376,11 +380,15 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   All commits GPG-signed (key `5359FC122398973E`, public key in
   `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`,
   Security milestone `1fd997e`, Health & Observability milestone `d0ca29e`,
-  QA milestone `d7df0fe`, Global search + case-view tabs `ea948e8`.
-* Lab suite: **416/416 passing** — +20 in Test 7J (O: exact/partial
-  ranking, sha256 + IOC + sender-entity resolution, type filter,
-  empty/unknown/hostile queries return nothing, palette shell wiring;
-  Q: ENTITIES + ATTACK CHAIN tabs, graph nodes, honest chain state).
+  QA milestone `d7df0fe`, Global search + case-view tabs `ea948e8`,
+  SMS + bulk IOC follow this doc update (see `git log -1`).
+* Lab suite: **437/437 passing** — +21 in Tests 7K/7L (AP: SMS registry,
+  fraud/benign verdicts, dual-engine sources, incompatibility, API run;
+  AN: preview counts, investigate-to-case with ledger links, blank-text
+  rejection, page render; nav count 6).
+* AP+AN verified live over HTTP: bulk page + preview/investigate round
+  trip (case + evidence + ledger links), SMS in the analysis registry and
+  Run Analysis options.
 * O+Q verified live over HTTP: search returns grouped exact-first hits,
   palette + trigger render in the shell, case view carries both new tabs,
   graph/chain APIs return real per-case data.
@@ -397,7 +405,8 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   `X-Correlation-ID`, structured `kavacham.obs` lines in server logs.
 * Reporting milestone verified live: report auto-generation, `KAV-EXP`
   verify, manifest rows, CSV + zip download.
-* Product A regression: 50/51 (known VT-key assertion).
+* Product A regression: Test 8 + live `/` and `/health` 200
+  (no separate QA file exists in the repo).
 * Reporting milestone verified live over HTTP: report auto-generated on
   export, `KAV-EXP` package verified (`sha256` match + zip OK), manifest
   rows present for analysed cases, CSV + zip download stream correctly.
@@ -406,8 +415,8 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 
 ## 30. Future Work
 
-The 14-phase plan plus the O/Q follow-ups are complete. Still open
-from version2.txt: LOGIN/RBAC users, rate limits + secure headers +
-secret-manager integration (BI tail), model/dataset registry surfaces
-(BD/BE), frontend security review (BT), and CONTEXT.md refresh per
-change (CG).
+The 14-phase plan plus the O/Q follow-ups are complete. version2.txt
+extensions done: SMS/smishing analysis (AP), bulk IOC investigation
+(AN). Still open: RDAP+DNS network intel (AG), model/dataset registries
+(BD/BE), rate limits + secure headers + privacy settings (BS/BR/BT),
+LOGIN/RBAC users (BI tail).

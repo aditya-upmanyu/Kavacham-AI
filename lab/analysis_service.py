@@ -47,7 +47,7 @@ MAX_FINDINGS = 60
 
 ANALYSIS_TYPES = [
     "EMAIL", "PHISHING", "SPAM", "URL", "FILE", "HASH",
-    "QR", "DOMAIN", "SCAM", "BEC",
+    "QR", "DOMAIN", "SCAM", "BEC", "SMS",
 ]
 
 ANALYSIS_REGISTRY = {
@@ -111,6 +111,13 @@ ANALYSIS_REGISTRY = {
         "label": "BEC / Fraud Analysis",
         "description": "Business email compromise and fraud indicators.",
         "evidence_types": ["EMAIL", "RAW_HEADER", "MESSAGE"],
+    },
+    "SMS": {
+        "label": "SMS / Smishing Analysis",
+        "description": "SMS, WhatsApp and chat text: ML spam classification "
+                       "plus scam-family signals (OTP, KYC, UPI, delivery, "
+                       "job, loan, credential theft).",
+        "evidence_types": ["MESSAGE"],
     },
 }
 
@@ -852,6 +859,65 @@ def _run_scam(pipeline, ev):
         int(result.get("score", 0) or 0), None
 
 
+def _run_sms(pipeline, ev):
+    """SMS / smishing (AP): ML spam classification + scam-family signals.
+
+    Never forced onto email-shaped models — the message text feeds the
+    spam classifier and the scam-family detectors directly.
+    """
+    from analyzer import scam_analyzer, spam_analyzer
+    predict, ml_ready = _ml_probe()
+    pipeline.add_source("sms_pipeline.spam_analyzer")
+    pipeline.add_source("sms_pipeline.scam_analyzer")
+    pipeline.engine_version = "sms_pipeline.v1"
+    pipeline.stage("Input normalized", "done", "Message text extracted.")
+
+    text = _normalized_email(ev)
+    if ml_ready:
+        pipeline.stage("Local ML analysis", "done",
+                       "Real model inference executed.")
+        spam = spam_analyzer.analyze(text, predict)
+    else:
+        pipeline.stage("Local ML analysis", "unavailable",
+                       "ML classifier unavailable in this environment.")
+        spam = spam_analyzer.analyze(text, _stub_predict)
+
+    scam = scam_analyzer.analyze(text)
+    pipeline.stage("Scam signals", "done",
+                   "Detected %d scam indicator(s)."
+                   % len(scam.get("indicators") or []))
+
+    spam_class = str(spam.get("classification") or "Unavailable")
+    scam_status = str(scam.get("status") or "clean").lower()
+    if spam_class == "Spam" or scam_status == "malicious":
+        verdict = "MALICIOUS"
+    elif scam_status == "suspicious":
+        verdict = "SUSPICIOUS"
+    elif spam_class == "Not Spam" and scam_status == "clean":
+        verdict = "CLEAN"
+    else:
+        verdict = "UNAVAILABLE"
+
+    pipeline.payload = {
+        "spam_classification": spam_class,
+        "spam_score": int(spam.get("score", 0) or 0),
+        "spam_probability": float(spam.get("probability_spam", 0.0) or 0.0),
+        "scam_status": scam_status,
+        "scam_score": int(scam.get("score", 0) or 0),
+        "scam_summary": scam.get("summary", ""),
+        "ml_ready": bool(ml_ready),
+    }
+    _indicators_to_findings(pipeline, spam.get("indicators"),
+                            "sms_pipeline.spam_analyzer")
+    _indicators_to_findings(pipeline, scam.get("indicators"),
+                            "sms_pipeline.scam_analyzer")
+    pipeline.stage("Risk calculation", "done",
+                   "Worst of spam/scam signals (deterministic).")
+    confidence = float(spam.get("probability_spam", 0.0) or 0.0)
+    return verdict, max(int(spam.get("score", 0) or 0),
+                        int(scam.get("score", 0) or 0)), confidence
+
+
 def _run_bec(pipeline, ev):
     from analyzer import bec_analyzer
     pipeline.add_source("bec_analyzer")
@@ -936,7 +1002,7 @@ def run_analysis(evidence_ref, analysis_type, actor=ACTOR_DEFAULT,
         "EMAIL": _run_email, "PHISHING": _run_phishing, "SPAM": _run_spam,
         "URL": _run_url, "FILE": _run_file, "HASH": _run_hash,
         "QR": _run_qr, "DOMAIN": _run_domain, "SCAM": _run_scam,
-        "BEC": _run_bec,
+        "BEC": _run_bec, "SMS": _run_sms,
     }
     runner = runners[analysis_type]
     verdict, risk_score, confidence = runner(pipeline, ev)

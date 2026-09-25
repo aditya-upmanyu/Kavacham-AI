@@ -1,0 +1,50 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Bulk IOC Investigation</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">BULK IOC INVESTIGATION</h1>
+    <p class="lab-subtitle">Paste logs, reports or message text. Indicators are extracted as data — never executed — and can open a case in one step.</p>
+  </div>
+</div>
+
+<section class="lab-panel" aria-labelledby="bulk-input-title">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title" id="bulk-input-title">PASTED TEXT</h2>
+  </div>
+  <div class="lab-panel-body">
+    <label class="lab-label" for="bulk-text">Logs, reports, emails (up to 256 KB)</label>
+    <textarea class="lab-textarea lab-mono" id="bulk-text" rows="8" style="width:100%;"
+              placeholder="Paste suspicious text here — IPs, domains, URLs, hashes, emails are extracted automatically."></textarea>
+    <div class="lab-row" style="margin-top:10px;">
+      <button class="lab-btn lab-btn-sm" id="bulk-scan" type="button">EXTRACT INDICATORS</button>
+      <button class="lab-btn lab-btn-sm lab-btn-primary" id="bulk-investigate" type="button">INVESTIGATE</button>
+    </div>
+  </div>
+</section>
+
+<section class="lab-panel" aria-labelledby="bulk-result-title" style="margin-top:16px;">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title" id="bulk-result-title">EXTRACTION RESULT</h2>
+    <span class="lab-xs lab-dim" id="bulk-count">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="bulk-body">
+    <div class="lab-panel-body">
+      <p class="lab-dim lab-sm">No scan yet. Extraction counts real indicators — nothing is invented.</p>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="bulk-foot">Paste text and choose EXTRACT INDICATORS or INVESTIGATE.</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_bulk.js') }}"></script>
+{% endblock %}

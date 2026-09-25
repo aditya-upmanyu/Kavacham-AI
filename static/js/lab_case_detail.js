@@ -109,6 +109,8 @@
     renderEvidence(c);
     renderTimeline(c);
     renderIocs(c);
+    renderEntitiesFromApi(c.case_ref);
+    renderChainFromApi(c.case_ref);
     renderAnalyses(c);
     renderNotes(c);
     renderReports(c);
@@ -231,6 +233,112 @@
           '<td class="lab-xs">' + esc(i.source) + '</td>' +
           '<td class="lab-mono lab-xs">' + esc(fmtTs(i.first_seen)) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
+  }
+
+  function renderChainFromApi(ref) {
+    var host = document.getElementById('cv-chain');
+    fetch('/lab/api/intel/attack-chain?case=' + encodeURIComponent(ref), {
+      headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+    })
+      .then(function (res) {
+        return res.json().then(function (body) {
+          if (!res.ok || body.success !== true) {
+            var e = (body && body.error) || {};
+            throw { message: e.message || 'The attack chain could not be derived.' };
+          }
+          return body.data;
+        });
+      })
+      .then(function (d) {
+        var stages = d.chain || [];
+        if (!stages.length) {
+          host.innerHTML = '';
+          host.appendChild(window.LAB.emptyState('—', 'INSUFFICIENT EVIDENCE',
+            d.note || 'Chains are only rendered from relationships that existing evidence and analysis actually support.',
+            null));
+          return;
+        }
+        host.innerHTML = '<div class="lab-panel-body"><ol class="lab-timeline">' +
+          stages.map(function (s, i) {
+            var evs = (s.evidence_refs || []).map(function (r) {
+              return '<span class="lab-mono lab-xs">' + esc(r) + '</span>';
+            }).join(' ');
+            var ans = (s.analysis_refs || []).map(function (r) {
+              return '<span class="lab-mono lab-xs">' + esc(r) + '</span>';
+            }).join(' ');
+            return '<li class="lab-timeline-item">' +
+              '<div class="lab-timeline-marker" aria-hidden="true"></div>' +
+              '<div class="lab-timeline-body">' +
+              '<div class="lab-row tight">' +
+              '<span class="lab-badge lab-badge-blue">STAGE ' + (i + 1) + '</span>' +
+              '<span class="lab-strong">' + esc(s.label || 'STAGE') + '</span>' +
+              (s.risk != null ? '<span class="lab-mono lab-xs lab-dim">RISK ' +
+                esc(String(s.risk)) + '</span>' : '') +
+              '</div>' +
+              (s.kind ? '<div class="lab-xs lab-dim" style="margin-top:4px;">' +
+                esc(String(s.kind)) + '</div>' : '') +
+              (evs ? '<div class="lab-xs lab-dim" style="margin-top:4px;">EVIDENCE: ' +
+                evs + '</div>' : '') +
+              (ans ? '<div class="lab-xs lab-dim" style="margin-top:4px;">ANALYSIS: ' +
+                ans + '</div>' : '') +
+              '</div></li>';
+          }).join('') + '</ol>' +
+          (d.note ? '<p class="lab-xs lab-dim">' + esc(d.note) + '</p>' : '') + '</div>';
+      })
+      .catch(function (err) {
+        host.innerHTML = '';
+        host.appendChild(window.LAB.emptyState('!', 'CHAIN UNAVAILABLE',
+          (err && err.message) || 'The attack chain could not be derived.', null));
+      });
+  }
+
+  function renderEntitiesFromApi(ref) {
+    var host = document.getElementById('cv-entities');
+    fetch('/lab/api/intel/graph?case=' + encodeURIComponent(ref), {
+      headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+    })
+      .then(function (res) {
+        return res.json().then(function (body) {
+          if (!res.ok || body.success !== true) {
+            var e = (body && body.error) || {};
+            throw { message: e.message || 'Entities could not be loaded.' };
+          }
+          return body.data.graph || {};
+        });
+      })
+      .then(function (g) {
+        var nodes = (g.nodes || []).filter(function (n) {
+          return n.type !== 'CASE' && n.type !== 'EVIDENCE';
+        });
+        if (!nodes.length) {
+          host.innerHTML = '';
+          host.appendChild(window.LAB.emptyState('—', 'NO ENTITIES',
+            'No sender entities or linked indicators exist for this case yet.', null));
+          return;
+        }
+        host.innerHTML = '<div class="lab-table-wrap"><table class="lab-table">' +
+          '<thead><tr><th scope="col">Type</th><th scope="col">Value</th>' +
+          '<th scope="col">Status</th><th scope="col">Related Evidence</th>' +
+          '<th scope="col">Related Cases</th></tr></thead><tbody>' +
+          nodes.map(function (n) {
+            var rel_e = (n.related_evidence || []).map(function (r) {
+              return '<span class="lab-mono lab-xs">' + esc(r) + '</span>';
+            }).join(' ');
+            var rel_c = (n.related_cases || []).map(function (r) {
+              return '<span class="lab-mono lab-xs">' + esc(r) + '</span>';
+            }).join(' ');
+            return '<tr><td>' + badge(n.type, 'lab-badge-blue') + '</td>' +
+              '<td class="lab-mono lab-xs" style="word-break:break-all;">' + esc(n.value) + '</td>' +
+              '<td class="lab-xs">' + esc(n.status || '—') + '</td>' +
+              '<td class="lab-xs">' + (rel_e || '—') + '</td>' +
+              '<td class="lab-xs">' + (rel_c || '—') + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      })
+      .catch(function (err) {
+        host.innerHTML = '';
+        host.appendChild(window.LAB.emptyState('!', 'ENTITIES UNAVAILABLE',
+          (err && err.message) || 'Entities could not be loaded.', null));
+      });
   }
 
   function renderAnalyses(c) {

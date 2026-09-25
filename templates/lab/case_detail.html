@@ -57,6 +57,8 @@
     <button class="lab-tab" role="tab" data-tab="evidence" aria-selected="false">EVIDENCE</button>
     <button class="lab-tab" role="tab" data-tab="timeline" aria-selected="false">TIMELINE</button>
     <button class="lab-tab" role="tab" data-tab="ioc" aria-selected="false">IOC</button>
+    <button class="lab-tab" role="tab" data-tab="entities" aria-selected="false">ENTITIES</button>
+    <button class="lab-tab" role="tab" data-tab="chain" aria-selected="false">ATTACK CHAIN</button>
     <button class="lab-tab" role="tab" data-tab="analyses" aria-selected="false">ANALYSIS</button>
     <button class="lab-tab" role="tab" data-tab="notes" aria-selected="false">NOTES</button>
     <button class="lab-tab" role="tab" data-tab="report" aria-selected="false">REPORT</button>
@@ -98,6 +100,14 @@
     <!-- IOC -->
     <section class="lab-tab-panel" data-panel="ioc" role="tabpanel" hidden>
       <div class="lab-panel"><div class="lab-panel-body flush" id="cv-iocs"></div></div>
+    </section>
+
+    <section class="lab-tab-panel" data-panel="entities" role="tabpanel" hidden>
+      <div class="lab-panel"><div class="lab-panel-body flush" id="cv-entities"></div></div>
+    </section>
+
+    <section class="lab-tab-panel" data-panel="chain" role="tabpanel" hidden>
+      <div class="lab-panel"><div class="lab-panel-body flush" id="cv-chain"></div></div>
     </section>
 
     <!-- ANALYSIS -->

@@ -25,6 +25,7 @@ from lab import analysis_service
 from lab import intel_service
 from lab import risk_service
 from lab import report_service
+from lab import search_service
 from lab import security
 from lab import obs
 
@@ -258,6 +259,19 @@ def api_providers():
         return api_error("PROVIDER_STATUS_FAILED",
                          "Provider status could not be determined.", 503)
     return api_ok({"providers": providers, "count": len(providers)})
+
+
+@lab_bp.route("/api/search")
+def api_search():
+    """Global command search (Section O): grouped, capped, linkable."""
+    from flask import request
+    try:
+        data = search_service.search(
+            (request.args.get("q") or ""),
+            only=(request.args.get("type") or "").strip().lower() or None)
+    except Exception:
+        return api_error("SEARCH_FAILED", "Search could not be completed.", 500)
+    return api_ok(data)
 
 
 # ---------------------------------------------------------------------------

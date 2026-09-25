@@ -315,6 +315,7 @@ expected_methods = {
     "/lab/health":                        {"GET"},
     "/lab/settings":                      {"GET"},
     "/lab/api/providers":                 {"GET"},
+    "/lab/api/search":                     {"GET"},
     "/lab/api/cases":                     {"GET", "POST"},
     "/lab/api/cases/<case_ref>":          {"GET", "PATCH"},
     "/lab/api/cases/<case_ref>/notes":    {"POST"},
@@ -1832,6 +1833,109 @@ check("qa: Lab ships no console.debug leftovers",
 check("qa: shell exposes the page correlation id",
       "corrId" in _pl.Path("static/js/lab_shell.js").read_text(
           encoding="utf-8"))
+
+# ===========================================================================
+section("Test 7J — Global search (O) + case-view tabs (Q)")
+# ===========================================================================
+from lab import search_service as sch                             # noqa: E402
+
+_b = _client3.get("/lab/api/search",
+                  query_string={"q": case1["case_ref"]}).get_json()
+check("search: success envelope",
+      _b["success"] is True and _b["data"]["query"] == case1["case_ref"])
+_by = {g["group"]: g for g in _b["data"]["groups"]}
+check("search: all five groups present",
+      set(_by) == {"case", "evidence", "analysis", "ioc", "entity"},
+      sorted(_by))
+check("search: exact case ref ranks exact first",
+      _by["case"]["items"] and _by["case"]["items"][0]["match"] == "exact"
+      and _by["case"]["items"][0]["label"] == case1["case_ref"])
+check("search: every result links to a real Lab page",
+      all(it["url"].startswith("/lab/")
+          for g in _b["data"]["groups"] for it in g["items"]))
+check("search: groups are capped",
+      all(g["count"] <= 8 for g in _b["data"]["groups"]))
+
+_b = _client3.get("/lab/api/search",
+                  query_string={"q": "KAV-CASE-2026"}).get_json()
+check("search: partial refs match",
+      any(it["match"] == "partial"
+          for it in {g["group"]: g for g in _b["data"]["groups"]}["case"]["items"]))
+
+_b = _client3.get("/lab/api/search",
+                  query_string={"q": ev_file["sha256"]}).get_json()
+check("search: evidence found by full sha256",
+      any(it["label"] == ev_file["evidence_ref"]
+          for it in {g["group"]: g for g in _b["data"]["groups"]}["evidence"]["items"]))
+
+_b = _client3.get("/lab/api/search",
+                  query_string={"q": "account-verify-login"}).get_json()
+check("search: IOC values match partially",
+      any(it["kind"] == "ioc"
+          for g in _b["data"]["groups"] for it in g["items"]))
+
+# --- entities: header sender extracted from real evidence text ---
+ev_hdr = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "EMAIL",
+    "title": "Header probe",
+    "content_text": "From: qa-probe-sender@example.com\n"
+                    "Subject: probe\n\nBody text."})
+_b = _client3.get("/lab/api/search",
+                  query_string={"q": "qa-probe-sender"}).get_json()
+_ent = {g["group"]: g for g in _b["data"]["groups"]}["entity"]["items"]
+check("search: sender entity resolves to its evidence",
+      any(it["label"] == "qa-probe-sender@example.com"
+          and it["url"] == "/lab/evidence/" + ev_hdr["evidence_ref"]
+          for it in _ent), _ent)
+
+# --- filters + empty query honesty ---
+_b = _client3.get("/lab/api/search",
+                  query_string={"q": "KAV", "type": "case"}).get_json()
+check("search: type filter limits groups",
+      [g["group"] for g in _b["data"]["groups"]] == ["case"])
+_b = _client3.get("/lab/api/search",
+                  query_string={"q": "KAV", "type": "bogus"}).get_json()
+check("search: unknown filter returns nothing, not everything",
+      _b["data"]["total"] == 0 and _b["data"]["groups"] == [])
+_b = _client3.get("/lab/api/search").get_json()
+check("search: empty query never dumps the vault",
+      _b["data"]["total"] == 0 and _b["data"]["groups"] == [])
+check("search: hostile input is inert",
+      _client3.get("/lab/api/search",
+                   query_string={"q": "' OR '1'='1"}).get_json()["success"] is True)
+
+# --- Q: ENTITIES + ATTACK CHAIN tabs on the case view ---
+_html = _client3.get("/lab/cases/" + case1["case_ref"]).get_data(as_text=True)
+for _tab in ("entities", "chain"):
+    check("caseview: %s tab present" % _tab,
+          'data-tab="%s"' % _tab in _html
+          and 'data-panel="%s"' % _tab in _html)
+_b = _client3.get("/lab/api/intel/graph",
+                  query_string={"case": case1["case_ref"]}).get_json()
+check("caseview: entity graph carries real nodes",
+      _b["success"] is True and _b["data"]["graph"]["node_count"] > 0
+      and any(n["type"] not in ("CASE", "EVIDENCE")
+              for n in _b["data"]["graph"]["nodes"]),
+      _b["data"]["graph"]["node_count"])
+_b = _client3.get("/lab/api/intel/attack-chain",
+                  query_string={"case": case1["case_ref"]}).get_json()
+check("caseview: attack chain honest state",
+      _b["success"] is True and _b["data"]["state"] in ("chain", "insufficient"),
+      _b["data"]["state"])
+if _b["data"]["state"] == "chain":
+    check("caseview: every chain stage cites evidence",
+          all(s["evidence_refs"] for s in _b["data"]["chain"]))
+
+# --- palette shell wiring ---
+_html = _client3.get("/lab/cases").get_data(as_text=True)
+check("search: palette dialog in the shell",
+      'id="lab-palette-backdrop"' in _html
+      and 'role="dialog"' in _html
+      and 'id="lab-search-open"' in _html)
+r = _client3.get("/static/js/lab_search.js")
+_js = r.get_data(as_text=True)
+check("search: palette script served",
+      r.status_code == 200 and "CTRL+K" in _js, r.status_code)
 
 # ===========================================================================
 print("\n" + "=" * 64)

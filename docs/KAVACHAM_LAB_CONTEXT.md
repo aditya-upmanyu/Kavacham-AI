@@ -2,7 +2,7 @@
 
 > Persistent architectural memory of the Kavacham Lab build.
 > Read this file before any future architectural change (version2.txt D.1).
-> Last updated: Phase 14 (QA) milestone — see section 29.
+> Last updated: Global search (O) + case-view tabs (Q) — see section 29.
 
 ## 1. Project Overview
 
@@ -128,7 +128,7 @@ APIs: `/lab/api/cases`, `/lab/api/cases/meta`, `/lab/api/audit`,
 `/lab/api/alerts`, `/lab/api/command-center`, `/lab/api/meta`,
 `/lab/api/providers`,
 `/lab/api/intel/*`, `/lab/api/risk`, `/lab/api/reports...`,
-`/lab/api/exports...`, `/lab/api/cases/<ref>/export`.
+`/lab/api/exports...`, `/lab/api/cases/<ref>/export`, `/lab/api/search`.
 
 ## 12. Existing Important Components
 
@@ -145,6 +145,10 @@ APIs: `/lab/api/cases`, `/lab/api/cases/meta`, `/lab/api/audit`,
   `lab_health.css` (BO status/latency/error/configuration table, BP
   provider surface); command-center mission board via
   `lab_command_center.js` CURRENT OPERATIONS strip.
+* Global search: `lab_search.js` CTRL+K palette (debounced, grouped,
+  keyboard-navigable, focus-restoring dialog) backed by `/lab/api/search`.
+* Case view: ENTITIES + ATTACK CHAIN tabs in `case_detail.html` /
+  `lab_case_detail.js`, fed by the existing intel graph/chain APIs.
 
 ## 13. Environment Variables
 
@@ -178,6 +182,9 @@ indexes. Notes:
 * obs — BZ structured request logging (`request_id`/`service`/`operation`/
   `duration_ms`/`status`, no query strings/secrets) + correlation ids
   (inbound `X-Correlation-ID` threaded, `X-Request-ID` on every response).
+* search_service — O global search over cases/evidence/analyses/IOCs/
+  sender entities; exact-before-partial ranking, type filter, capped
+  groups with real page links; empty/unknown queries return nothing.
 * case_service — create/list/search/detail/update, notes, audit, timeline.
 * evidence_service — intake (web+API), hashing (SHA-256/1, MD5), PE/ELF
   magic blocking, custody chain, integrity verification, originals dir.
@@ -262,7 +269,8 @@ indexes. Notes:
   intelligence, risk, reporting, security (audit vocabulary + redaction +
   RBAC enforcement), health & observability (BO/BP/BZ/BQ), QA security
   gap-fill (CC: IDOR, SQLi, XSS posture, SSRF posture, malformed input,
-  open redirects, secret exposure) + accessibility guards (BV), Product A
+  open redirects, secret exposure) + accessibility guards (BV), global
+  search + case-view tabs (O/Q), Product A
   regression baseline. VT env pinned OFF
   inside destructive-analysis and intel sections and restored after.
 * Product A regression is covered by `test_lab.py` Test 8 + live HTTP
@@ -272,9 +280,10 @@ indexes. Notes:
 
 Phases done (old plan numbering): 1 Repository Audit → 9 Reporting.
 New 14-phase plan: Phases 1-14 done (**QA completed — the 14-phase plan
-is complete**). Remaining version2.txt follow-ups: global command
-search (CTRL+K, O) and case-view ENTITIES/ATTACK CHAIN tabs (Q), plus
-the BI tail (LOGIN/RBAC users, rate limits + secure headers).
+is complete**). version2.txt follow-ups done: global command
+search (CTRL+K, O) and case-view ENTITIES/ATTACK CHAIN tabs (Q).
+Still open: the BI tail (LOGIN/RBAC users, rate limits + secure
+headers).
 
 ## 23. Completed Features
 
@@ -294,13 +303,16 @@ correlation ids, BQ CURRENT OPERATIONS mission board)**;
 **QA (CC security gap-fill: IDOR/SQLi/XSS/SSRF/malformed/redirect/secret
 posture; BV skip link + focus-visible + reduced motion; CD regression +
 production readiness)**;
+**global search (O CTRL+K palette over cases/evidence/analyses/IOCs/
+entities, exact-before-partial, filters, keyboard navigation)**;
+**case-view ENTITIES + ATTACK CHAIN tabs (Q, fed by the intel
+graph/chain APIs)**;
 docs context file.
 
 ## 24. Pending Features
 
 rate limiting; secure headers/CSRF review; secret-manager integration;
-frontend security review (BT); command search
-CTRL+K (O); case-view ENTITIES + ATTACK CHAIN tabs (Q); model
+frontend security review (BT); model
 registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 
 ## 25. Known Limitations
@@ -364,12 +376,15 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   All commits GPG-signed (key `5359FC122398973E`, public key in
   `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`,
   Security milestone `1fd997e`, Health & Observability milestone `d0ca29e`,
-  QA milestone `d7df0fe`.
-* Lab suite: **396/396 passing** — +24 in Test 7I (CC: unknown-ref
-  envelopes, hostile search input inert, stored markup inert at render,
-  metadata-URL structural analysis with no fetch, malformed input,
-  no Lab redirects, no storage-path leaks; BV: skip link, focus-visible,
-  reduced motion, no console.debug, corrId surface).
+  QA milestone `d7df0fe`, Global search + case-view tabs follow this
+  doc update (see `git log -1`).
+* Lab suite: **416/416 passing** — +20 in Test 7J (O: exact/partial
+  ranking, sha256 + IOC + sender-entity resolution, type filter,
+  empty/unknown/hostile queries return nothing, palette shell wiring;
+  Q: ENTITIES + ATTACK CHAIN tabs, graph nodes, honest chain state).
+* O+Q verified live over HTTP: search returns grouped exact-first hits,
+  palette + trigger render in the shell, case view carries both new tabs,
+  graph/chain APIs return real per-case data.
 * QA milestone verified live over HTTP: Product A `/` + `/health`
   return 200, skip link renders, live DB `PRAGMA integrity_check` ok at
   schema v4, no scratch files tracked.
@@ -392,8 +407,8 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 
 ## 30. Future Work
 
-The 14-phase plan is complete. Remaining version2.txt follow-ups:
-command search CTRL+K (O), case-view ENTITIES/ATTACK CHAIN tabs (Q),
-LOGIN/RBAC users, rate limits + secure headers + secret-manager
-integration (BI tail), model/dataset registry surfaces (BD/BE),
-frontend security review (BT), and CONTEXT.md refresh per change (CG).
+The 14-phase plan plus the O/Q follow-ups are complete. Still open
+from version2.txt: LOGIN/RBAC users, rate limits + secure headers +
+secret-manager integration (BI tail), model/dataset registry surfaces
+(BD/BE), frontend security review (BT), and CONTEXT.md refresh per
+change (CG).

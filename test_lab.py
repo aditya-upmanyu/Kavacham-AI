@@ -2156,6 +2156,73 @@ for _url, _marker in [("/lab/models", "REGISTERED MODELS"),
           r.status_code)
 
 # ===========================================================================
+section("Test 7O — Rate limiting + secure headers (BS)")
+# ===========================================================================
+from lab import ratelimit as _rl                                 # noqa: E402
+
+# --- unit: token bucket semantics ---
+_rl.reset()
+_ok1, _rem1, _ = _rl.check("10.9.9.9", "write")
+check("ratelimit: first request allowed",
+      _ok1 is True and _rem1 == _rl.LIMIT - 1, _rem1)
+for _ in range(_rl.LIMIT - 1):
+    _rl.check("10.9.9.9", "write")
+_ok2, _rem2, _retry = _rl.check("10.9.9.9", "write")
+check("ratelimit: budget exhausted denies",
+      _ok2 is False and _rem2 == 0 and _retry >= 1, _retry)
+check("ratelimit: buckets are per IP",
+      _rl.check("10.9.9.10", "write")[0] is True)
+check("ratelimit: scopes are independent",
+      _rl.check("10.9.9.9", "lookup")[0] is True)
+_rl.reset()
+check("ratelimit: reset restores budget",
+      _rl.check("10.9.9.9", "write")[0] is True)
+
+# --- HTTP: 429 envelope with Retry-After ---
+_old_limit = _rl.LIMIT
+_rl.LIMIT = 3
+_rl.reset()
+try:
+    _codes = []
+    for _ in range(5):
+        _r = _client3.post("/lab/api/intel/bulk/preview",
+                           json={"text": "rate probe 1.2.3.4"})
+        _codes.append(_r.status_code)
+    check("ratelimit: over-budget POST rejected with 429",
+          _codes.count(429) >= 1, _codes)
+    _r = _client3.post("/lab/api/intel/bulk/preview",
+                       json={"text": "rate probe 1.2.3.4"})
+    _b = _r.get_json()
+    check("ratelimit: 429 is a Section 49 envelope",
+          _r.status_code == 429 and _b["success"] is False
+          and _b["error"]["code"] == "RATE_LIMITED"
+          and "Retry-After" in _r.headers
+          and _r.headers.get("X-RateLimit-Remaining") == "0",
+          (_r.status_code, _r.headers.get("Retry-After")))
+finally:
+    _rl.LIMIT = _old_limit
+    _rl.reset()
+r = _client3.post("/lab/api/intel/bulk/preview",
+                  json={"text": "rate probe 1.2.3.4"})
+check("ratelimit: restored budget serves again",
+      r.status_code == 200, r.status_code)
+
+# --- secure headers on Lab responses (BS/BT) ---
+for _url in ("/lab/api/health", "/lab/cases"):
+    r = _client3.get(_url)
+    _h = r.headers
+    check("headers: %s carries the secure set" % _url,
+          _h.get("X-Content-Type-Options") == "nosniff"
+          and _h.get("X-Frame-Options") == "DENY"
+          and _h.get("Referrer-Policy") == "no-referrer"
+          and _h.get("Permissions-Policy") == _rl.SECURE_HEADERS[
+              "Permissions-Policy"]
+          and "X-Request-ID" in _h)
+check("headers: same-origin Lab emits no CORS wildcard",
+      "Access-Control-Allow-Origin" not in _client3.get(
+          "/lab/api/health").headers)
+
+# ===========================================================================
 print("\n" + "=" * 64)
 passed = sum(1 for ok, _, _ in RESULTS if ok)
 failed = sum(1 for ok, _, _ in RESULTS if not ok)

@@ -55,6 +55,9 @@ def init_blueprint(bp):
             else None
         )
         response.headers.set(_RESP_HEADER, rid)
+        from lab import ratelimit as _rl
+        for _k, _v in _rl.SECURE_HEADERS.items():
+            response.headers.setdefault(_k, _v)
         _LOGGER.info(
             json.dumps(
                 {

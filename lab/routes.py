@@ -27,6 +27,7 @@ from lab import risk_service
 from lab import report_service
 from lab import search_service
 from lab import registry_service
+from lab import ratelimit
 from lab import security
 from lab import obs
 
@@ -158,6 +159,27 @@ def api_error(code, message, status=400):
     return jsonify({"success": False, "error": {"code": code, "message": message}}), status
 
 
+def _require_rate_limit(scope):
+    """Refuse over-budget callers with a Section 49 429 (BS)."""
+    def deco(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            allowed, remaining, retry = ratelimit.check(_client_ip(), scope)
+            if not allowed:
+                resp = jsonify({"success": False, "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "Too many requests. Retry after %d seconds."
+                               % retry}})
+                resp.status_code = 429
+                resp.headers["Retry-After"] = str(retry)
+                resp.headers["X-RateLimit-Limit"] = str(ratelimit.LIMIT)
+                resp.headers["X-RateLimit-Remaining"] = str(remaining)
+                return resp
+            return fn(*args, **kwargs)
+        return wrapper
+    return deco
+
+
 def api_ok(data, meta=None, status=200):
     payload = {"success": True, "data": data}
     if meta is not None:
@@ -271,6 +293,7 @@ def api_providers():
 
 
 @lab_bp.route("/api/search")
+@_require_rate_limit("lookup")
 def api_search():
     """Global command search (Section O): grouped, capped, linkable."""
     from flask import request
@@ -382,6 +405,7 @@ def api_cases_list():
 
 @lab_bp.route("/api/cases", methods=["POST"])
 @_require_permission("case:create")
+@_require_rate_limit("write")
 def api_cases_create():
     from flask import request
     payload = request.get_json(silent=True)
@@ -409,6 +433,7 @@ def api_cases_get(case_ref):
 
 @lab_bp.route("/api/cases/<case_ref>", methods=["PATCH"])
 @_require_permission("case:update")
+@_require_rate_limit("write")
 def api_cases_update(case_ref):
     from flask import request
     payload = request.get_json(silent=True)
@@ -426,6 +451,7 @@ def api_cases_update(case_ref):
 
 @lab_bp.route("/api/cases/<case_ref>/notes", methods=["POST"])
 @_require_permission("case:update")
+@_require_rate_limit("write")
 def api_cases_note(case_ref):
     from flask import request
     payload = request.get_json(silent=True) or {}
@@ -485,6 +511,7 @@ def api_evidence_list():
 
 @lab_bp.route("/api/evidence", methods=["POST"])
 @_require_permission("evidence:create")
+@_require_rate_limit("write")
 def api_evidence_create():
     payload = request.get_json(silent=True)
     if payload is None:
@@ -533,6 +560,7 @@ def api_evidence_custody(evidence_ref):
 
 @lab_bp.route("/api/evidence/<evidence_ref>/verify", methods=["POST"])
 @_require_permission("evidence:verify")
+@_require_rate_limit("write")
 def api_evidence_verify(evidence_ref):
     try:
         result = evidence_service.verify_integrity(evidence_ref)
@@ -583,6 +611,7 @@ def api_analysis_list():
 
 @lab_bp.route("/api/analysis", methods=["POST"])
 @_require_permission("analysis:run")
+@_require_rate_limit("write")
 def api_analysis_create():
     payload = request.get_json(silent=True)
     if payload is None:
@@ -887,6 +916,7 @@ def api_intel_ioc_get(ioc_id):
 
 @lab_bp.route("/api/intel/iocs/<int:ioc_id>", methods=["PATCH"])
 @_require_permission("intel:update")
+@_require_rate_limit("write")
 def api_intel_ioc_patch(ioc_id):
     payload = request.get_json(silent=True) or {}
     status = (payload.get("status") or "").strip()
@@ -903,6 +933,7 @@ def api_intel_ioc_patch(ioc_id):
 
 @lab_bp.route("/api/intel/iocs/<int:ioc_id>/cases", methods=["POST"])
 @_require_permission("intel:update")
+@_require_rate_limit("write")
 def api_intel_ioc_add_case(ioc_id):
     payload = request.get_json(silent=True) or {}
     case_ref = (payload.get("case_ref") or "").strip()
@@ -919,6 +950,7 @@ def api_intel_ioc_add_case(ioc_id):
 
 @lab_bp.route("/api/intel/sync", methods=["POST"])
 @_require_permission("intel:sync")
+@_require_rate_limit("write")
 def api_intel_sync():
     try:
         data = intel_service.sync_iocs(actor="analyst",
@@ -930,6 +962,7 @@ def api_intel_sync():
 
 
 @lab_bp.route("/api/intel/bulk/preview", methods=["POST"])
+@_require_rate_limit("lookup")
 def api_intel_bulk_preview():
     """Bulk IOC preview (AN): extract + count, read-only, never persists."""
     payload = request.get_json(silent=True)
@@ -945,6 +978,7 @@ def api_intel_bulk_preview():
 
 @lab_bp.route("/api/intel/bulk/investigate", methods=["POST"])
 @_require_permission("case:create")
+@_require_rate_limit("write")
 def api_intel_bulk_investigate():
     """Bulk IOC investigate (AN): case + MESSAGE evidence + ledger sync."""
     payload = request.get_json(silent=True)
@@ -1001,6 +1035,7 @@ def api_intel_chain():
 
 
 @lab_bp.route("/api/intel/network", methods=["GET"])
+@_require_rate_limit("lookup")
 def api_intel_network():
     """Keyless DNS + RDAP lookup for one domain (AG). Never raises."""
     from lab import network_intel
@@ -1141,6 +1176,7 @@ def api_reports_list():
 
 @lab_bp.route("/api/reports", methods=["POST"])
 @_require_permission("report:create")
+@_require_rate_limit("write")
 def api_reports_generate():
     payload = request.get_json(silent=True) or {}
     case_ref = (payload.get("case_ref") or "").strip()
@@ -1192,6 +1228,7 @@ def api_reports_csv(report_ref):
 
 @lab_bp.route("/api/cases/<case_ref>/export", methods=["POST"])
 @_require_permission("report:export")
+@_require_rate_limit("write")
 def api_case_export(case_ref):
     try:
         data = report_service.export_case(case_ref, actor="analyst",
@@ -1228,6 +1265,7 @@ def api_exports_detail(export_ref):
 
 @lab_bp.route("/api/exports/<export_ref>/verify", methods=["POST"])
 @_require_permission("report:verify")
+@_require_rate_limit("write")
 def api_exports_verify(export_ref):
     try:
         data = report_service.verify_export(export_ref)

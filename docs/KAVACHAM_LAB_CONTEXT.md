@@ -2,7 +2,7 @@
 
 > Persistent architectural memory of the Kavacham Lab build.
 > Read this file before any future architectural change (version2.txt D.1).
-> Last updated: Dataset + model registries (BD/BE) — see section 29.
+> Last updated: Rate limiting + secure headers (BS) — see section 29.
 
 ## 1. Project Overview
 
@@ -186,7 +186,12 @@ indexes. Notes:
   NOT CONFIGURED with null latency.
 * obs — BZ structured request logging (`request_id`/`service`/`operation`/
   `duration_ms`/`status`, no query strings/secrets) + correlation ids
-  (inbound `X-Correlation-ID` threaded, `X-Request-ID` on every response).
+  (inbound `X-Correlation-ID` threaded, `X-Request-ID` on every response)
+  + BS secure headers on every Lab response (nosniff, DENY framing,
+  no-referrer, locked permissions; no fake CSP — documented in code).
+* ratelimit — BS per-IP token-bucket budgets (120/60s per scope) on all
+  mutating + heavy-lookup Lab APIs; over-budget callers get a Section 49
+  RATE_LIMITED 429 with Retry-After.
 * search_service — O global search over cases/evidence/analyses/IOCs/
   sender entities; exact-before-partial ranking, type filter, capped
   groups with real page links; empty/unknown queries return nothing.
@@ -390,15 +395,19 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`,
   Security milestone `1fd997e`, Health & Observability milestone `d0ca29e`,
   QA milestone `d7df0fe`, Global search + case-view tabs `ea948e8`,
-  SMS + bulk IOC `4301e45`, RDAP+DNS `b01321d`, registries `75b0dd1`.
-* Lab suite: **467/467 passing** — +21 in Tests 7K/7L (AP: SMS registry,
+  SMS + bulk IOC `4301e45`, RDAP+DNS `b01321d`, registries `75b0dd1`,
+  rate limits + headers follow this doc update (see `git log -1`).
+* Lab suite: **478/478 passing** — +21 in Tests 7K/7L (AP: SMS registry,
   fraud/benign verdicts, dual-engine sources, incompatibility, API run;
   AN: preview counts, investigate-to-case with ledger links, blank-text
   rejection, page render; nav count 6), +7 in Test 7M (AG: invalid/dead
   domain honesty, timeout budget, DOMAIN payload + stage, API envelope),
   +23 in Test 7N (BD/BE: registry envelopes, real row counts/columns/
   labels, null provenance, v2 metrics exact + never on wrong artifacts,
-  relative paths, page renders; Test 1 now pins schema v5 + 21 tables).
+  relative paths, page renders; Test 1 now pins schema v5 + 21 tables),
+  +11 in Test 7O (BS: bucket unit semantics, per-IP/per-scope isolation,
+  429 Section 49 envelope with Retry-After, budget restore; secure header
+  set on API + page, no CORS wildcard).
 * AP+AN verified live over HTTP: bulk page + preview/investigate round
   trip (case + evidence + ledger links), SMS in the analysis registry and
   Run Analysis options.
@@ -406,6 +415,7 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   11 analysis types served.
 * BD/BE verified live: 6 models + 4 datasets served, models page renders,
   live DB migrated to schema v5.
+* BS verified live: secure headers on Lab responses.
 * O+Q verified live over HTTP: search returns grouped exact-first hits,
   palette + trigger render in the shell, case view carries both new tabs,
   graph/chain APIs return real per-case data.
@@ -435,5 +445,6 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 The 14-phase plan plus the O/Q follow-ups are complete. version2.txt
 extensions done: SMS/smishing analysis (AP), bulk IOC investigation
 (AN), keyless RDAP+DNS network intel (AG), dataset + model registries
-(BD/BE, schema v5). Still open: rate limits + secure headers + privacy
-settings (BS/BR/BT), LOGIN/RBAC users (BI tail).
+(BD/BE, schema v5), rate limiting + secure headers (BS). Still open:
+privacy settings + retention (BR), frontend review notes (BT),
+LOGIN/RBAC users (BI tail).

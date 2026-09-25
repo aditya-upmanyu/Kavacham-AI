@@ -1,0 +1,21 @@
+/* KAVACHAM LAB — system health + settings pages (Phase 13, BO/BP).
+   Only additive rules; the shell palette comes from lab.css/lab_shell.css. */
+
+.hlth-err {
+  color: #F08A8A;
+}
+
+/* Six-tile mission board already uses .lab-strip; keep tiles readable at
+   narrow widths. */
+#cc-operations .lab-strip-item {
+  min-width: 150px;
+}
+
+@media (max-width: 720px) {
+  #health-table th:nth-child(4),
+  #health-table td:nth-child(4),
+  #health-table th:nth-child(6),
+  #health-table td:nth-child(6) {
+    display: none;
+  }
+}

@@ -1,0 +1,55 @@
+{% extends "lab/base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lab_health.css') }}" />
+{% endblock %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Settings</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">SETTINGS</h1>
+    <p class="lab-subtitle">Threat-intelligence provider configuration. Values are managed through environment variables; this surface never displays secrets — only whether each provider is configured.</p>
+  </div>
+</div>
+
+<section class="lab-panel" aria-labelledby="settings-providers-title">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title" id="settings-providers-title">THREAT INTELLIGENCE PROVIDERS</h2>
+    <span class="lab-xs lab-dim" id="settings-count">—</span>
+  </div>
+  <div class="lab-panel-body flush">
+    <div class="lab-table-wrap">
+      <table class="lab-table" id="settings-table">
+        <thead>
+          <tr>
+            <th scope="col">Provider</th>
+            <th scope="col">Status</th>
+            <th scope="col">Config Key</th>
+            <th scope="col">Source</th>
+            <th scope="col">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" style="padding:16px;">
+            <div class="lab-skeleton lab-skeleton-line" style="width:70%;"></div>
+            <div class="lab-skeleton lab-skeleton-line" style="width:55%;"></div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="settings-foot">Retrieving provider configuration…</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_settings.js') }}"></script>
+{% endblock %}

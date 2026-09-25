@@ -2,7 +2,7 @@
 
 > Persistent architectural memory of the Kavacham Lab build.
 > Read this file before any future architectural change (version2.txt D.1).
-> Last updated: Phase 12 (Security) milestone — see section 29.
+> Last updated: Phase 13 (Health & Observability) milestone — see section 29.
 
 ## 1. Project Overview
 
@@ -120,16 +120,18 @@ on success, `{"success": false, "error": {"code", "message"}}` on error.
 Pages: `/lab`, `/lab/cases`, `/lab/cases/new`, `/lab/cases/<ref>`,
 `/lab/audit`, `/lab/evidence...`, `/lab/analysis...`, `/lab/intel/*`,
 `/lab/risk`, `/lab/reports`, `/lab/reports/<ref>`, `/lab/reports/exports`,
-`/lab/reports/manifest`.
+`/lab/reports/manifest`, `/lab/health`, `/lab/settings`.
 APIs: `/lab/api/cases`, `/lab/api/cases/meta`, `/lab/api/audit`,
 `/lab/api/evidence...`, `/lab/api/analysis...`, `/lab/api/health`,
 `/lab/api/alerts`, `/lab/api/command-center`, `/lab/api/meta`,
+`/lab/api/providers`,
 `/lab/api/intel/*`, `/lab/api/risk`, `/lab/api/reports...`,
 `/lab/api/exports...`, `/lab/api/cases/<ref>/export`.
 
 ## 12. Existing Important Components
 
-* `lab_shell.js` (`window.LAB` utilities, header health refresh, drawer).
+* `lab_shell.js` (`window.LAB` utilities incl. page `corrId`, header
+  health refresh, drawer).
 * Design system in `lab.css`: badges (incl. `lab-badge-*` semantic colors),
   panels, tables (`lab-table`), tabs, wizard steps, states
   (`lab-state` empty/error), toasts, skeleton loading.
@@ -137,6 +139,10 @@ APIs: `/lab/api/cases`, `/lab/api/cases/meta`, `/lab/api/audit`,
 * Risk: `lab_risk.js` + `lab_risk.css` (band scale, finding cards).
 * Reporting: `lab_reports.js` + `lab_exports.js` + `lab_reports.css`
   (report document with print-to-PDF, export center, manifest page).
+* Health & observability: `lab_health.js` + `lab_settings.js` +
+  `lab_health.css` (BO status/latency/error/configuration table, BP
+  provider surface); command-center mission board via
+  `lab_command_center.js` CURRENT OPERATIONS strip.
 
 ## 13. Environment Variables
 
@@ -161,8 +167,15 @@ indexes. Notes:
 
 ## 15. Lab Modules
 
-* health — real per-service checks (API, ML, spam/phishing engines, risk
-  engine, VT, Gemini, Gmail, DB, storage, background jobs, monitoring).
+* health — 21 real per-service checks (core: API, ML, spam/phishing/
+  scam engines, risk; integrations: VT, AbuseIPDB, Shodan, Censys,
+  URLScan, HIBP, WebRisk, Gemini, Gmail; data: DB, storage; infra:
+  background jobs, queue, workers, monitoring). Every row carries
+  STATUS/LATENCY/LAST CHECK/ERROR/CONFIGURATION; unwired surfaces report
+  NOT CONFIGURED with null latency.
+* obs — BZ structured request logging (`request_id`/`service`/`operation`/
+  `duration_ms`/`status`, no query strings/secrets) + correlation ids
+  (inbound `X-Correlation-ID` threaded, `X-Request-ID` on every response).
 * case_service — create/list/search/detail/update, notes, audit, timeline.
 * evidence_service — intake (web+API), hashing (SHA-256/1, MD5), PE/ELF
   magic blocking, custody chain, integrity verification, originals dir.
@@ -243,9 +256,10 @@ indexes. Notes:
 
 * `test_lab.py` — isolated temp DB + storage (env overrides set before any
   lab import), services + HTTP via `app.test_client()`. Sections 1..8, 7C,
-  7D, 7E, 7F, 7G cover migrations, cases, evidence, analysis pipeline,
+  7D, 7E, 7F, 7G, 7H cover migrations, cases, evidence, analysis pipeline,
   intelligence, risk, reporting, security (audit vocabulary + redaction +
-  RBAC enforcement), Product A regression baseline. VT env pinned OFF
+  RBAC enforcement), health & observability (BO/BP/BZ/BQ), Product A
+  regression baseline. VT env pinned OFF
   inside destructive-analysis and intel sections and restored after.
 * Product A: `QA_test.py` baseline 50/51 (VT-key assertion is the known
   expectation).
@@ -253,8 +267,8 @@ indexes. Notes:
 ## 22. Current Implementation Status
 
 Phases done (old plan numbering): 1 Repository Audit → 9 Reporting.
-New 14-phase plan: Phases 1-12 done (**Security completed**); Phase 13
-Health & Observability pending, 14 QA. Global command search (CTRL+K,
+New 14-phase plan: Phases 1-13 done (**Health & Observability
+completed**); Phase 14 QA pending. Global command search (CTRL+K,
 version2.txt O) and case-view ENTITIES/ATTACK CHAIN tabs (Q) still
 pending.
 
@@ -270,13 +284,15 @@ intelligence (IOC ledger, correlation, entity graph, attack chains);
 `KAV-EXP` export packages, BG manifest + SHA-256 integrity, IOC CSV)**;
 **security (BH audit vocabulary + never-log redaction at the funnel,
 BI RBAC matrix seeded + enforced server-side on 12 mutating APIs)**;
+**health & observability (BO 21-service System Health page,
+BP provider Settings surface with no secrets, BZ structured logging +
+correlation ids, BQ CURRENT OPERATIONS mission board)**;
 docs context file.
 
 ## 24. Pending Features
 
 rate limiting; secure headers/CSRF review; secret-manager integration;
-frontend security review (BT); system-health provider/settings page
-(BO/BP); structured logging + correlation IDs (BZ); command search
+frontend security review (BT); command search
 CTRL+K (O); case-view ENTITIES + ATTACK CHAIN tabs (Q); model
 registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 
@@ -340,14 +356,21 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 * Git `main` = `kavacham` (Kavacham-AI) = `origin` (Anweshak-AI).
   All commits GPG-signed (key `5359FC122398973E`, public key in
   `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`,
-  Security milestone `1fd997e`.
-* Lab suite: **338/338 passing** — +29 in Test 7G (security: BH event
-  vocabulary, secret redaction at the audit funnel, RBAC matrix semantics
-  + seeding, server-side 403 enforcement, shell role display).
+  Security milestone `1fd997e`, Health & Observability milestone follows
+  this doc update (see `git log -1`).
+* Lab suite: **372/372 passing** — +34 in Test 7H (BO 21-service
+  vocabulary + configuration field, BP providers API with no secrets,
+  BZ correlation-id echo + structured log lines, BQ operations tiles
+  matched against the ledger, health/settings pages + mission board).
 * Product A regression: 50/51 (known VT-key assertion).
 * Security milestone verified live over HTTP: RBAC rows seeded
   (5 roles, 68 role_permissions), analyst create-case allowed, header
   role indicator + full audit filter vocabulary render.
+* Health & Observability milestone verified live over HTTP: 21-service
+  health page (STATUS/LATENCY/LAST CHECK/ERROR/CONFIGURATION), providers
+  API (7 providers, no secret material), command-center mission board
+  matching the ledger, `X-Request-ID` echoing an inbound
+  `X-Correlation-ID`, structured `kavacham.obs` lines in server logs.
 * Reporting milestone verified live: report auto-generation, `KAV-EXP`
   verify, manifest rows, CSV + zip download.
 * Product A regression: 50/51 (known VT-key assertion).
@@ -359,8 +382,7 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 
 ## 30. Future Work
 
-Phase 13 Health & Observability (provider health page BO/BP, settings
-surface, structured logs + correlation IDs BZ), Phase 14 QA (full suite
-+ browser/accessibility pass), then LOGIN/RBAC users, rate limits +
-secure headers (BI tail), command search (O), case-view ENTITIES/ATTACK
-CHAIN tabs (Q) and CONTEXT.md refresh per phase (CG).
+Phase 14 QA (full suite + browser/accessibility pass, production build),
+then LOGIN/RBAC users, rate limits + secure headers (BI tail), command
+search (O), case-view ENTITIES/ATTACK CHAIN tabs (Q) and CONTEXT.md
+refresh per phase (CG).

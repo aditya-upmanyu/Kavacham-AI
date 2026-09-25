@@ -89,6 +89,37 @@
       item('EVIDENCE RECORDS', evdVal);
   }
 
+  /* ---------------- Current operations (BQ mission board) ---------------- */
+  function renderOperations(data) {
+    var host = $('cc-operations');
+    if (!host) return;
+    var ops = data.operations || {};
+
+    function item(label, value, cls) {
+      return '<div class="lab-strip-item">' +
+        '<span class="lab-label">' + esc(label) + '</span>' +
+        '<span class="lab-strip-value' + (cls ? ' ' + cls : '') + '">' + value + '</span>' +
+        '</div>';
+    }
+
+    function val(v) {
+      if (!ops.available) return '<span class="lab-dim">NOT CONFIGURED</span>';
+      return (v === null || v === undefined) ? 'UNAVAILABLE' : String(v);
+    }
+
+    host.innerHTML =
+      item('ACTIVE INVESTIGATIONS', val(ops.active_investigations)) +
+      item('HIGH-RISK FINDINGS', val(ops.high_risk_findings),
+           (ops.available && ops.high_risk_findings > 0) ? 'lab-state-crit' : '') +
+      item('UNREVIEWED EVIDENCE', val(ops.unreviewed_evidence)) +
+      item('IOC ALERTS', val(ops.ioc_alerts),
+           (ops.available && ops.ioc_alerts > 0) ? 'lab-state-crit' : '') +
+      item('PROVIDER ALERTS', val(ops.provider_alerts),
+           (ops.available && ops.provider_alerts > 0) ? 'lab-state-crit' : '') +
+      item('INTEGRITY ALERTS', val(ops.integrity_alerts),
+           (ops.available && ops.integrity_alerts > 0) ? 'lab-state-crit' : '');
+  }
+
   /* ---------------- Health table ---------------- */
   function renderHealth(health) {
     var tbody = $('cc-health-table');
@@ -280,6 +311,7 @@
       .then(function (data) {
         renderAlerts(data.alerts);
         renderSummary(data);
+        renderOperations(data);
         renderHealth(data.health);
         renderModel(data.model_health);
         renderCases(data.counts);

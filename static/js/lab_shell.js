@@ -80,12 +80,21 @@
     return el;
   }
 
+  /* ---------------- Correlation id (BZ) ---------------- */
+  /* One id per page load; sent as X-Correlation-ID so the backend threads
+     it through the request log and echoes it as X-Request-ID. The value is
+     random hex — no user data, no secrets. */
+  var corrId = 'c' + Math.random().toString(16).slice(2, 10) +
+    Date.now().toString(16).slice(-4);
+
   /* ---------------- Header health refresh (real data only) ---------------- */
   var statusEl = document.getElementById('lab-system-status');
   var lastCheckEl = document.getElementById('lab-last-check');
 
   function refreshHeaderHealth() {
-    return fetch('/lab/api/health', { headers: { 'Accept': 'application/json' } })
+    return fetch('/lab/api/health', {
+      headers: { 'Accept': 'application/json', 'X-Correlation-ID': corrId },
+    })
       .then(function (res) { return res.json(); })
       .then(function (body) {
         if (!body || body.success !== true || !body.data) return null;
@@ -119,6 +128,7 @@
   window.LAB = {
     toast: toast,
     refreshHeaderHealth: refreshHeaderHealth,
+    corrId: corrId,
     setDrawer: setDrawer,
     /* Section 49 error rendering — calm, operational, no stack traces */
     renderError: function (target, code, message, action) {

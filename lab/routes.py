@@ -19,12 +19,16 @@ from flask import jsonify, render_template, request, send_file
 from lab import lab_bp
 from lab import health as health_service
 from lab import case_service
+from lab import db as lab_db
 from lab import evidence_service
 from lab import analysis_service
 from lab import intel_service
 from lab import risk_service
 from lab import report_service
 from lab import security
+from lab import obs
+
+obs.init_blueprint(lab_bp)
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +91,8 @@ NAV_STRUCTURE = [
     {
         "group": "SYSTEM",
         "links": [
+            {"id": "system-health", "label": "System Health", "url": "/lab/health", "ready": True},
+            {"id": "settings", "label": "Settings", "url": "/lab/settings", "ready": True},
             {"id": "audit-log", "label": "Audit Log", "url": "/lab/audit", "ready": True},
         ],
     },
@@ -221,6 +227,37 @@ def audit_page():
         nav_id="audit-log",
         page_title="Audit Log",
     ))
+
+
+# ---------------------------------------------------------------------------
+# Phase 13 — Health & Observability pages (Sections BO/BP)
+# ---------------------------------------------------------------------------
+
+@lab_bp.route("/health", strict_slashes=False)
+def system_health_page():
+    return render_template("lab/health.html", **_shell_context(
+        nav_id="system-health",
+        page_title="System Health",
+    ))
+
+
+@lab_bp.route("/settings", strict_slashes=False)
+def settings_page():
+    return render_template("lab/settings.html", **_shell_context(
+        nav_id="settings",
+        page_title="Settings",
+    ))
+
+
+@lab_bp.route("/api/providers")
+def api_providers():
+    """Provider configuration states for Settings (BP). Booleans only."""
+    try:
+        providers = health_service.provider_statuses()
+    except Exception:
+        return api_error("PROVIDER_STATUS_FAILED",
+                         "Provider status could not be determined.", 503)
+    return api_ok({"providers": providers, "count": len(providers)})
 
 
 # ---------------------------------------------------------------------------
@@ -628,10 +665,15 @@ def api_command_center():
                         "error": "MODEL_METRICS_UNAVAILABLE"}
 
     # --- Case / evidence counts: only if the data layer exists ---
-    db_path = os.path.join(health_service.BASE_DIR, "kavacham_lab.db")
+    # The configured database path (env override aware), never a guess.
+    db_path = lab_db.DB_PATH
     db_exists = os.path.exists(db_path)
     active_cases = None
     evidence_records = None
+    high_risk_findings = None
+    unreviewed_evidence = None
+    ioc_alerts = None
+    integrity_alerts = None
     if db_exists:
         try:
             import sqlite3
@@ -642,11 +684,35 @@ def api_command_center():
                 active_cases = cur.fetchone()[0]
                 cur = conn.execute("SELECT count(*) FROM evidence")
                 evidence_records = cur.fetchone()[0]
+                # --- BQ mission-board tiles: real queries, never fabricated ---
+                cur = conn.execute(
+                    "SELECT count(*) FROM cases WHERE "
+                    "(risk_score IS NOT NULL AND risk_score >= 61) "
+                    "OR risk_level = 'HIGH'")
+                high_risk_findings = cur.fetchone()[0]
+                cur = conn.execute(
+                    "SELECT count(*) FROM evidence e WHERE NOT EXISTS "
+                    "(SELECT 1 FROM analyses a "
+                    "WHERE a.evidence_id = e.evidence_id)")
+                unreviewed_evidence = cur.fetchone()[0]
+                cur = conn.execute(
+                    "SELECT count(*) FROM alerts WHERE "
+                    "title LIKE '%IOC%' OR message LIKE '%IOC%' "
+                    "OR source LIKE '%IOC%'")
+                ioc_alerts = cur.fetchone()[0]
+                cur = conn.execute(
+                    "SELECT count(*) FROM evidence "
+                    "WHERE integrity_state != 'VERIFIED'")
+                integrity_alerts = cur.fetchone()[0]
             finally:
                 conn.close()
         except Exception:
             active_cases = None
             evidence_records = None
+            high_risk_findings = None
+            unreviewed_evidence = None
+            ioc_alerts = None
+            integrity_alerts = None
 
     # --- Recent analyses: real session history from Product A ---
     recent = []
@@ -668,6 +734,16 @@ def api_command_center():
 
     duration = (time.perf_counter() - started) * 1000.0
 
+    # --- BQ: provider alerts = integration services not OPERATIONAL ---
+    provider_alerts = None
+    try:
+        provider_alerts = sum(
+            1 for svc in health_data.get("services", [])
+            if svc.get("group") == "integration"
+            and svc.get("status_key") != "operational")
+    except Exception:
+        provider_alerts = None
+
     return api_ok({
         "health": health_data,
         "alerts": alerts,
@@ -677,6 +753,15 @@ def api_command_center():
             "evidence_records": evidence_records,
             "persistence_available": db_exists,
             "persistence_status": "OPERATIONAL" if db_exists else "NOT CONFIGURED",
+        },
+        "operations": {
+            "available": db_exists,
+            "active_investigations": active_cases,
+            "high_risk_findings": high_risk_findings,
+            "unreviewed_evidence": unreviewed_evidence,
+            "ioc_alerts": ioc_alerts,
+            "provider_alerts": provider_alerts,
+            "integrity_alerts": integrity_alerts,
         },
         "recent_analyses": {
             "items": recent,

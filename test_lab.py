@@ -224,7 +224,7 @@ data = report["data"]
 check("envelope has success/data/meta",
       set(report.keys()) == {"success", "data", "meta"}, sorted(report.keys()))
 check("report success true", report["success"] is True)
-check("12 services checked", data["summary"]["total"] == 12,
+check("21 services checked", data["summary"]["total"] == 21,
       data["summary"]["total"])
 
 service_keys = {"label", "status", "status_key", "latency_ms", "detail",
@@ -311,6 +311,10 @@ expected_methods = {
     "/lab/cases/new":                     {"GET"},
     "/lab/cases/<case_ref>":              {"GET"},
     "/lab/audit":                         {"GET"},
+    # Phase 13 — health & observability (Sections BO/BP/BZ)
+    "/lab/health":                        {"GET"},
+    "/lab/settings":                      {"GET"},
+    "/lab/api/providers":                 {"GET"},
     "/lab/api/cases":                     {"GET", "POST"},
     "/lab/api/cases/<case_ref>":          {"GET", "PATCH"},
     "/lab/api/cases/<case_ref>/notes":    {"POST"},
@@ -1562,6 +1566,149 @@ r = _client3.get("/lab/cases")
 _html = r.get_data(as_text=True)
 check("security: header shows current role",
       r.status_code == 200 and "ANALYST · RESTRICTED" in _html)
+
+# ===========================================================================
+section("Test 7H — Phase 13 Health & Observability (BO/BP/BZ/BQ)")
+# ===========================================================================
+_r13 = hs.run_health_checks()
+_d13 = _r13["data"]
+_labels13 = {s["label"] for s in _d13["services"]}
+for _lbl in ("SCAM ENGINE", "ABUSEIPDB", "SHODAN", "CENSYS", "URLSCAN",
+             "HIBP", "WEB RISK", "QUEUE", "WORKERS"):
+    check("health: monitors %s" % _lbl, _lbl in _labels13, sorted(_labels13))
+check("health: every service carries a configuration field",
+      all("configuration" in s for s in _d13["services"]))
+_unwired = ("ABUSEIPDB", "SHODAN", "CENSYS", "URLSCAN", "HIBP",
+            "WEB RISK", "QUEUE", "WORKERS")
+check("health: unwired surfaces honestly NOT CONFIGURED",
+      all(next(s for s in _d13["services"] if s["label"] == l)["status_key"]
+          == "unconfigured" for l in _unwired))
+check("health: providers report null latency (never faked)",
+      all(next(s for s in _d13["services"] if s["label"] == l)["latency_ms"]
+          is None for l in _unwired))
+check("health: scam engine backed by the real analyzer",
+      next(s for s in _d13["services"]
+           if s["label"] == "SCAM ENGINE")["status_key"] == "operational")
+_vt_expected = ("VIRUSTOTAL_API_KEY set"
+               if (os.environ.get("VIRUSTOTAL_API_KEY") or "").strip()
+               else "VIRUSTOTAL_API_KEY not set")
+check("health: VirusTotal row states its real configuration",
+      next(s for s in _d13["services"]
+           if s["label"] == "THREAT INTELLIGENCE")["configuration"]
+      == _vt_expected)
+
+# --- BP: provider configuration surface (booleans only, never secrets) ---
+_b = _client3.get("/lab/api/providers").get_json()
+_provs = _b["data"]["providers"]
+check("providers: success envelope with count",
+      _b["success"] is True and _b["data"]["count"] == len(_provs),
+      _b["data"]["count"])
+_names = {p["name"] for p in _provs}
+check("providers: VT plus the six pending providers listed",
+      {"VirusTotal", "ABUSEIPDB", "SHODAN", "CENSYS", "URLSCAN", "HIBP",
+       "WEB RISK"} <= _names, sorted(_names))
+check("providers: entries carry name/configured/key_env/source/note",
+      all({"name", "configured", "key_env", "source", "note"} <= set(p)
+          and isinstance(p["configured"], bool) for p in _provs))
+check("providers: no secret material in the payload",
+      all("value" not in p and "secret" not in p and "api_key" not in p
+          for p in _provs))
+check("providers: VirusTotal reflects the real environment",
+      next(p for p in _provs
+           if p["name"] == "VirusTotal")["configured"]
+      == bool((os.environ.get("VIRUSTOTAL_API_KEY") or "").strip()))
+
+# --- BZ: correlation ids + structured request logs ---
+import logging as _logging                          # noqa: E402
+_lines = []
+
+
+class _Cap(_logging.Handler):
+    def emit(self, record):
+        _lines.append(record.getMessage())
+
+
+_obslog = _logging.getLogger("kavacham.obs")
+_obslog.addHandler(_Cap())
+try:
+    r = _client3.get("/lab/cases", headers={"X-Correlation-ID": "probe-corr-1"})
+    check("obs: inbound correlation id echoed as request id",
+          r.headers.get("X-Request-ID") == "probe-corr-1",
+          r.headers.get("X-Request-ID"))
+    r = _client3.get("/lab/api/health")
+    check("obs: generated request id when none is sent",
+          bool(r.headers.get("X-Request-ID")))
+    _recs = [json.loads(m) for m in _lines]
+    check("obs: lines carry request_id/service/operation/duration/status",
+          any({"request_id", "service", "operation", "duration_ms",
+               "status"} <= set(l) for l in _recs))
+    check("obs: line threads the echoed correlation id",
+          any(l.get("request_id") == "probe-corr-1"
+              and l.get("service") == "lab"
+              and isinstance(l.get("duration_ms"), (int, float))
+              for l in _recs))
+    check("obs: operations never carry query strings or secret words",
+          all("?" not in str(l.get("operation", ""))
+              and "api_key" not in json.dumps(l).lower()
+              and "password" not in json.dumps(l).lower()
+              for l in _recs),
+          len(_recs))
+finally:
+    for _h in list(_obslog.handlers):
+        if isinstance(_h, _Cap):
+            _obslog.removeHandler(_h)
+
+# --- BQ: mission-board operations tiles match the ledger ---
+_b = _client3.get("/lab/api/command-center").get_json()
+_ops = _b["data"]["operations"]
+check("ops: mission board keys present",
+      {"available", "active_investigations", "high_risk_findings",
+       "unreviewed_evidence", "ioc_alerts", "provider_alerts",
+       "integrity_alerts"} <= set(_ops), sorted(_ops))
+check("ops: operations available against the test database",
+      _ops["available"] is True)
+_high = db.query_one(
+    "SELECT COUNT(*) AS n FROM cases WHERE "
+    "(risk_score IS NOT NULL AND risk_score >= 61) "
+    "OR risk_level = 'HIGH'")["n"]
+check("ops: high-risk findings match the ledger",
+      _ops["high_risk_findings"] == _high,
+      (_ops["high_risk_findings"], _high))
+_unrev = db.query_one(
+    "SELECT COUNT(*) AS n FROM evidence e WHERE NOT EXISTS "
+    "(SELECT 1 FROM analyses a WHERE a.evidence_id = e.evidence_id)")["n"]
+check("ops: unreviewed evidence matches the ledger",
+      _ops["unreviewed_evidence"] == _unrev,
+      (_ops["unreviewed_evidence"], _unrev))
+_iocn = db.query_one(
+    "SELECT COUNT(*) AS n FROM alerts WHERE title LIKE '%IOC%' "
+    "OR message LIKE '%IOC%' OR source LIKE '%IOC%'")["n"]
+check("ops: IOC alerts match the alerts table",
+      _ops["ioc_alerts"] == _iocn, (_ops["ioc_alerts"], _iocn))
+_intn = db.query_one(
+    "SELECT COUNT(*) AS n FROM evidence "
+    "WHERE integrity_state != 'VERIFIED'")["n"]
+check("ops: integrity alerts match evidence state",
+      _ops["integrity_alerts"] == _intn,
+      (_ops["integrity_alerts"], _intn))
+check("ops: provider alerts match integration health",
+      _ops["provider_alerts"] == sum(
+          1 for s in _d13["services"]
+          if s["group"] == "integration"
+          and s["status_key"] != "operational"),
+      _ops["provider_alerts"])
+
+# --- pages render ---
+for _url, _marker in [("/lab/health", "MONITORED SERVICES"),
+                      ("/lab/settings", "THREAT INTELLIGENCE PROVIDERS")]:
+    r = _client3.get(_url)
+    _html = r.get_data(as_text=True)
+    check("page: %s renders" % _url,
+          r.status_code == 200 and _marker in _html,
+          r.status_code)
+r = _client3.get("/lab")
+check("page: command center carries CURRENT OPERATIONS",
+      r.status_code == 200 and "CURRENT OPERATIONS" in r.get_data(as_text=True))
 
 # ===========================================================================
 print("\n" + "=" * 64)

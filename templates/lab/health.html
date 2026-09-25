@@ -1,0 +1,62 @@
+{% extends "lab/base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lab_health.css') }}" />
+{% endblock %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">System Health</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">SYSTEM HEALTH</h1>
+    <p class="lab-subtitle">Live service checks — status, latency, last check, error and configuration. Every row comes from a real check; nothing is hardcoded.</p>
+  </div>
+  <div class="lab-page-head-actions">
+    <span class="lab-xs lab-dim" id="health-summary">—</span>
+    <button class="lab-btn lab-btn-sm" id="health-refresh" type="button">REFRESH</button>
+  </div>
+</div>
+
+<section class="lab-panel" aria-labelledby="health-table-title">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title" id="health-table-title">MONITORED SERVICES</h2>
+    <span class="lab-xs lab-dim" id="health-ts">—</span>
+  </div>
+  <div class="lab-panel-body flush">
+    <div class="lab-table-wrap">
+      <table class="lab-table" id="health-table">
+        <thead>
+          <tr>
+            <th scope="col">Service</th>
+            <th scope="col">Status</th>
+            <th scope="col">Latency</th>
+            <th scope="col">Last Check</th>
+            <th scope="col">Error</th>
+            <th scope="col">Configuration</th>
+            <th scope="col">Detail</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="7" style="padding:16px;">
+            <div class="lab-skeleton lab-skeleton-line" style="width:80%;"></div>
+            <div class="lab-skeleton lab-skeleton-line" style="width:65%;"></div>
+            <div class="lab-skeleton lab-skeleton-line" style="width:72%;"></div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="health-foot">Retrieving system status…</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_health.js') }}"></script>
+{% endblock %}

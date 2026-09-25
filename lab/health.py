@@ -20,7 +20,7 @@ def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
-def _ok(label, detail, latency_ms, source, extra=None):
+def _ok(label, detail, latency_ms, source, extra=None, configuration=None):
     payload = {
         "label": label,
         "status": "OPERATIONAL",
@@ -29,6 +29,7 @@ def _ok(label, detail, latency_ms, source, extra=None):
         "detail": detail,
         "source": source,
         "error": None,
+        "configuration": configuration,
         "checked_at": _now_iso(),
     }
     if extra:
@@ -36,7 +37,7 @@ def _ok(label, detail, latency_ms, source, extra=None):
     return payload
 
 
-def _not_configured(label, detail, source, extra=None):
+def _not_configured(label, detail, source, extra=None, configuration=None):
     payload = {
         "label": label,
         "status": "NOT CONFIGURED",
@@ -45,6 +46,7 @@ def _not_configured(label, detail, source, extra=None):
         "detail": detail,
         "source": source,
         "error": None,
+        "configuration": configuration,
         "checked_at": _now_iso(),
     }
     if extra:
@@ -52,7 +54,8 @@ def _not_configured(label, detail, source, extra=None):
     return payload
 
 
-def _unavailable(label, detail, error_code, source, latency_ms=None):
+def _unavailable(label, detail, error_code, source, latency_ms=None,
+                 configuration=None):
     return {
         "label": label,
         "status": "SERVICE UNAVAILABLE",
@@ -61,6 +64,7 @@ def _unavailable(label, detail, error_code, source, latency_ms=None):
         "detail": detail,
         "source": source,
         "error": error_code,
+        "configuration": configuration,
         "checked_at": _now_iso(),
     }
 
@@ -193,12 +197,14 @@ def check_virustotal():
             "THREAT INTELLIGENCE",
             "No VirusTotal API key configured. External lookups disabled.",
             "intel/virustotal_service.py",
-            {"latency_ms": round(elapsed, 2), "probed": "configuration only"})
+            {"latency_ms": round(elapsed, 2), "probed": "configuration only"},
+            configuration="VIRUSTOTAL_API_KEY not set")
 
     return _ok("THREAT INTELLIGENCE", "VirusTotal API key configured.", elapsed,
                "intel/virustotal_service.py",
                {"probed": "configuration only",
-                "latency_basis": "configuration check (no network call)"})
+                "latency_basis": "configuration check (no network call)"},
+               configuration="VIRUSTOTAL_API_KEY set")
 
 
 def check_gemini():
@@ -327,7 +333,8 @@ def check_background_jobs():
     return _not_configured(
         "BACKGROUND JOBS",
         "No background job runner is configured for this deployment.",
-        "none")
+        "none",
+        configuration="no background scheduler configured")
 
 
 def check_monitoring():
@@ -335,7 +342,130 @@ def check_monitoring():
     return _not_configured(
         "MONITORING",
         "No external monitoring integration is configured.",
-        "none")
+        "none",
+        configuration="no monitoring integration configured")
+
+
+def check_queue():
+    """Task queue (Section BO) — no queue backend is deployed."""
+    return _not_configured(
+        "QUEUE",
+        "No task queue is configured; work executes synchronously in the "
+        "request context.",
+        "none",
+        configuration="no queue backend configured")
+
+
+def check_workers():
+    """Worker pool (Section BO) — no worker process runs in this deployment."""
+    return _not_configured(
+        "WORKERS",
+        "No worker processes are running; all work executes in-request.",
+        "none",
+        configuration="no worker pool configured")
+
+
+def check_scam_engine():
+    """Scam analyzer importable and callable (SCAM analysis type)."""
+    start = time.perf_counter()
+    try:
+        from analyzer.scam_analyzer import analyze as _scam_analyze  # noqa: F401
+        if not callable(_scam_analyze):
+            raise TypeError("scam analyze is not callable")
+    except Exception:
+        return _unavailable("SCAM ENGINE", "Scam analyzer could not be imported.",
+                            "SCAM_ENGINE_IMPORT_FAILED", "analyzer/scam_analyzer.py",
+                            configuration="analyzer/scam_analyzer.py")
+    elapsed = (time.perf_counter() - start) * 1000.0
+    return _ok("SCAM ENGINE", "Analyzer importable.", elapsed,
+               "analyzer/scam_analyzer.py",
+               {"latency_basis": "module import"},
+               configuration="analyzer/scam_analyzer.py")
+
+
+# Providers tracked by Section BO but not wired into the pipeline yet. The
+# check is honest either way: missing key -> NOT CONFIGURED; key present but
+# no integration module -> still NOT CONFIGURED (never pretended active).
+_PROVIDERS = [
+    ("ABUSEIPDB", "ABUSEIPDB_API_KEY", "abuseipdb"),
+    ("SHODAN", "SHODAN_API_KEY", "shodan"),
+    ("CENSYS", "CENSYS_API_ID", "censys"),
+    ("URLSCAN", "URLSCAN_API_KEY", "urlscan"),
+    ("HIBP", "HIBP_API_KEY", "haveibeenpwned"),
+    ("WEB RISK", "WEB_RISK_API_KEY", "webrisk"),
+]
+
+
+def _check_provider_env(label, env_var, module_name):
+    configured = bool((os.environ.get(env_var) or "").strip())
+    if not configured:
+        return _not_configured(
+            label, "No %s environment variable is configured. "
+                   "External lookups disabled." % env_var,
+            "env config",
+            configuration="%s not set" % env_var)
+    return _not_configured(
+        label, "Provider module not implemented; key present but unused.",
+        "provider/%s" % module_name,
+        configuration="%s set" % env_var)
+
+
+def check_abuseipdb():
+    return _check_provider_env(*_PROVIDERS[0])
+
+
+def check_shodan():
+    return _check_provider_env(*_PROVIDERS[1])
+
+
+def check_censys():
+    return _check_provider_env(*_PROVIDERS[2])
+
+
+def check_urlscan():
+    return _check_provider_env(*_PROVIDERS[3])
+
+
+def check_hibp():
+    return _check_provider_env(*_PROVIDERS[4])
+
+
+def check_webrisk():
+    return _check_provider_env(*_PROVIDERS[5])
+
+
+def provider_statuses():
+    """Configuration surface for the Settings page (Section BP).
+
+    Booleans + env var names only — never secret values.
+    """
+    out = []
+    try:
+        from intel.virustotal_service import availability_status
+        vt = availability_status()
+        vt_cfg = bool(vt.get("configured"))
+    except Exception:
+        vt_cfg = False
+        vt = {}
+    out.append({
+        "name": "VirusTotal",
+        "configured": vt_cfg,
+        "key_env": "VIRUSTOTAL_API_KEY",
+        "source": "intel/virustotal_service.py",
+        "note": ("External lookups enabled." if vt_cfg
+                 else "No API key configured; external lookups disabled."),
+    })
+    for label, env_var, module_name in _PROVIDERS:
+        configured = bool((os.environ.get(env_var) or "").strip())
+        out.append({
+            "name": label,
+            "configured": configured,
+            "key_env": env_var,
+            "source": "provider/%s" % module_name,
+            "note": ("Key present but integration module is not implemented."
+                     if configured else "Not configured."),
+        })
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -347,13 +477,22 @@ CHECKS = [
     ("ML MODEL", check_ml_model, "core"),
     ("SPAM ENGINE", check_spam_engine, "core"),
     ("PHISHING ENGINE", check_phishing_engine, "core"),
+    ("SCAM ENGINE", check_scam_engine, "core"),
     ("RISK ENGINE", check_risk_engine, "core"),
     ("THREAT INTELLIGENCE", check_virustotal, "integration"),
+    ("ABUSEIPDB", check_abuseipdb, "integration"),
+    ("SHODAN", check_shodan, "integration"),
+    ("CENSYS", check_censys, "integration"),
+    ("URLSCAN", check_urlscan, "integration"),
+    ("HIBP", check_hibp, "integration"),
+    ("WEB RISK", check_webrisk, "integration"),
     ("ULTRA AI", check_gemini, "integration"),
     ("GMAIL API", check_gmail_api, "integration"),
     ("DATABASE", check_database, "data"),
     ("STORAGE", check_storage, "data"),
     ("BACKGROUND JOBS", check_background_jobs, "infra"),
+    ("QUEUE", check_queue, "infra"),
+    ("WORKERS", check_workers, "infra"),
     ("MONITORING", check_monitoring, "infra"),
 ]
 

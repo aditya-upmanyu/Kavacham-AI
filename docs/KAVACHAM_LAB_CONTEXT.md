@@ -364,7 +364,7 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   All commits GPG-signed (key `5359FC122398973E`, public key in
   `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`,
   Security milestone `1fd997e`, Health & Observability milestone `d0ca29e`,
-  QA milestone follows this doc update (see `git log -1`).
+  QA milestone `d7df0fe`.
 * Lab suite: **396/396 passing** — +24 in Test 7I (CC: unknown-ref
   envelopes, hostile search input inert, stored markup inert at render,
   metadata-URL structural analysis with no fetch, malformed input,

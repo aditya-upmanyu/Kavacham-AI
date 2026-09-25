@@ -13,6 +13,7 @@
   {% block head %}{% endblock %}
 </head>
 <body class="lab-body">
+<a class="lab-skip" href="#lab-main">Skip to main content</a>
 <div id="lab-root" class="lab-shell">
 
   <!-- ==================================================================
@@ -109,7 +110,7 @@
     <!-- ================================================================
          CONTENT AREA
          ================================================================ -->
-    <main class="lab-main" id="lab-main">
+    <main class="lab-main" id="lab-main" tabindex="-1">
       {% block breadcrumb %}{% endblock %}
       {% block content %}{% endblock %}
     </main>

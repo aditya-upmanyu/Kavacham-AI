@@ -2,7 +2,7 @@
 
 > Persistent architectural memory of the Kavacham Lab build.
 > Read this file before any future architectural change (version2.txt D.1).
-> Last updated: Phase 13 (Health & Observability) milestone — see section 29.
+> Last updated: Phase 14 (QA) milestone — see section 29.
 
 ## 1. Project Overview
 
@@ -25,8 +25,10 @@ Two products share the repository but remain independent surfaces:
   No build step, no SPA framework.
 * Product A entry: `app.py` (Flask app `app`), models under `model_training/`,
   analyzers under `analyzers/`, VirusTotal wrapper under `intel/`.
-* Product A QA suite: `QA_test.py` (baseline 50/51 — one known expectation
-  asserts "Intel reported unavailable" without a key).
+* Product A QA: no `QA_test.py` file exists in the repo — the earlier
+  baseline note was aspirational. Product A regression is covered by
+  `test_lab.py` Test 8 (imports, blueprint registration, route inventory)
+  plus live HTTP checks (`/` and `/health` return 200).
 * Lab QA suite: `test_lab.py` (see section 21).
 
 ## 3. Existing Kavacham AI
@@ -258,19 +260,21 @@ indexes. Notes:
   lab import), services + HTTP via `app.test_client()`. Sections 1..8, 7C,
   7D, 7E, 7F, 7G, 7H cover migrations, cases, evidence, analysis pipeline,
   intelligence, risk, reporting, security (audit vocabulary + redaction +
-  RBAC enforcement), health & observability (BO/BP/BZ/BQ), Product A
+  RBAC enforcement), health & observability (BO/BP/BZ/BQ), QA security
+  gap-fill (CC: IDOR, SQLi, XSS posture, SSRF posture, malformed input,
+  open redirects, secret exposure) + accessibility guards (BV), Product A
   regression baseline. VT env pinned OFF
   inside destructive-analysis and intel sections and restored after.
-* Product A: `QA_test.py` baseline 50/51 (VT-key assertion is the known
-  expectation).
+* Product A regression is covered by `test_lab.py` Test 8 + live HTTP
+  checks (no separate QA file exists in the repo).
 
 ## 22. Current Implementation Status
 
 Phases done (old plan numbering): 1 Repository Audit → 9 Reporting.
-New 14-phase plan: Phases 1-13 done (**Health & Observability
-completed**); Phase 14 QA pending. Global command search (CTRL+K,
-version2.txt O) and case-view ENTITIES/ATTACK CHAIN tabs (Q) still
-pending.
+New 14-phase plan: Phases 1-14 done (**QA completed — the 14-phase plan
+is complete**). Remaining version2.txt follow-ups: global command
+search (CTRL+K, O) and case-view ENTITIES/ATTACK CHAIN tabs (Q), plus
+the BI tail (LOGIN/RBAC users, rate limits + secure headers).
 
 ## 23. Completed Features
 
@@ -287,6 +291,9 @@ BI RBAC matrix seeded + enforced server-side on 12 mutating APIs)**;
 **health & observability (BO 21-service System Health page,
 BP provider Settings surface with no secrets, BZ structured logging +
 correlation ids, BQ CURRENT OPERATIONS mission board)**;
+**QA (CC security gap-fill: IDOR/SQLi/XSS/SSRF/malformed/redirect/secret
+posture; BV skip link + focus-visible + reduced motion; CD regression +
+production readiness)**;
 docs context file.
 
 ## 24. Pending Features
@@ -338,7 +345,7 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   new 14-phase plan). Scratch/untracked.
 * `lab/db.py`, `lab/routes.py`, `lab/*_service.py`, `lab/health.py`.
 * `templates/lab/*`, `static/js/lab_*.js`, `static/css/lab*.css`.
-* `test_lab.py`, `app.py`, `QA_test.py`.
+* `test_lab.py`, `app.py`.
 * `docs/KAVACHAM_LAB_CONTEXT.md` — this file.
 
 ## 28. Do-Not-Break Rules
@@ -356,12 +363,16 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 * Git `main` = `kavacham` (Kavacham-AI) = `origin` (Anweshak-AI).
   All commits GPG-signed (key `5359FC122398973E`, public key in
   `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`,
-  Security milestone `1fd997e`, Health & Observability milestone `d0ca29e`.
-* Lab suite: **372/372 passing** — +34 in Test 7H (BO 21-service
-  vocabulary + configuration field, BP providers API with no secrets,
-  BZ correlation-id echo + structured log lines, BQ operations tiles
-  matched against the ledger, health/settings pages + mission board).
-* Product A regression: 50/51 (known VT-key assertion).
+  Security milestone `1fd997e`, Health & Observability milestone `d0ca29e`,
+  QA milestone follows this doc update (see `git log -1`).
+* Lab suite: **396/396 passing** — +24 in Test 7I (CC: unknown-ref
+  envelopes, hostile search input inert, stored markup inert at render,
+  metadata-URL structural analysis with no fetch, malformed input,
+  no Lab redirects, no storage-path leaks; BV: skip link, focus-visible,
+  reduced motion, no console.debug, corrId surface).
+* QA milestone verified live over HTTP: Product A `/` + `/health`
+  return 200, skip link renders, live DB `PRAGMA integrity_check` ok at
+  schema v4, no scratch files tracked.
 * Security milestone verified live over HTTP: RBAC rows seeded
   (5 roles, 68 role_permissions), analyst create-case allowed, header
   role indicator + full audit filter vocabulary render.
@@ -381,7 +392,8 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 
 ## 30. Future Work
 
-Phase 14 QA (full suite + browser/accessibility pass, production build),
-then LOGIN/RBAC users, rate limits + secure headers (BI tail), command
-search (O), case-view ENTITIES/ATTACK CHAIN tabs (Q) and CONTEXT.md
-refresh per phase (CG).
+The 14-phase plan is complete. Remaining version2.txt follow-ups:
+command search CTRL+K (O), case-view ENTITIES/ATTACK CHAIN tabs (Q),
+LOGIN/RBAC users, rate limits + secure headers + secret-manager
+integration (BI tail), model/dataset registry surfaces (BD/BE),
+frontend security review (BT), and CONTEXT.md refresh per change (CG).

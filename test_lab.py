@@ -1711,6 +1711,129 @@ check("page: command center carries CURRENT OPERATIONS",
       r.status_code == 200 and "CURRENT OPERATIONS" in r.get_data(as_text=True))
 
 # ===========================================================================
+section("Test 7I — Phase 14 QA security gap-fill (CC)")
+# ===========================================================================
+
+# --- IDOR / unauthorized access: unknown refs rejected as envelopes ---
+for _url, _status, _code in [
+        ("/lab/api/cases/KAV-CASE-2099-99999", 404, "CASE_NOT_FOUND"),
+        ("/lab/api/evidence/KAV-EVD-2099-99999", 404, "EVIDENCE_NOT_FOUND"),
+        ("/lab/api/analysis/KAV-ANL-2099-99999", 404, "ANALYSIS_NOT_FOUND"),
+        ("/lab/api/reports/KAV-RPT-2099-99999", 400, "REPORT_NOT_FOUND")]:
+    r = _client3.get(_url)
+    _b = r.get_json()
+    check("qa: unknown ref rejected at %s" % _url,
+          r.status_code == _status and _b["success"] is False
+          and _b["error"]["code"] == _code, (r.status_code, _b))
+r = _client3.patch("/lab/api/cases/KAV-CASE-2099-99999",
+                   json={"status": "REVIEW"})
+check("qa: unknown case update rejected",
+      r.status_code == 404
+      and r.get_json()["error"]["code"] == "CASE_NOT_FOUND",
+      r.status_code)
+r = _client3.post("/lab/api/exports/KAV-EXP-2099-99999/verify")
+check("qa: unknown export verify rejected",
+      r.status_code in (400, 404) and r.get_json()["success"] is False,
+      r.status_code)
+
+# --- SQL injection: hostile search input is data, never code ---
+r = _client3.get("/lab/api/cases", query_string={"q": "' OR '1'='1"})
+_b = r.get_json()
+check("qa: injection search returns envelope, not a dump",
+      r.status_code == 200 and _b["success"] is True
+      and _b["data"]["total"] == 0, _b["data"]["total"])
+r = _client3.get("/lab/api/evidence", query_string={"q": "'; DROP TABLE cases; --"})
+_b = r.get_json()
+check("qa: hostile evidence search is inert",
+      r.status_code == 200 and _b["success"] is True)
+check("qa: cases table survives hostile input",
+      db.query_one("SELECT COUNT(*) AS n FROM cases")["n"] > 0)
+
+# --- XSS: stored markup stays inert (view layer escapes / textContent) ---
+r = _client3.post("/lab/api/cases",
+                  json={"title": "<script>alert('xss')</script>",
+                        "case_type": "PHISHING",
+                        "priority": "LOW",
+                        "description": "xss probe"})
+_xss_ref = r.get_json()["data"]["case"]["case_ref"]
+_html = _client3.get("/lab/cases/" + _xss_ref).get_data(as_text=True)
+check("qa: stored script tag never reaches server-rendered HTML",
+      "<script>alert('xss')</script>" not in _html)
+import pathlib as _pl                                        # noqa: E402
+_detail_js = _pl.Path("static/js/lab_case_detail.js").read_text(
+    encoding="utf-8")
+check("qa: case title bound via textContent, not innerHTML",
+      "cv-title').textContent" in _detail_js.replace('"', "'"))
+
+# --- SSRF: cloud-metadata URL analyzed structurally, never fetched ---
+ev_ssrf = evs.accept_evidence({
+    "case_ref": case1["case_ref"], "evidence_type": "URL",
+    "title": "Metadata probe",
+    "content_text": "http://169.254.169.254/latest/meta-data/"})
+a_ssrf = ans.run_analysis(ev_ssrf["evidence_ref"], "URL")
+check("qa: metadata URL completes with a structural verdict",
+      a_ssrf["verdict"] in {"SUSPICIOUS", "MALICIOUS", "CLEAN"}
+      and a_ssrf["status"] == "COMPLETE",
+      (a_ssrf["verdict"], a_ssrf["status"]))
+check("qa: no fetch stage claimed for the metadata URL",
+      all("fetch" not in str(s.get("name", "")).lower()
+          and "fetch" not in str(s.get("detail", "")).lower()
+          for s in a_ssrf["payload"]["stages"]))
+
+# --- Malformed input at HTTP level ---
+r = _client3.post("/lab/api/cases", data="not json",
+                  content_type="text/plain")
+check("qa: non-JSON body rejected as INVALID_PAYLOAD",
+      r.status_code == 400
+      and r.get_json()["error"]["code"] == "INVALID_PAYLOAD",
+      r.status_code)
+r = _client3.post("/lab/api/evidence", json={"evidence_type": "URL"})
+check("qa: evidence missing fields rejected",
+      r.status_code == 400 and r.get_json()["success"] is False,
+      r.status_code)
+
+# --- Open redirect: Lab issues no redirects on unknown API paths ---
+r = _client3.get("/lab/api/no-such-thing")
+check("qa: unknown API path is not a redirect",
+      r.status_code != 301 and r.status_code != 302
+      and r.status_code != 307 and r.status_code != 308,
+      r.status_code)
+check("qa: Lab registers no redirect endpoints",
+      all("redirect" not in str(rule) for rule in
+          [str(r_) for r_ in app_module.app.url_map.iter_rules()
+           if str(r_).startswith("/lab")]))
+
+# --- Secret exposure: no server paths in detail payloads ---
+_b = _client3.get("/lab/api/evidence/" + ev_file["evidence_ref"]).get_json()
+check("qa: evidence detail leaks no storage paths",
+      "stored_path" not in _b["data"]["evidence"]
+      and "storage_path" not in _b["data"]["evidence"],
+      sorted(_b["data"]["evidence"]))
+_b = _client3.get("/lab/api/reports/" + _rpt_ref).get_json()
+check("qa: report detail leaks no storage paths",
+      "storage_path" not in json.dumps(_b["data"]),
+      [k for k in _b["data"] if "path" in k.lower()])
+
+# --- Accessibility (BV): skip link, landmarks, focus, reduced motion ---
+_html = _client3.get("/lab/cases").get_data(as_text=True)
+check("qa: skip link targets the main landmark",
+      'class="lab-skip"' in _html and 'href="#lab-main"' in _html
+      and 'id="lab-main"' in _html)
+_lab_css = _pl.Path("static/css/lab.css").read_text(encoding="utf-8")
+check("qa: visible keyboard focus styles",
+      ":focus-visible" in _lab_css)
+check("qa: reduced-motion support in Lab CSS",
+      "prefers-reduced-motion" in _lab_css)
+check("qa: Lab ships no console.debug leftovers",
+      not any("console.log" in _pl.Path("static/js/" + _f).read_text(
+          encoding="utf-8", errors="replace")
+          for _f in ("lab_shell.js", "lab_command_center.js",
+                     "lab_health.js", "lab_settings.js")))
+check("qa: shell exposes the page correlation id",
+      "corrId" in _pl.Path("static/js/lab_shell.js").read_text(
+          encoding="utf-8"))
+
+# ===========================================================================
 print("\n" + "=" * 64)
 passed = sum(1 for ok, _, _ in RESULTS if ok)
 failed = sum(1 for ok, _, _ in RESULTS if not ok)

@@ -26,6 +26,7 @@ from lab import intel_service
 from lab import risk_service
 from lab import report_service
 from lab import search_service
+from lab import registry_service
 from lab import security
 from lab import obs
 
@@ -88,6 +89,13 @@ NAV_STRUCTURE = [
             {"id": "investigation-reports", "label": "Investigation Reports", "url": "/lab/reports", "ready": True},
             {"id": "export-center", "label": "Export Center", "url": "/lab/reports/exports", "ready": True},
             {"id": "evidence-manifest", "label": "Evidence Manifest", "url": "/lab/reports/manifest", "ready": True},
+        ],
+    },
+    {
+        "group": "REGISTRIES",
+        "links": [
+            {"id": "model-registry", "label": "Model Registry", "url": "/lab/models", "ready": True},
+            {"id": "dataset-registry", "label": "Dataset Registry", "url": "/lab/datasets", "ready": True},
         ],
     },
     {
@@ -1005,6 +1013,48 @@ def api_intel_network():
         return api_error("NETWORK_LOOKUP_FAILED",
                          "Network intelligence is unavailable.", 500)
     return api_ok(data)
+
+
+# ---------------------------------------------------------------------------
+# Model + dataset registries (Sections BD/BE)
+# ---------------------------------------------------------------------------
+
+@lab_bp.route("/models", strict_slashes=False)
+def models_page():
+    return render_template("lab/models.html", **_shell_context(
+        nav_id="model-registry",
+        page_title="Model Registry",
+    ))
+
+
+@lab_bp.route("/datasets", strict_slashes=False)
+def datasets_page():
+    return render_template("lab/datasets.html", **_shell_context(
+        nav_id="dataset-registry",
+        page_title="Dataset Registry",
+    ))
+
+
+@lab_bp.route("/api/models")
+def api_models():
+    """Model registry rows (BE): real artifacts + real metrics only."""
+    try:
+        models = registry_service.list_models()
+    except Exception:
+        return api_error("MODEL_REGISTRY_FAILED",
+                         "The model registry could not be read.", 500)
+    return api_ok({"models": models, "count": len(models)})
+
+
+@lab_bp.route("/api/datasets")
+def api_datasets():
+    """Dataset registry rows (BD): profiled from the real CSVs."""
+    try:
+        datasets = registry_service.list_datasets()
+    except Exception:
+        return api_error("DATASET_REGISTRY_FAILED",
+                         "The dataset registry could not be read.", 500)
+    return api_ok({"datasets": datasets, "count": len(datasets)})
 
 
 # ---------------------------------------------------------------------------

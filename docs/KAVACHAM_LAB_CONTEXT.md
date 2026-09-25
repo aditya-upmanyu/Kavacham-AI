@@ -2,7 +2,7 @@
 
 > Persistent architectural memory of the Kavacham Lab build.
 > Read this file before any future architectural change (version2.txt D.1).
-> Last updated: RDAP+DNS network intel (AG) — see section 29.
+> Last updated: Dataset + model registries (BD/BE) — see section 29.
 
 ## 1. Project Overview
 
@@ -129,7 +129,8 @@ APIs: `/lab/api/cases`, `/lab/api/cases/meta`, `/lab/api/audit`,
 `/lab/api/providers`,
 `/lab/api/intel/*`, `/lab/api/risk`, `/lab/api/reports...`,
 `/lab/api/exports...`, `/lab/api/cases/<ref>/export`, `/lab/api/search`,
-`/lab/api/intel/network`.
+`/lab/api/intel/network`, `/lab/api/models`, `/lab/api/datasets`.
+Registry pages: `/lab/models`, `/lab/datasets`.
 
 ## 12. Existing Important Components
 
@@ -172,6 +173,8 @@ indexes. Notes:
 * `iocs` unique `(ioc_type, value)`; status column OBSERVED/VERIFIED/FALSE_POSITIVE.
 * `cases.risk_level` (v1) + `risk_score`/`risk_assessed_at` (v3) are
   snapshots written only by the risk engine when an assessment is computed.
+* v5 adds `dataset_registry`, `model_registry` (BD/BE) and `settings`
+  (key/value store for retention + future toggles).
 
 ## 15. Lab Modules
 
@@ -202,6 +205,9 @@ indexes. Notes:
 * report_service — reports (`KAV-RPT` refs, BF 15 sections), export
   packages (`KAV-EXP`, Section 70), evidence manifest + integrity
   verification (Sections 43/BG).
+* registry_service — BD/BE dataset + model registries profiled from real
+  on-disk artifacts (row counts, columns, label distributions,
+  metrics.json numbers only on the matching model; unknowns stay NULL).
 * security — BH audit vocabulary + secret redaction at the audit funnel,
   BI RBAC matrix, `seed_rbac()`, role resolution adapter (section 8).
 
@@ -384,17 +390,23 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`,
   Security milestone `1fd997e`, Health & Observability milestone `d0ca29e`,
   QA milestone `d7df0fe`, Global search + case-view tabs `ea948e8`,
-  SMS + bulk IOC `4301e45`, RDAP+DNS `b01321d`.
-* Lab suite: **444/444 passing** — +21 in Tests 7K/7L (AP: SMS registry,
+  SMS + bulk IOC `4301e45`, RDAP+DNS `b01321d`, registries follow this
+  doc update (see `git log -1`).
+* Lab suite: **467/467 passing** — +21 in Tests 7K/7L (AP: SMS registry,
   fraud/benign verdicts, dual-engine sources, incompatibility, API run;
   AN: preview counts, investigate-to-case with ledger links, blank-text
   rejection, page render; nav count 6), +7 in Test 7M (AG: invalid/dead
-  domain honesty, timeout budget, DOMAIN payload + stage, API envelope).
+  domain honesty, timeout budget, DOMAIN payload + stage, API envelope),
+  +23 in Test 7N (BD/BE: registry envelopes, real row counts/columns/
+  labels, null provenance, v2 metrics exact + never on wrong artifacts,
+  relative paths, page renders; Test 1 now pins schema v5 + 21 tables).
 * AP+AN verified live over HTTP: bulk page + preview/investigate round
   trip (case + evidence + ledger links), SMS in the analysis registry and
   Run Analysis options.
 * AG verified live: dead domains degrade to unavailable/unavailable,
   11 analysis types served.
+* BD/BE verified live: 6 models + 4 datasets served, models page renders,
+  live DB migrated to schema v5.
 * O+Q verified live over HTTP: search returns grouped exact-first hits,
   palette + trigger render in the shell, case view carries both new tabs,
   graph/chain APIs return real per-case data.
@@ -423,6 +435,6 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 
 The 14-phase plan plus the O/Q follow-ups are complete. version2.txt
 extensions done: SMS/smishing analysis (AP), bulk IOC investigation
-(AN), keyless RDAP+DNS network intel (AG). Still open: model/dataset
-registries (BD/BE), rate limits + secure headers + privacy settings
-(BS/BR/BT), LOGIN/RBAC users (BI tail).
+(AN), keyless RDAP+DNS network intel (AG), dataset + model registries
+(BD/BE, schema v5). Still open: rate limits + secure headers + privacy
+settings (BS/BR/BT), LOGIN/RBAC users (BI tail).

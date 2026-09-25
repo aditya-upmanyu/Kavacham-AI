@@ -1,0 +1,36 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Dataset Registry</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">DATASET REGISTRY</h1>
+    <p class="lab-subtitle">Real dataset files profiled from disk — contents are treated strictly as data and never executed.</p>
+  </div>
+</div>
+
+<section class="lab-panel" aria-labelledby="datasets-title">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title" id="datasets-title">REGISTERED DATASETS</h2>
+    <span class="lab-xs lab-dim" id="datasets-count">—</span>
+  </div>
+  <div class="lab-panel-body flush" id="datasets-body">
+    <div class="lab-panel-body">
+      <div class="lab-skeleton lab-skeleton-line" style="width:70%;"></div>
+      <div class="lab-skeleton lab-skeleton-line" style="width:55%;"></div>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="datasets-foot">Profiling registered datasets…</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_datasets.js') }}"></script>
+{% endblock %}

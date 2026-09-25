@@ -1,0 +1,55 @@
+{% extends "lab/base.html" %}
+
+{% block breadcrumb %}
+<nav class="lab-crumb" aria-label="Breadcrumb">
+  <a href="/lab">Command Center</a>
+  <span class="lab-crumb-sep">/</span>
+  <span class="lab-crumb-current">Model Registry</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="lab-page-head">
+  <div>
+    <h1 class="lab-title">MODEL REGISTRY</h1>
+    <p class="lab-subtitle">Real model artifacts on disk with real metrics. Unknown fields show —, never invented numbers.</p>
+  </div>
+</div>
+
+<section class="lab-panel" aria-labelledby="models-title">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title" id="models-title">REGISTERED MODELS</h2>
+    <span class="lab-xs lab-dim" id="models-count">—</span>
+  </div>
+  <div class="lab-panel-body flush">
+    <div class="lab-table-wrap">
+      <table class="lab-table" id="models-table">
+        <thead>
+          <tr>
+            <th scope="col">Model</th>
+            <th scope="col">Kind</th>
+            <th scope="col">Accuracy</th>
+            <th scope="col">Precision</th>
+            <th scope="col">Recall</th>
+            <th scope="col">F1</th>
+            <th scope="col">False-Positive Rate</th>
+            <th scope="col">Trained</th>
+            <th scope="col">Artifact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="9" style="padding:16px;">
+            <div class="lab-skeleton lab-skeleton-line" style="width:70%;"></div>
+            <div class="lab-skeleton lab-skeleton-line" style="width:55%;"></div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="lab-panel-foot" id="models-foot">Reading the model registry…</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab_models.js') }}"></script>
+{% endblock %}

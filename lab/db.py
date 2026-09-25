@@ -377,6 +377,51 @@ MIGRATIONS = [
         CREATE INDEX IF NOT EXISTS idx_exports_case ON export_packages(case_id);
         CREATE INDEX IF NOT EXISTS idx_exports_created ON export_packages(created_at DESC);
     """),
+    (5, "dataset/model registries (BD/BE) + lab settings store", """
+        CREATE TABLE IF NOT EXISTS dataset_registry (
+            dataset_id             TEXT PRIMARY KEY,
+            name                   TEXT NOT NULL,
+            source                 TEXT,
+            license                TEXT,
+            version                TEXT,
+            download_date          TEXT,
+            row_count              INTEGER,
+            columns_json           TEXT,
+            labels_json            TEXT,
+            class_distribution_json TEXT,
+            duplicates             INTEGER,
+            missing_values         INTEGER,
+            training_usage         TEXT,
+            model_usage            TEXT,
+            registered_at          TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS model_registry (
+            model_id               TEXT PRIMARY KEY,
+            name                   TEXT NOT NULL,
+            path                   TEXT NOT NULL,
+            kind                   TEXT,
+            dataset_id             TEXT REFERENCES dataset_registry(dataset_id),
+            dataset_version        TEXT,
+            training_date          TEXT,
+            features               TEXT,
+            accuracy               REAL,
+            precision              REAL,
+            recall                 REAL,
+            f1                     REAL,
+            roc_auc                REAL,
+            false_positive_rate    REAL,
+            false_negative_rate    REAL,
+            confusion_matrix_json  TEXT,
+            registered_at          TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_models_dataset ON model_registry(dataset_id);
+        CREATE TABLE IF NOT EXISTS settings (
+            key        TEXT PRIMARY KEY,
+            value      TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            updated_by TEXT NOT NULL DEFAULT 'analyst'
+        );
+    """),
 ]
 
 # Constraint / enum documentation (enforced at service layer, verified by tests).
@@ -513,3 +558,7 @@ def bootstrap():
     # Deferred import avoids the db -> security module cycle.
     from lab import security
     security.seed_rbac()
+    # Register on-disk datasets + models (BD/BE). Deferred for the same
+    # reason; each scan is idempotent and skips missing files.
+    from lab import registry_service
+    registry_service.seed_registries()

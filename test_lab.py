@@ -43,8 +43,9 @@ section("Test 1 — Database & Migrations")
 # ===========================================================================
 applied = db.migrate()
 check("initial migration applied",
-      1 in applied and 2 in applied and 3 in applied and 4 in applied, applied)
-check("schema version is 4", db.current_version() == 4, db.current_version())
+      1 in applied and 2 in applied and 3 in applied and 4 in applied
+      and 5 in applied, applied)
+check("schema version is 5", db.current_version() == 5, db.current_version())
 
 re_run = db.migrate()
 check("migrations idempotent (no re-apply)", re_run == [], re_run)
@@ -57,7 +58,8 @@ expected_tables = [
     "cases", "evidence", "chain_of_custody", "analyses", "analysis_findings",
     "iocs", "case_iocs", "entities", "case_entities", "timeline_events",
     "notes", "reports", "audit_logs", "alerts", "users", "roles",
-    "permissions", "role_permissions",
+    "permissions", "role_permissions", "dataset_registry", "model_registry",
+    "settings",
 ]
 missing = [t for t in expected_tables if t not in counts]
 check("all normalized tables exist (%d)" % len(expected_tables), not missing, missing)
@@ -353,6 +355,10 @@ expected_methods = {
     "/lab/api/intel/graph":               {"GET"},
     "/lab/api/intel/attack-chain":        {"GET"},
     "/lab/api/intel/network":             {"GET"},
+    "/lab/models":                            {"GET"},
+    "/lab/datasets":                          {"GET"},
+    "/lab/api/models":                        {"GET"},
+    "/lab/api/datasets":                      {"GET"},
     # Phase 9 — central risk engine (Sections AZ, BA)
     "/lab/risk":                          {"GET"},
     "/lab/api/risk":                      {"GET"},
@@ -2080,6 +2086,74 @@ _b = _client3.get("/lab/api/intel/network",
                   ).get_json()
 check("network: API envelope never 500s on dead domains",
       _b["success"] is True and {"dns", "rdap"} <= set(_b["data"]))
+
+# ===========================================================================
+section("Test 7N — Dataset + model registries (BD/BE)")
+# ===========================================================================
+from lab import registry_service as reg                            # noqa: E402
+
+_b = _client3.get("/lab/api/datasets").get_json()
+_sets = {d["dataset_id"]: d for d in _b["data"]["datasets"]}
+check("datasets: success envelope",
+      _b["success"] is True and _b["data"]["count"] == len(_sets),
+      _b["data"]["count"])
+for _f in ("dataset", "dataset_balanced", "dataset_kavacham_v2",
+           "KAVACHAM_HARD_TEST"):
+    check("datasets: %s registered" % _f, _f in _sets)
+import csv as _csv                                                 # noqa: E402
+with open("dataset_balanced.csv", newline="",
+          encoding="utf-8", errors="replace") as _fh:
+    _rows = sum(1 for _ in _fh) - 1
+check("datasets: row count matches the real file",
+      _sets["dataset_balanced"]["row_count"] == _rows,
+      (_sets["dataset_balanced"]["row_count"], _rows))
+check("datasets: columns read from the header",
+      _sets["dataset_balanced"]["columns"] == ["label", "message"],
+      _sets["dataset_balanced"]["columns"])
+check("datasets: labels only from the label column",
+      set(_sets["dataset_balanced"]["labels"]) <= {"spam", "ham",
+                                                  "(missing)"},
+      _sets["dataset_balanced"]["labels"])
+check("datasets: unknown provenance stays null, never invented",
+      _sets["dataset"]["license"] is None
+      and _sets["dataset"]["download_date"] is None)
+check("datasets: tallies are real integers",
+      isinstance(_sets["dataset"]["duplicates"], int)
+      and isinstance(_sets["dataset"]["missing_values"], int))
+
+_b = _client3.get("/lab/api/models").get_json()
+_mods = {m["model_id"]: m for m in _b["data"]["models"]}
+check("models: success envelope",
+      _b["success"] is True and _b["data"]["count"] == len(_mods))
+for _m in ("kavacham_v1", "kavacham_v2", "vectorizer_v1", "vectorizer_v2",
+           "model", "vectorizer"):
+    check("models: %s registered" % _m, _m in _mods)
+with open("metrics.json", encoding="utf-8") as _fh:
+    _metrics = json.load(_fh)
+check("models: v2 metrics match metrics.json exactly",
+      _mods["kavacham_v2"]["accuracy"] == _metrics["accuracy"]
+      and _mods["kavacham_v2"]["precision"] == _metrics["precision"]
+      and _mods["kavacham_v2"]["recall"] == _metrics["recall"]
+      and _mods["kavacham_v2"]["f1"] == _metrics["f1_score"]
+      and _mods["kavacham_v2"]["false_positive_rate"]
+      == _metrics["false_positive_rate"]
+      and _mods["kavacham_v2"]["training_date"] == _metrics["trained_at"])
+check("models: metrics never leak onto the wrong artifact",
+      _mods["kavacham_v1"]["accuracy"] is None
+      and _mods["model"]["accuracy"] is None)
+check("models: unsupported metrics stay null (BE)",
+      _mods["kavacham_v2"]["roc_auc"] is None
+      and _mods["kavacham_v2"]["confusion_matrix"] is None)
+check("models: artifact paths are repo-relative, never absolute",
+      all(not m["path"].startswith(("/", "C:", "\\"))
+          for m in _mods.values()))
+
+for _url, _marker in [("/lab/models", "REGISTERED MODELS"),
+                      ("/lab/datasets", "REGISTERED DATASETS")]:
+    r = _client3.get(_url)
+    check("page: %s renders" % _url,
+          r.status_code == 200 and _marker in r.get_data(as_text=True),
+          r.status_code)
 
 # ===========================================================================
 print("\n" + "=" * 64)

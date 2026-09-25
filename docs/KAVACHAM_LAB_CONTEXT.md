@@ -407,8 +407,7 @@ no-fake-login rule (single-operator RBAC adapter, section 8).
   Security milestone `1fd997e`, Health & Observability milestone `d0ca29e`,
   QA milestone `d7df0fe`, Global search + case-view tabs `ea948e8`,
   SMS + bulk IOC `4301e45`, RDAP+DNS `b01321d`, registries `75b0dd1`,
-  rate limits + headers `45b6d99`, retention + review follow this doc
-  update (see `git log -1`).
+  rate limits + headers `45b6d99`, retention + review `9fc665e`.
 * Lab suite: **496/496 passing** — +21 in Tests 7K/7L (AP: SMS registry,
   fraud/benign verdicts, dual-engine sources, incompatibility, API run;
   AN: preview counts, investigate-to-case with ledger links, blank-text

@@ -36,6 +36,7 @@ from datetime import datetime, timezone
 from lab import db
 from lab import case_service
 from lab import evidence_service
+from lab import network_intel
 
 ACTOR_DEFAULT = "analyst"
 
@@ -96,7 +97,8 @@ ANALYSIS_REGISTRY = {
     "DOMAIN": {
         "label": "Domain Analysis",
         "description": ("Domain structure, registrable-domain extraction, "
-                        "suspicious feature detection and optional VirusTotal "
+                        "suspicious feature detection, keyless DNS + RDAP "
+                        "network intelligence, and optional VirusTotal "
                         "reputation lookup."),
         "evidence_types": ["DOMAIN", "URL", "IP", "EMAIL", "RAW_HEADER",
                            "MESSAGE"],
@@ -838,6 +840,22 @@ def _run_domain(pipeline, ev, domain_hint=None):
     else:
         pipeline.stage("Threat intelligence", "unavailable",
                        "VirusTotal not configured — structure analysis only.")
+
+    net_host = (reg or structure.get("hostname") or target).split(
+        "//")[-1].split("/")[0].split(":")[0].strip().lower()
+    network = network_intel.lookup(net_host)
+    pipeline.payload["network"] = network
+    net_states = {network["dns"].get("state"),
+                  network["rdap"].get("state")}
+    if net_states == {"available"}:
+        pipeline.stage("Network intelligence", "done",
+                       "DNS + RDAP retrieved for %s." % net_host)
+    elif net_states == {"invalid"}:
+        pipeline.stage("Network intelligence", "unavailable",
+                       "Not a plausible domain for DNS/RDAP.")
+    else:
+        pipeline.stage("Network intelligence", "unavailable",
+                       "DNS/RDAP unreachable — structure analysis only.")
 
     pipeline.stage("Risk calculation", "done",
                    "Deterministic structural scoring (url_analyzer).")

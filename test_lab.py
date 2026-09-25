@@ -352,6 +352,7 @@ expected_methods = {
     "/lab/api/intel/correlation":         {"GET"},
     "/lab/api/intel/graph":               {"GET"},
     "/lab/api/intel/attack-chain":        {"GET"},
+    "/lab/api/intel/network":             {"GET"},
     # Phase 9 — central risk engine (Sections AZ, BA)
     "/lab/risk":                          {"GET"},
     "/lab/api/risk":                      {"GET"},
@@ -2042,6 +2043,43 @@ r = _client3.get("/lab/intel/bulk")
 check("page: /lab/intel/bulk renders",
       r.status_code == 200 and "BULK IOC INVESTIGATION" in r.get_data(
           as_text=True), r.status_code)
+
+# ===========================================================================
+section("Test 7M — RDAP + DNS network intel (AG)")
+# ===========================================================================
+from lab import network_intel as neti                           # noqa: E402
+
+_bad = neti.lookup("not a domain!!")
+check("network: garbage domain is invalid, never raises",
+      _bad["dns"]["state"] == "invalid"
+      and _bad["rdap"]["state"] == "invalid")
+_dead = neti.lookup("nonexistent-domain-xyz.invalid")
+check("network: unresolvable domain degrades honestly",
+      _dead["dns"]["state"] in ("available", "unavailable")
+      and _dead["rdap"]["state"] in ("available", "unavailable")
+      and "note" in _dead["dns"] and "note" in _dead["rdap"],
+      (_dead["dns"]["state"], _dead["rdap"]["state"]))
+check("network: timeout budget is enforced (BS)",
+      neti.TIMEOUT_S <= 10, neti.TIMEOUT_S)
+
+a_dom2 = ans.run_analysis(ev_dom["evidence_ref"], "DOMAIN")
+check("network: DOMAIN runs carry the network payload",
+      {"dns", "rdap"} <= set(a_dom2["payload"]["analysis"]["network"]))
+check("network: intelligence stage recorded honestly",
+      any(s["name"] == "Network intelligence"
+          and s["status"] in ("done", "unavailable")
+          for s in a_dom2["payload"]["stages"]))
+
+r = _client3.get("/lab/api/intel/network")
+check("network: missing domain rejected",
+      r.status_code == 400
+      and r.get_json()["error"]["code"] == "VALIDATION_FAILED",
+      r.status_code)
+_b = _client3.get("/lab/api/intel/network",
+                  query_string={"domain": "nonexistent-domain-xyz.invalid"}
+                  ).get_json()
+check("network: API envelope never 500s on dead domains",
+      _b["success"] is True and {"dns", "rdap"} <= set(_b["data"]))
 
 # ===========================================================================
 print("\n" + "=" * 64)

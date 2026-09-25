@@ -992,6 +992,21 @@ def api_intel_chain():
     return api_ok(data)
 
 
+@lab_bp.route("/api/intel/network", methods=["GET"])
+def api_intel_network():
+    """Keyless DNS + RDAP lookup for one domain (AG). Never raises."""
+    from lab import network_intel
+    domain = (request.args.get("domain") or "").strip().lower()
+    if not domain:
+        return api_error("VALIDATION_FAILED", "domain is required.")
+    try:
+        data = network_intel.lookup(domain)
+    except Exception:
+        return api_error("NETWORK_LOOKUP_FAILED",
+                         "Network intelligence is unavailable.", 500)
+    return api_ok(data)
+
+
 # ---------------------------------------------------------------------------
 # Phase 9 — central risk engine (Sections AZ, BA)
 # ---------------------------------------------------------------------------

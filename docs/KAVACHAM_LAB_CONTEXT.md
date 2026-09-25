@@ -2,7 +2,7 @@
 
 > Persistent architectural memory of the Kavacham Lab build.
 > Read this file before any future architectural change (version2.txt D.1).
-> Last updated: SMS/smishing analysis (AP) + bulk IOC (AN) — see section 29.
+> Last updated: RDAP+DNS network intel (AG) — see section 29.
 
 ## 1. Project Overview
 
@@ -128,7 +128,8 @@ APIs: `/lab/api/cases`, `/lab/api/cases/meta`, `/lab/api/audit`,
 `/lab/api/alerts`, `/lab/api/command-center`, `/lab/api/meta`,
 `/lab/api/providers`,
 `/lab/api/intel/*`, `/lab/api/risk`, `/lab/api/reports...`,
-`/lab/api/exports...`, `/lab/api/cases/<ref>/export`, `/lab/api/search`.
+`/lab/api/exports...`, `/lab/api/cases/<ref>/export`, `/lab/api/search`,
+`/lab/api/intel/network`.
 
 ## 12. Existing Important Components
 
@@ -191,7 +192,9 @@ indexes. Notes:
   magic blocking, custody chain, integrity verification, originals dir.
 * analysis_service — 11-type registry (EMAIL/PHISHING/SPAM/URL/FILE/HASH/
   QR/DOMAIN/SCAM/BEC/SMS), stage pipeline, findings persistence, honest
-  ML/VT probe states.
+  ML/VT probe states; DOMAIN runs carry keyless DNS+RDAP network intel.
+* network_intel — AG keyless DNS (DoH reads) + RDAP (IANA bootstrap),
+  8s timeouts, honest available/unavailable/invalid states, never raises.
 * intel_service — IOC classify/extract/sync, ledger, status workflow,
   cross-case correlation, entity graph, attack chains, bulk IOC
   paste-to-case (AN).
@@ -381,14 +384,18 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   `pubkey.asc`); Risk milestone `4620b92`, Reporting milestone `e96946a`,
   Security milestone `1fd997e`, Health & Observability milestone `d0ca29e`,
   QA milestone `d7df0fe`, Global search + case-view tabs `ea948e8`,
-  SMS + bulk IOC `4301e45`.
-* Lab suite: **437/437 passing** — +21 in Tests 7K/7L (AP: SMS registry,
+  SMS + bulk IOC `4301e45`, RDAP+DNS follows this doc update
+  (see `git log -1`).
+* Lab suite: **444/444 passing** — +21 in Tests 7K/7L (AP: SMS registry,
   fraud/benign verdicts, dual-engine sources, incompatibility, API run;
   AN: preview counts, investigate-to-case with ledger links, blank-text
-  rejection, page render; nav count 6).
+  rejection, page render; nav count 6), +7 in Test 7M (AG: invalid/dead
+  domain honesty, timeout budget, DOMAIN payload + stage, API envelope).
 * AP+AN verified live over HTTP: bulk page + preview/investigate round
   trip (case + evidence + ledger links), SMS in the analysis registry and
   Run Analysis options.
+* AG verified live: dead domains degrade to unavailable/unavailable,
+  11 analysis types served.
 * O+Q verified live over HTTP: search returns grouped exact-first hits,
   palette + trigger render in the shell, case view carries both new tabs,
   graph/chain APIs return real per-case data.
@@ -417,6 +424,6 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 
 The 14-phase plan plus the O/Q follow-ups are complete. version2.txt
 extensions done: SMS/smishing analysis (AP), bulk IOC investigation
-(AN). Still open: RDAP+DNS network intel (AG), model/dataset registries
-(BD/BE), rate limits + secure headers + privacy settings (BS/BR/BT),
-LOGIN/RBAC users (BI tail).
+(AN), keyless RDAP+DNS network intel (AG). Still open: model/dataset
+registries (BD/BE), rate limits + secure headers + privacy settings
+(BS/BR/BT), LOGIN/RBAC users (BI tail).

@@ -359,6 +359,9 @@ expected_methods = {
     "/lab/datasets":                          {"GET"},
     "/lab/api/models":                        {"GET"},
     "/lab/api/datasets":                      {"GET"},
+    "/lab/api/settings":                      {"GET", "PATCH"},
+    "/lab/api/settings/purge-preview":        {"GET"},
+    "/lab/api/settings/purge":                {"POST"},
     # Phase 9 — central risk engine (Sections AZ, BA)
     "/lab/risk":                          {"GET"},
     "/lab/api/risk":                      {"GET"},
@@ -2221,6 +2224,135 @@ for _url in ("/lab/api/health", "/lab/cases"):
 check("headers: same-origin Lab emits no CORS wildcard",
       "Access-Control-Allow-Origin" not in _client3.get(
           "/lab/api/health").headers)
+
+# ===========================================================================
+section("Test 7P — Privacy settings + retention + frontend review (BR/BT)")
+# ===========================================================================
+from lab import settings_service as sts                            # noqa: E402
+from lab import security as _sec                                  # noqa: E402
+
+_b = _client3.get("/lab/api/settings").get_json()
+check("settings: defaults served with provenance",
+      _b["success"] is True
+      and _b["data"]["settings"]["retention_days"]["value"] == "365"
+      and _b["data"]["settings"]["retention_days"]["updated_by"] in (
+          "system", "analyst"),
+      _b["data"]["settings"])
+check("settings: secret source stated, no secret values",
+      _b["data"]["secret_source"] == sts.SECRET_SOURCE
+      and "api_key" not in json.dumps(_b["data"]).lower()
+      and "password" not in json.dumps(_b["data"]).lower())
+
+# --- ANALYST cannot change retention (settings:manage is ADMIN-only) ---
+check("rbac: ANALYST lacks settings:manage",
+      not _sec.authorize("ANALYST", "settings:manage"))
+check("rbac: ADMIN holds settings:manage",
+      _sec.authorize("ADMIN", "settings:manage"))
+r = _client3.patch("/lab/api/settings",
+                   json={"key": "retention_days", "value": 730})
+check("settings: analyst update refused with 403",
+      r.status_code == 403
+      and r.get_json()["error"]["code"] == "FORBIDDEN", r.status_code)
+
+_orig_role = _sec.current_role
+_sec.current_role = lambda: "ADMIN"
+try:
+    r = _client3.patch("/lab/api/settings",
+                       json={"key": "retention_days", "value": "not-a-number"})
+    check("settings: non-integer rejected",
+          r.status_code == 400
+          and r.get_json()["error"]["code"] == "VALIDATION_FAILED",
+          r.status_code)
+    r = _client3.patch("/lab/api/settings",
+                       json={"key": "retention_days", "value": 5})
+    check("settings: out-of-range rejected",
+          r.status_code == 400, r.status_code)
+    r = _client3.patch("/lab/api/settings",
+                       json={"key": "nope", "value": 1})
+    check("settings: unknown key rejected",
+          r.status_code == 400
+          and r.get_json()["error"]["code"] == "UNKNOWN_SETTING",
+          r.status_code)
+    r = _client3.patch("/lab/api/settings",
+                       json={"key": "retention_days", "value": 730})
+    _b = r.get_json()
+    check("settings: admin update applies",
+          r.status_code == 200 and _b["data"]["setting"]["value"] == "730",
+          (r.status_code, _b))
+finally:
+    _sec.current_role = _orig_role
+check("settings: change audited as SETTINGS_CHANGED",
+      any(a["target_ref"] == "retention_days"
+          and "365 -> 730" in (a["detail"] or "")
+          for a in cs.list_audit(action="SETTINGS_CHANGED")["items"]))
+
+# --- purge preview counts real rows, purge deletes + audits ---
+db.execute(
+    "INSERT INTO audit_logs(event_type, actor, action, target_type, "
+    "target_ref, detail, ip_address, created_at) "
+    "VALUES (?,?,?,?,?,?,?,?)",
+    ("CASE_UPDATED", "qa", "CASE_UPDATED", "cases", "KAV-CASE-2000-00001",
+     "stale row", None, "2020-01-01T00:00:00Z"))
+_b = _client3.get("/lab/api/settings/purge-preview").get_json()
+check("settings: preview counts stale rows, deletes nothing",
+      _b["success"] is True and _b["data"]["audit_rows"] >= 1
+      and db.query_one("SELECT COUNT(*) AS n FROM audit_logs WHERE "
+                       "target_ref = 'KAV-CASE-2000-00001'")["n"] == 1,
+      _b["data"])
+r = _client3.post("/lab/api/settings/purge")
+check("settings: analyst purge refused with 403",
+      r.status_code == 403, r.status_code)
+_sec.current_role = lambda: "ADMIN"
+try:
+    r = _client3.post("/lab/api/settings/purge")
+    _b = r.get_json()
+    check("settings: admin purge deletes stale rows",
+          r.status_code == 200 and _b["data"]["deleted"] >= 1
+          and db.query_one("SELECT COUNT(*) AS n FROM audit_logs WHERE "
+                           "target_ref = 'KAV-CASE-2000-00001'")["n"] == 0,
+          _b["data"])
+finally:
+    _sec.current_role = _orig_role
+check("settings: purge itself audited",
+      any(a["action"] == "AUDIT_PURGED"
+          for a in cs.list_audit(limit=50)["items"]))
+
+# --- BT frontend review: no secret storage, backend decides ---
+import pathlib as _pth                                            # noqa: E402
+_store_hits = []
+for _f in _pth.Path("static/js").glob("lab_*.js"):
+    _t = _f.read_text(encoding="utf-8", errors="replace")
+    for _m in ("localStorage.setItem", "sessionStorage.setItem"):
+        _idx = 0
+        while True:
+            _i = _t.find(_m, _idx)
+            if _i < 0:
+                break
+            _frag = _t[_i:_i + 80].lower()
+            if any(_w in _frag for _w in ("token", "secret", "password",
+                                         "api_key", "apikey", "bearer")):
+                _store_hits.append("%s: %s" % (_f.name, _frag))
+            _idx = _i + 1
+check("frontend: browser storage holds no secret material", not _store_hits,
+      _store_hits[:3])
+_sec.current_role = lambda: "READ_ONLY"
+try:
+    r = _client3.post("/lab/api/analysis",
+                      json={"evidence_ref": ev_file["evidence_ref"],
+                            "analysis_type": "SMS"})
+    check("frontend: hiding is not auth (server 403s READ_ONLY writes)",
+          r.status_code == 403
+          and r.get_json()["error"]["code"] == "FORBIDDEN", r.status_code)
+finally:
+    _sec.current_role = _orig_role
+_html = _client3.get("/lab/settings").get_data(as_text=True)
+check("settings: non-admin sees the honest role gate",
+      "require the ADMIN role" in _html and "DATA RETENTION" in _html)
+check("privacy: run-analysis states provider/DNS disclosure",
+      "never" in _client3.get("/lab/analysis/new").get_data(
+          as_text=True).lower()
+      and "VirusTotal" in _client3.get("/lab/analysis/new").get_data(
+          as_text=True))
 
 # ===========================================================================
 print("\n" + "=" * 64)

@@ -2,7 +2,7 @@
 
 > Persistent architectural memory of the Kavacham Lab build.
 > Read this file before any future architectural change (version2.txt D.1).
-> Last updated: Rate limiting + secure headers (BS) — see section 29.
+> Last updated: Privacy settings + retention (BR/BT) — version2 complete, see section 29.
 
 ## 1. Project Overview
 
@@ -213,6 +213,9 @@ indexes. Notes:
 * registry_service — BD/BE dataset + model registries profiled from real
   on-disk artifacts (row counts, columns, label distributions,
   metrics.json numbers only on the matching model; unknowns stay NULL).
+* settings_service — BR retention store (retention_days default 365,
+  ADMIN-only changes audited as SETTINGS_CHANGED, purge preview counts
+  without deleting, ADMIN purge deletes + audits itself).
 * security — BH audit vocabulary + secret redaction at the audit funnel,
   BI RBAC matrix, `seed_rbac()`, role resolution adapter (section 8).
 
@@ -286,8 +289,9 @@ indexes. Notes:
   RBAC enforcement), health & observability (BO/BP/BZ/BQ), QA security
   gap-fill (CC: IDOR, SQLi, XSS posture, SSRF posture, malformed input,
   open redirects, secret exposure) + accessibility guards (BV), global
-  search + case-view tabs (O/Q), Product A
-  regression baseline. VT env pinned OFF
+  search + case-view tabs (O/Q), SMS + bulk + network intel (AP/AN/AG),
+  registries (BD/BE), rate limits + headers (BS), retention (BR/BT),
+  Product A regression baseline. VT env pinned OFF
   inside destructive-analysis and intel sections and restored after.
 * Product A regression is covered by `test_lab.py` Test 8 + live HTTP
   checks (no separate QA file exists in the repo).
@@ -296,10 +300,12 @@ indexes. Notes:
 
 Phases done (old plan numbering): 1 Repository Audit → 9 Reporting.
 New 14-phase plan: Phases 1-14 done (**QA completed — the 14-phase plan
-is complete**). version2.txt follow-ups done: global command
-search (CTRL+K, O) and case-view ENTITIES/ATTACK CHAIN tabs (Q).
-Still open: the BI tail (LOGIN/RBAC users, rate limits + secure
-headers).
+is complete**). version2.txt follow-ups all built: global command
+search (CTRL+K, O), case-view ENTITIES/ATTACK CHAIN tabs (Q), SMS (AP),
+bulk IOC (AN), RDAP+DNS (AG), registries (BD/BE), rate limits + secure
+headers (BS), retention + frontend review (BR/BT). Deliberately
+unbuilt: key-based providers AA–AF (honest NOT CONFIGURED) and password
+LOGIN (spec forbids a fake login page; see section 8).
 
 ## 23. Completed Features
 
@@ -325,24 +331,29 @@ production readiness)**;
 entities, exact-before-partial, filters, keyboard navigation)**;
 **case-view ENTITIES + ATTACK CHAIN tabs (Q, fed by the intel
 graph/chain APIs)**;
+**network intel (AG keyless DNS + RDAP with honest states)**;
+**dataset + model registries (BD/BE profiled from disk, schema v5)**;
+**rate limiting + secure headers (BS)**;
+**privacy settings + retention enforcement (BR/BT)**;
 docs context file.
 
 ## 24. Pending Features
 
-rate limiting; secure headers/CSRF review; secret-manager integration;
-frontend security review (BT); model
-registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
+None buildable without external credentials: per-key providers AA–AF
+(AbuseIPDB/Shodan/Censys/URLScan/HIBP/WebRisk) stay honestly
+NOT CONFIGURED until keys exist; password LOGIN is out per the
+no-fake-login rule (single-operator RBAC adapter, section 8).
 
 ## 25. Known Limitations
 
-* No LOGIN surface yet — RBAC enforcement runs server-side against the
+* No LOGIN surface — RBAC enforcement runs server-side against the
   default ANALYST role (see section 8; adapter point documented).
-* VT only provider wired; other providers report NOT CONFIGURED.
-* Live DB is schema v4 but has no vault data beyond a small seed
-  (1 case + evidence set) until a rescan/analysis runs.
-* No global command search yet.
+* VT + keyless DNS/RDAP are the only live intel; key-based providers
+  report NOT CONFIGURED.
+* Live DB is schema v5; vault data grows with use.
 * Case-view REPORT tab lists generated reports; generation lives in the
   Report Center.
+* Rate-limit buckets are process-local (documented in `ratelimit.py`).
 
 ## 26. Architectural Decisions
 
@@ -396,8 +407,9 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   Security milestone `1fd997e`, Health & Observability milestone `d0ca29e`,
   QA milestone `d7df0fe`, Global search + case-view tabs `ea948e8`,
   SMS + bulk IOC `4301e45`, RDAP+DNS `b01321d`, registries `75b0dd1`,
-  rate limits + headers `45b6d99`.
-* Lab suite: **478/478 passing** — +21 in Tests 7K/7L (AP: SMS registry,
+  rate limits + headers `45b6d99`, retention + review follow this doc
+  update (see `git log -1`).
+* Lab suite: **496/496 passing** — +21 in Tests 7K/7L (AP: SMS registry,
   fraud/benign verdicts, dual-engine sources, incompatibility, API run;
   AN: preview counts, investigate-to-case with ledger links, blank-text
   rejection, page render; nav count 6), +7 in Test 7M (AG: invalid/dead
@@ -407,7 +419,11 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
   relative paths, page renders; Test 1 now pins schema v5 + 21 tables),
   +11 in Test 7O (BS: bucket unit semantics, per-IP/per-scope isolation,
   429 Section 49 envelope with Retry-After, budget restore; secure header
-  set on API + page, no CORS wildcard).
+  set on API + page, no CORS wildcard),
+  +18 in Test 7P (BR: retention defaults + provenance, ADMIN-only
+  update/purge with 403s, validation, audited change + purge, preview
+  honesty; BT: no secret storage, server-side 403s, role gate,
+  disclosure note).
 * AP+AN verified live over HTTP: bulk page + preview/investigate round
   trip (case + evidence + ledger links), SMS in the analysis registry and
   Run Analysis options.
@@ -416,6 +432,8 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 * BD/BE verified live: 6 models + 4 datasets served, models page renders,
   live DB migrated to schema v5.
 * BS verified live: secure headers on Lab responses.
+* BR verified live: retention default + secret source served, retention
+  panel renders, provider/DNS disclosure on Run Analysis.
 * O+Q verified live over HTTP: search returns grouped exact-first hits,
   palette + trigger render in the shell, case view carries both new tabs,
   graph/chain APIs return real per-case data.
@@ -445,6 +463,8 @@ registry/dataset registry surfaces (BD/BE); RBAC users/LOGIN surface.
 The 14-phase plan plus the O/Q follow-ups are complete. version2.txt
 extensions done: SMS/smishing analysis (AP), bulk IOC investigation
 (AN), keyless RDAP+DNS network intel (AG), dataset + model registries
-(BD/BE, schema v5), rate limiting + secure headers (BS). Still open:
-privacy settings + retention (BR), frontend review notes (BT),
-LOGIN/RBAC users (BI tail).
+(BD/BE, schema v5), rate limiting + secure headers (BS), privacy
+settings + retention (BR/BT). Deliberately not built: per-key providers
+(AA–AF stay honest NOT CONFIGURED without keys), password LOGIN (the
+spec forbids a fake login page; single-operator RBAC adapter documented
+in section 8).

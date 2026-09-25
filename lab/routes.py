@@ -27,6 +27,7 @@ from lab import risk_service
 from lab import report_service
 from lab import search_service
 from lab import registry_service
+from lab import settings_service
 from lab import ratelimit
 from lab import security
 from lab import obs
@@ -1090,6 +1091,68 @@ def api_datasets():
         return api_error("DATASET_REGISTRY_FAILED",
                          "The dataset registry could not be read.", 500)
     return api_ok({"datasets": datasets, "count": len(datasets)})
+
+
+# ---------------------------------------------------------------------------
+# Privacy settings + retention enforcement (Section BR)
+# ---------------------------------------------------------------------------
+
+@lab_bp.route("/api/settings")
+def api_settings():
+    """Stored settings with provenance + the secret source statement."""
+    try:
+        data = settings_service.get_all()
+    except Exception:
+        return api_error("SETTINGS_READ_FAILED",
+                         "Settings could not be read.", 500)
+    return api_ok({"settings": data,
+                   "secret_source": settings_service.SECRET_SOURCE})
+
+
+@lab_bp.route("/api/settings", methods=["PATCH"])
+@_require_permission("settings:manage")
+@_require_rate_limit("write")
+def api_settings_update():
+    """Change a setting (ADMIN). Every change is audited."""
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return api_error("INVALID_PAYLOAD", "A JSON body is required.", 400)
+    key = (payload.get("key") or "").strip()
+    if not key:
+        return api_error("VALIDATION_FAILED", "key is required.")
+    try:
+        data = settings_service.set_setting(
+            key, payload.get("value"), actor="analyst")
+    except settings_service.SettingsError as exc:
+        return api_error(exc.code, exc.message)
+    except Exception:
+        return api_error("SETTINGS_UPDATE_FAILED",
+                         "The setting could not be updated.", 500)
+    return api_ok({"setting": data})
+
+
+@lab_bp.route("/api/settings/purge-preview")
+def api_settings_purge_preview():
+    """Count audit rows past retention (reports only, deletes nothing)."""
+    try:
+        data = settings_service.purge_preview()
+    except Exception:
+        return api_error("PURGE_PREVIEW_FAILED",
+                         "Retention preview could not be computed.", 500)
+    return api_ok(data)
+
+
+@lab_bp.route("/api/settings/purge", methods=["POST"])
+@_require_permission("settings:manage")
+@_require_rate_limit("write")
+def api_settings_purge():
+    """Delete audit rows past retention (ADMIN). The purge is audited."""
+    try:
+        data = settings_service.purge_audit(actor="analyst")
+    except Exception:
+        return api_error("PURGE_FAILED",
+                         "The retention purge could not run.", 500)
+    return api_ok(data)
 
 
 # ---------------------------------------------------------------------------

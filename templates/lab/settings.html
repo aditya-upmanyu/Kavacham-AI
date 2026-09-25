@@ -48,6 +48,40 @@
   </div>
   <div class="lab-panel-foot" id="settings-foot">Retrieving provider configuration…</div>
 </section>
+
+<section class="lab-panel" aria-labelledby="settings-retention-title" style="margin-top:16px;">
+  <div class="lab-panel-head">
+    <h2 class="lab-section-title" id="settings-retention-title">DATA RETENTION</h2>
+    <span class="lab-xs lab-dim" id="retention-state">—</span>
+  </div>
+  <div class="lab-panel-body">
+    <p class="lab-sm lab-dim" style="margin-top:0;">
+      Audit rows older than the retention window may be purged. Nothing is
+      deleted on a schedule (no scheduler exists in this deployment) and
+      every purge is itself audited. Secrets come from
+      <span class="lab-mono">environment (.env / process environment)</span> —
+      never from this page.
+    </p>
+    <div class="lab-row tight" style="margin-bottom:10px;">
+      <span class="lab-label">RETENTION (DAYS)</span>
+      <span class="lab-strip-value lab-mono" id="retention-value">—</span>
+      <span class="lab-xs lab-dim" id="retention-meta"></span>
+    </div>
+    {% if current_role == "ADMIN" %}
+    <div class="lab-row tight">
+      <label class="lab-sr-only" for="retention-input">Retention days (30–3650)</label>
+      <input class="lab-input lab-mono" id="retention-input" type="number" min="30" max="3650" step="1"
+             style="width:130px;" placeholder="365" />
+      <button class="lab-btn lab-btn-sm" id="retention-save" type="button">SAVE</button>
+      <button class="lab-btn lab-btn-sm" id="retention-preview" type="button">PURGE PREVIEW</button>
+      <button class="lab-btn lab-btn-sm lab-btn-danger" id="retention-purge" type="button">PURGE NOW</button>
+    </div>
+    {% else %}
+    <p class="lab-xs lab-dim">Retention controls require the ADMIN role. Current role: <span class="lab-mono">{{ current_role }}</span>.</p>
+    {% endif %}
+  </div>
+  <div class="lab-panel-foot" id="retention-foot">Retention: 365 days by default.</div>
+</section>
 {% endblock %}
 
 {% block scripts %}
